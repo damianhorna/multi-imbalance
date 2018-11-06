@@ -40,19 +40,18 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     lookup = {}
     # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
     if class_index == -1:
-        class_index = len(df.columns)
-    # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise
+        class_index = len(df.columns) - 1
+    # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
     for i, _ in enumerate(df):
         if i == class_index:
-            return
+            continue
         col = df.iloc[:, i]
         if is_numeric_dtype(col):
             if normalize:
                 df.iloc[:, i] = normalize_series(col)
         else:
             lookup[i] = create_svdm_lookup_column(df, col, class_index)
-
-    return df
+    return df, lookup
 
 
 def normalize_dataframe(df):
@@ -223,8 +222,9 @@ if __name__ == "__main__":
     print(df)
 
     src = os.path.join(base_dir, "datasets", "iris.csv")
-    dataset = read_dataset(src)
+    dataset, lookup = read_dataset(src)
     print("own function")
     print(dataset)
     print(dataset.columns)
+    print(lookup)
 
