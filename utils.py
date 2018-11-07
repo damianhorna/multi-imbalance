@@ -2,6 +2,7 @@ import math
 from collections import Counter
 import os
 import itertools
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -52,6 +53,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
+    df = add_tags(df, class_col_name)
     # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
     for col_name in df:
         if col_name == class_col_name:
@@ -91,6 +93,27 @@ def extract_initial_rules(df, class_col_name):
             # Assuming the value is x, we now store tuples of (x, x) per row
             rules[col_name] = [tuple([row[col_name], row[col_name]]) for _, row in df.iterrows()]
     return rules
+
+
+def add_tags(df, class_col_name):
+    """
+    Assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY", "BORDERLINE".
+    SAFE: example is classified correctly when looking at its k neighbors
+    UNSAFE: example is misclassified when looking at its k neighbors
+    NOISY: example is UNSAFE and all its k neighbors belong to the opposite class
+    BORDERLINE: example is UNSAFE and it's not NOISY
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset
+    class_col_name: str - name of the column holding the class labels
+
+    Returns
+    -------
+    pd.DataFrame.
+    Dataset with an additional column containing the tag.
+
+    """
 
 
 def normalize_dataframe(df):
@@ -152,14 +175,16 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     return c
 
 
-def find_neighbors(k, rule):
+def find_neighbors(df, k, rule, class_col_name):
     """
-    Finds k nearest examples for a given rule.
+    Finds k nearest examples for a given rule with the same class label as the rule.
 
     Parameters
     ----------
-    k:
-    rule:
+    df: pd.DataFrame - dataset
+    k: int - number of neighbors to consider
+    rule: pd.Series - rule
+    class_col_name: str - name of class label
 
     Returns
     -------
@@ -167,19 +192,21 @@ def find_neighbors(k, rule):
     k nearest examples for the given rule.
 
     """
+    class_label = rule[class_col_name]
+    examples_with_same_label = df.loc[df[class_col_name] == class_label]
 
 
-def most_specific_generalization(dataset, rules, example, rule, class_col_name):
+def most_specific_generalization(rules, example, rule, class_col_name, i):
     """
     Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
 
     Parameters
     ----------
-    dataset: pd.DataFrame - dataset.
-    rules: pd.DataFrame - rules.
+    rules: list of pd.Series - rules.
     example: pd.Series - row from the dataset.
     rule: pd.Series - rule that will be potentially generalized.
     class_col_name: str - name of the column hold the class labels.
+    i: int - row index.
 
     Returns
     -------
@@ -190,14 +217,25 @@ def most_specific_generalization(dataset, rules, example, rule, class_col_name):
     for col_name in example:
         if col_name == class_col_name:
             continue
-        example_feature = example[col_name]
+        example_dtype = example[col_name].dtype
+        # print("example feature:", example[col_name], type(example[col_name]), col_name)
+        example_val = example[col_name][i]
+        # print("example val:", example_val)
         if col_name in rule:
-            rule_feature = rule[col_name]
-            if is_string_dtype(example_feature) and example_feature != rule_feature:
-                rules.drop([col_name], axis=1)
-            elif is_numeric_dtype(example_feature) and example_feature:
-                pass
-
+            # Cast object to tuple datatype -> this is only automatically done if it's not a string
+            rule_val = (rule[col_name])
+            # print("rule_val", rule_val, "\nrule type:", type(rule_val))
+            if is_string_dtype(example_dtype) and example_val != rule_val:
+                rule = rule.drop(labels=[col_name])
+            elif is_numeric_dtype(example_dtype):
+                if example_val > rule_val[1]:
+                    # print("new upper limit", (rule_val[0], example_val))
+                    rule[col_name] = (rule_val[0], example_val)
+                elif example_val < rule_val[0]:
+                    # print("new lower limit", (example_val, rule_val[1]))
+                    rule[col_name] = (example_val, rule_val[1])
+                    # print("updated:", rule)
+    return rule
 
 
 def hvdm(xi, yi, counts):
