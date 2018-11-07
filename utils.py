@@ -5,7 +5,7 @@ import itertools
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
 
 
@@ -34,8 +34,8 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
 
     Returns
     -------
-    pd.DataFrame, dict - dataset and counts matrix which contains for nominal classes how often the value of an
-    co-occurs with each class label
+    pd.DataFrame, pd.DataFrame, dict - dataset, initial rule set and counts matrix which contains for nominal classes
+    how often the value of a feature co-occurs with each class label
 
     """
     # Add column names
@@ -51,6 +51,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     global CLASSES
     CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
+    rules = extract_initial_rules(df, class_col_name)
     # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
     for col_name in df:
         if col_name == class_col_name:
@@ -62,6 +63,34 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
         else:
             lookup[col_name] = create_svdm_lookup_column(df, col, class_col_name)
     return df, lookup
+
+
+def extract_initial_rules(df, class_col_name):
+    """
+    Creates the initial rule set for a given dataset, which corresponds to the examples in the dataset, i.e.
+    lower and upper bound (of numeric) features are the same. Note that for every feature in the dataset,
+    two values are stored per rule, namely lower and upper bound. For example, if we have
+    A   B ...                                                   A        B ...
+    ---------- in the dataset, the corresponding rule stores:  ---------------
+    1.0 x ...                                                  (1.0,1.0) x
+    df: pd.DataFrame - dataset
+    class_col_name: str - name of the column holding the class labels
+
+    Returns
+    -------
+    pd.DataFrame.
+    Rule set
+
+    """
+    rules = df.copy()
+    for col_name in df:
+        if col_name == class_col_name:
+            continue
+        col = df[col_name]
+        if is_numeric_dtype(col):
+            # Assuming the value is x, we now store tuples of (x, x) per row
+            rules[col_name] = [tuple([row[col_name], row[col_name]]) for _, row in df.iterrows()]
+    return rules
 
 
 def normalize_dataframe(df):
@@ -140,23 +169,35 @@ def find_neighbors(k, rule):
     """
 
 
-def most_specific_generalization(example, rule, class_idx):
+def most_specific_generalization(dataset, rules, example, rule, class_col_name):
     """
     Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
 
     Parameters
     ----------
-    example: row from the dataset.
-    rule: rule that will be potentially generalized.
-    class_idx: int - index of column holding the class label.
+    dataset: pd.DataFrame - dataset.
+    rules: pd.DataFrame - rules.
+    example: pd.Series - row from the dataset.
+    rule: pd.Series - rule that will be potentially generalized.
+    class_col_name: str - name of the column hold the class labels.
 
     Returns
     -------
-    generalized rule
+    pd.Series.
+    Generalized rule
 
     """
-    for i, _ in enumerate(example):
-        feature = example.iloc[:, i]
+    for col_name in example:
+        if col_name == class_col_name:
+            continue
+        example_feature = example[col_name]
+        if col_name in rule:
+            rule_feature = rule[col_name]
+            if is_string_dtype(example_feature) and example_feature != rule_feature:
+                rules.drop([col_name], axis=1)
+            elif is_numeric_dtype(example_feature) and example_feature:
+                pass
+
 
 
 def hvdm(xi, yi, counts):
@@ -274,7 +315,6 @@ if __name__ == "__main__":
     # Iris dataset
     df = sklearn_to_df(sklearn.datasets.load_iris())
     print(df)
-
     src = os.path.join(base_dir, "datasets", "iris.csv")
     dataset, lookup = read_dataset(src)
     print("own function")
