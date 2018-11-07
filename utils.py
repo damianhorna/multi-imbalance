@@ -1,5 +1,5 @@
 import math
-from collections import Counter, defaultdict
+from collections import Counter
 import os
 import itertools
 
@@ -15,9 +15,10 @@ NUMERIC = 1
 TYPE_MAPPING = {""}
 DATA_TYPES = []
 CONDITIONAL = "Conditional"
+CLASSES = []
 
 
-def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1):
+def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
     """
     Reads in a dataset in csv format and stores it in a dataFrame.
 
@@ -29,6 +30,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     na_values: list of str - values encoding missing values - these are represented by NaN
     normalize: bool - True if numeric values should be in range between 0 and 1
     class_index: int - 0-based index where class label is stored in dataset. -1 = last column
+    header: bool - True if header row is included in the dataset else False
 
     Returns
     -------
@@ -36,32 +38,40 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     co-occurs with each class label
 
     """
-    df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values)
+    # Add column names
+    if header:
+        df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values)
+    else:
+        df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values, header=None)
+        df.columns = [i for i in range(len(df.columns))]
     lookup = {}
     # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
     if class_index == -1:
         class_index = len(df.columns) - 1
+    global CLASSES
+    CLASSES = df.iloc[:, class_index].unique()
+    class_col_name = df.columns[class_index]
     # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
-    for i, _ in enumerate(df):
-        if i == class_index:
+    for col_name in df:
+        if col_name == class_col_name:
             continue
-        col = df.iloc[:, i]
+        col = df[col_name]
         if is_numeric_dtype(col):
             if normalize:
-                df.iloc[:, i] = normalize_series(col)
+                df[col_name] = normalize_series(col)
         else:
-            lookup[i] = create_svdm_lookup_column(df, col, class_index)
+            lookup[col_name] = create_svdm_lookup_column(df, col, class_col_name)
     return df, lookup
 
 
 def normalize_dataframe(df):
     """Normalize numeric features (=columns) using min-max normalization"""
-    for col_idx, _ in enumerate(df):
-        col = df.iloc[:, col_idx]
+    for col_name in df.columns:
+        col = df[col_name]
         if is_numeric_dtype(col):
             min_val = col.min()
             max_val = col.max()
-            df.iloc[:, col_idx] = (col - min_val) / (max_val - min_val)
+            df[col_name] = (col - min_val) / (max_val - min_val)
     return df
 
 
@@ -74,7 +84,7 @@ def normalize_series(col):
     return col
 
 
-def create_svdm_lookup_column(df, coli, class_idx):
+def create_svdm_lookup_column(df, coli, class_col_name):
     """
     Create sparse lookup table for the feature representing the current column i.
 
@@ -86,17 +96,14 @@ def create_svdm_lookup_column(df, coli, class_idx):
     ----------
     df: pd.DataFrame - dataset.
     coli: pd.Series - i-th column (= feature) of the dataset
-    class_idx: int - index of class label in <df>.
+    class_col_name: str - name of class label in <df>.
 
     Returns
     -------
     dict - sparse dictionary holding the non-zero counts of all values of <coli> with the class labels
 
     """
-    # classes = df.iloc[:, class_idx].unique()
     c = {}
-    # print("Kj:\n", classes)
-    # print(coli)
     nxiyi = Counter(coli.values)
     c.update(nxiyi)
     c[CONDITIONAL] = {}
@@ -104,16 +111,52 @@ def create_svdm_lookup_column(df, coli, class_idx):
     unique_xiyi = nxiyi.keys()
     # Create all pairwise combinations of two values
     combinations = itertools.combinations(unique_xiyi, 2)
-    # for i in range(0, len(unique_xiyi), 2):
     for combo in combinations:
         for val in combo:
             # print("current value:\n", val)
             rows_with_val = df.loc[coli == val]
             # print("rows with value:\n", rows_with_val)
-            nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
-            # print("counts:\n", nxiyikj)
+            # nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
+            nxiyikj = Counter(rows_with_val[class_col_name].values)
+            print("counts:\n", nxiyikj)
             c[CONDITIONAL][val] = nxiyikj
     return c
+
+
+def find_neighbors(k, rule):
+    """
+    Finds k nearest examples for a given rule.
+
+    Parameters
+    ----------
+    k:
+    rule:
+
+    Returns
+    -------
+    list.
+    k nearest examples for the given rule.
+
+    """
+
+
+def most_specific_generalization(example, rule, class_idx):
+    """
+    Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
+
+    Parameters
+    ----------
+    example: row from the dataset.
+    rule: rule that will be potentially generalized.
+    class_idx: int - index of column holding the class label.
+
+    Returns
+    -------
+    generalized rule
+
+    """
+    for i, _ in enumerate(example):
+        feature = example.iloc[:, i]
 
 
 def hvdm(xi, yi, counts):
@@ -146,13 +189,13 @@ def hvdm(xi, yi, counts):
         if pd.api.types.is_numeric_dtype(short.columns[j]):
             dist = di(col1, col2)
         else:
-            dist = svdm(col1, col2, counts)
+            dist = svdm(col1, col2, j, counts)
         dists.append(dist*dist)
     # Compute HVDM
     return math.sqrt(sum(dists))
 
 
-def svdm(f1, f2, counts):
+def svdm(f1, f2, i, counts):
     """
     Computes the Value difference metric for nominal values. Assumes that the data is normalized.
 
@@ -160,6 +203,7 @@ def svdm(f1, f2, counts):
     ----------
     f1: pd.Series - features of input 1.
     f2: pd.Series - features of input 2.
+    i: int - index of <f1> and <f2> respectively in the dataset, i.e. in which column they are stored
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
 
     Returns
@@ -172,8 +216,18 @@ def svdm(f1, f2, counts):
         # if f1.isnull().values.any() or f2.isnull().values.any():
         print("NaN(s) in svdm()")
         return 1.
+    singles = set()
+    for k in counts[i]:
+        if k != CONDITIONAL:
+            singles.add(k)
+    combos = itertools.combinations(singles, 2)
+    print(combos)
     dist = 0.
-
+    for k in CLASSES:
+        kl = k
+        for val in combos:
+            nxi = counts[i][val]
+            nyi = counts[i][val]
     return dist
 
 
