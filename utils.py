@@ -196,13 +196,12 @@ def find_neighbors(df, k, rule, class_col_name):
     examples_with_same_label = df.loc[df[class_col_name] == class_label]
 
 
-def most_specific_generalization(rules, example, rule, class_col_name, i):
+def most_specific_generalization(example, rule, class_col_name, i):
     """
     Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
 
     Parameters
     ----------
-    rules: list of pd.Series - rules.
     example: pd.Series - row from the dataset.
     rule: pd.Series - rule that will be potentially generalized.
     class_col_name: str - name of the column hold the class labels.
