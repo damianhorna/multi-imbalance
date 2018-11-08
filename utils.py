@@ -175,9 +175,10 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     return c
 
 
-def find_neighbors(df, k, rule, class_col_name):
+def find_neighbors(df, k, rule, class_col_name, counts):
     """
     Finds k nearest examples for a given rule with the same class label as the rule.
+    If less than k examples exist, a warning is issued.
 
     Parameters
     ----------
@@ -185,6 +186,7 @@ def find_neighbors(df, k, rule, class_col_name):
     k: int - number of neighbors to consider
     rule: pd.Series - rule
     class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
 
     Returns
     -------
@@ -194,6 +196,13 @@ def find_neighbors(df, k, rule, class_col_name):
     """
     class_label = rule[class_col_name]
     examples_with_same_label = df.loc[df[class_col_name] == class_label]
+    neighbors = examples_with_same_label.shape[0]
+    if neighbors < k:
+        warnings.warn("Only {} neighbors for {}".format(examples_with_same_label.shape[0], examples_with_same_label),
+                      UserWarning)
+    if neighbors > 0:
+        # for i, example in df.iterrows():
+        dists = hvdm(neighbors, rule, counts)
 
 
 def most_specific_generalization(example, rule, class_col_name, i):
@@ -205,7 +214,7 @@ def most_specific_generalization(example, rule, class_col_name, i):
     example: pd.Series - row from the dataset.
     rule: pd.Series - rule that will be potentially generalized.
     class_col_name: str - name of the column hold the class labels.
-    i: int - row index.
+    i: int - row index of <example>.
 
     Returns
     -------
@@ -267,46 +276,71 @@ def hvdm(xi, yi, counts):
         if pd.api.types.is_numeric_dtype(short.columns[j]):
             dist = di(col1, col2)
         else:
-            dist = svdm(col1, col2, j, counts)
+            dist = svdm(col1, col2, j, counts, CLASSES)
         dists.append(dist*dist)
     # Compute HVDM
     return math.sqrt(sum(dists))
 
 
-def svdm(f1, f2, i, counts):
+def svdm(example_feat, rule_feat, i, counts, classes):
     """
     Computes the Value difference metric for nominal values. Assumes that the data is normalized.
 
     Parameters
     ----------
-    f1: pd.Series - features of input 1.
-    f2: pd.Series - features of input 2.
-    i: int - index of <f1> and <f2> respectively in the dataset, i.e. in which column they are stored
+    example_feat: pd.Series - column (=feature) containing all examples.
+    rule_feat: pd.Series - column (=feature) of the rule.
+    i: int - index of <example_feat> and <rule_feat> respectively in the dataset, i.e. in which column they are stored
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    classes: list of str - class labels in the dataset.
 
     Returns
     -------
     float - distance
 
     """
+    print(example_feat)
+    print(rule_feat)
+    col_name = example_feat.name
     # If NaN is included anywhere
-    if f1.hasnans or f2.hashnans:
-        # if f1.isnull().values.any() or f2.isnull().values.any():
+    # if example_feat.hasnans or rule_feat.hashnans:
+    if example_feat.isna().sum() > 0 or rule_feat.isna().sum() > 0:
         print("NaN(s) in svdm()")
         return 1.
+    # Use all single value counts that don't depend on the class label
     singles = set()
-    for k in counts[i]:
+    for k in counts[col_name]:
         if k != CONDITIONAL:
             singles.add(k)
-    combos = itertools.combinations(singles, 2)
-    print(combos)
-    dist = 0.
-    for k in CLASSES:
-        kl = k
-        for val in combos:
-            nxi = counts[i][val]
-            nyi = counts[i][val]
-    return dist
+    rule_val = rule_feat[col_name]
+    n_rule = counts[col_name][rule_val]
+    print("value in rule", rule_val)
+    dists = []
+    # For every row
+    for idx, example_val in example_feat.iteritems():
+        print("compute example", idx)
+        print("------------------")
+        print(example_val)
+        dist = 0.
+        for k in classes:
+            print("processing class", k)
+            n_example = counts[col_name][example_val]
+            nk_example = counts[col_name][CONDITIONAL][example_val][k]
+            nk_rule = counts[col_name][CONDITIONAL][rule_val][k]
+            print("n_example", n_example)
+            print("nk_example", nk_example)
+            print("n_rule", n_rule)
+            print("nk_rule", nk_rule)
+            res = abs(nk_example/n_example - nk_rule/n_rule)
+            dist += res
+            print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
+            print("d={}".format(dist))
+        dists.append((idx, dist))
+    print("distances:", dists)
+    # Split tuples into 2 separate lists, one containing the indices and the other one containing the values
+    zlst = list(zip(*dists))
+    out = pd.Series(zlst[1], index=zlst[0])
+    return out
 
 
 def di(f1, f2):
