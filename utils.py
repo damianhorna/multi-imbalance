@@ -282,7 +282,7 @@ def hvdm(xi, yi, counts):
     return math.sqrt(sum(dists))
 
 
-def svdm(example_feat, rule_feat, i, counts, classes):
+def svdm(example_feat, rule_feat, counts, classes):
     """
     Computes the Value difference metric for nominal values. Assumes that the data is normalized.
 
@@ -290,7 +290,6 @@ def svdm(example_feat, rule_feat, i, counts, classes):
     ----------
     example_feat: pd.Series - column (=feature) containing all examples.
     rule_feat: pd.Series - column (=feature) of the rule.
-    i: int - index of <example_feat> and <rule_feat> respectively in the dataset, i.e. in which column they are stored
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
     classes: list of str - class labels in the dataset.
 
@@ -356,7 +355,7 @@ def di(f1, f2):
 
     """
     # If NaN is included anywhere
-    if f1.hasnans or f2.hashnans:
+    if example_feat.isna().sum() > 0 or rule_feat.isna().sum() > 0:
         # if f1.isnull().values.any() or f2.isnull().values.any():
         print("NaN(s) in di()")
         return 1.
