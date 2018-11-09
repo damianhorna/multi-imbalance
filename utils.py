@@ -299,8 +299,6 @@ def svdm(example_feat, rule_feat, i, counts, classes):
     float - distance
 
     """
-    print(example_feat)
-    print(rule_feat)
     col_name = example_feat.name
     # If NaN is included anywhere
     # if example_feat.hasnans or rule_feat.hashnans:
@@ -314,29 +312,29 @@ def svdm(example_feat, rule_feat, i, counts, classes):
             singles.add(k)
     rule_val = rule_feat[col_name]
     n_rule = counts[col_name][rule_val]
-    print("value in rule", rule_val)
+    # print("value in rule", rule_val)
     dists = []
     # For every row
     for idx, example_val in example_feat.iteritems():
-        print("compute example", idx)
-        print("------------------")
-        print(example_val)
+        # print("compute example", idx)
+        # print("------------------")
+        # print(example_val)
         dist = 0.
         for k in classes:
-            print("processing class", k)
+            # print("processing class", k)
             n_example = counts[col_name][example_val]
             nk_example = counts[col_name][CONDITIONAL][example_val][k]
             nk_rule = counts[col_name][CONDITIONAL][rule_val][k]
-            print("n_example", n_example)
-            print("nk_example", nk_example)
-            print("n_rule", n_rule)
-            print("nk_rule", nk_rule)
+            # print("n_example", n_example)
+            # print("nk_example", nk_example)
+            # print("n_rule", n_rule)
+            # print("nk_rule", nk_rule)
             res = abs(nk_example/n_example - nk_rule/n_rule)
             dist += res
-            print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
-            print("d={}".format(dist))
+            # print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
+            # print("d={}".format(dist))
         dists.append((idx, dist))
-    print("distances:", dists)
+    # print("distances:", dists)
     # Split tuples into 2 separate lists, one containing the indices and the other one containing the values
     zlst = list(zip(*dists))
     out = pd.Series(zlst[1], index=zlst[0])
