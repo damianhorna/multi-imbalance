@@ -35,8 +35,8 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
 
     Returns
     -------
-    pd.DataFrame, pd.DataFrame, dict - dataset, initial rule set and counts matrix which contains for nominal classes
-    how often the value of a feature co-occurs with each class label
+    pd.DataFrame, pd.DataFrame, dict, pd.DataFrame - dataset, initial rule set, counts matrix which contains for
+    nominal classes how often the value of a feature co-occurs with each class label, min/max values per numeric column
 
     """
     # Add column names
@@ -53,6 +53,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
+    minmax = {}
     df = add_tags(df, class_col_name)
     # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
     for col_name in df:
@@ -62,9 +63,11 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
         if is_numeric_dtype(col):
             if normalize:
                 df[col_name] = normalize_series(col)
+            minmax[col_name] = {"min": col.min(), "max": col.max()}
         else:
             lookup[col_name] = create_svdm_lookup_column(df, col, class_col_name)
-    return df, lookup
+    min_max = pd.DataFrame(minmax)
+    return df, lookup, rules, min_max
 
 
 def extract_initial_rules(df, class_col_name):
@@ -114,6 +117,7 @@ def add_tags(df, class_col_name):
     Dataset with an additional column containing the tag.
 
     """
+    return df
 
 
 def normalize_dataframe(df):
@@ -170,12 +174,12 @@ def create_svdm_lookup_column(df, coli, class_col_name):
             # print("rows with value:\n", rows_with_val)
             # nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
             nxiyikj = Counter(rows_with_val[class_col_name].values)
-            print("counts:\n", nxiyikj)
+            # print("counts:\n", nxiyikj)
             c[CONDITIONAL][val] = nxiyikj
     return c
 
 
-def find_neighbors(df, k, rule, class_col_name, counts):
+def find_neighbors(df, k, rule, class_col_name, counts, min_max):
     """
     Finds k nearest examples for a given rule with the same class label as the rule.
     If less than k examples exist, a warning is issued.
@@ -187,6 +191,7 @@ def find_neighbors(df, k, rule, class_col_name, counts):
     rule: pd.Series - rule
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
 
     Returns
     -------
@@ -202,7 +207,7 @@ def find_neighbors(df, k, rule, class_col_name, counts):
                       UserWarning)
     if neighbors > 0:
         # for i, example in df.iterrows():
-        dists = hvdm(neighbors, rule, counts)
+        dists = hvdm(neighbors, rule, counts, min_max, class_col_name)
 
 
 def most_specific_generalization(example, rule, class_col_name, i):
@@ -246,45 +251,51 @@ def most_specific_generalization(example, rule, class_col_name, i):
     return rule
 
 
-def hvdm(xi, yi, counts):
+def hvdm(examples, rule, counts, classes, min_max, class_col_name):
     """
     Computes the distance (Heterogenous Value Difference Metrics) between a rule/example and another example.
 
     Parameters
     ----------
-    xi: pd.dataFrame - (m x n or a x b), where a<=m, b<=n rule or example
-    yi: pd.dataFrame - (m x n) example
+    examples: pd.DataFrame - examples
+    rule: pd.Series - (m x n) rule
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    classes: list of str - class labels in the dataset.
+    min_max: pd: pd.DataFrame - contains min/max values per numeric feature
+    class_col_name: str - name of class label
 
     Returns
     -------
-    float - distance.
+    pd.DataFrame - distances.
 
     """
-    # Select same columns in both inputs
+    # Select only those columns that exist in examples and rule
     # https://stackoverflow.com/questions/46228574/pandas-select-dataframe-columns-based-on-another-dataframes-columns
-    long = yi[yi.columns.intersection(xi.columns)]
-    short = xi[xi.columns.intersection(yi.columns)]
-    print(xi.shape + ": " + xi.columns, yi.shape + ": " + yi.columns)
+    examples = examples[rule.index.intersection(examples.columns)]
     dists = []
     # Compute distance for j-th feature (=column)
-    for j, _ in enumerate(short):
+    for col_name in examples:
+        if col_name == class_col_name:
+            continue
         # Extract column from both dataframes into numpy array
-        col1 = short.iloc[:, j].values
-        col2 = long.iloc[:, j].values
+        example_feature_col = examples[col_name]
         # Compute nominal/numeric distance
-        if pd.api.types.is_numeric_dtype(short.columns[j]):
-            dist = di(col1, col2)
+        if pd.api.types.is_numeric_dtype(example_feature_col):
+            dist_squared = di(example_feature_col, rule, min_max)
         else:
-            dist = svdm(col1, col2, j, counts, CLASSES)
-        dists.append(dist*dist)
-    # Compute HVDM
-    return math.sqrt(sum(dists))
+            dist_squared = svdm(example_feature_col, rule, counts, classes)
+        dists.append(dist_squared)
+    distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists])
+    # Sum up rows to compute HVDM - no need to square the distances as the order won't change
+    distances["dist"] = distances.select_dtypes(float).sum(1)
+    distances = distances.sort_values("dist", ascending=True)
+    # print(distances)
+    return distances
 
 
 def svdm(example_feat, rule_feat, counts, classes):
     """
-    Computes the Value difference metric for nominal values. Assumes that the data is normalized.
+    Computes the (squared) Value difference metric for nominal values.
 
     Parameters
     ----------
@@ -295,15 +306,16 @@ def svdm(example_feat, rule_feat, counts, classes):
 
     Returns
     -------
-    float - distance
+    pd.Series.
+    (squared) distance of each example.
 
     """
-    col_name = example_feat.name
     # If NaN is included anywhere
     # if example_feat.hasnans or rule_feat.hashnans:
     if example_feat.isna().sum() > 0 or rule_feat.isna().sum() > 0:
         print("NaN(s) in svdm()")
         return 1.
+    col_name = example_feat.name
     # Use all single value counts that don't depend on the class label
     singles = set()
     for k in counts[col_name]:
@@ -332,26 +344,28 @@ def svdm(example_feat, rule_feat, counts, classes):
             dist += res
             # print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
             # print("d={}".format(dist))
-        dists.append((idx, dist))
+        dists.append((idx, dist*dist))
     # print("distances:", dists)
     # Split tuples into 2 separate lists, one containing the indices and the other one containing the values
     zlst = list(zip(*dists))
-    out = pd.Series(zlst[1], index=zlst[0])
+    out = pd.Series(zlst[1], index=zlst[0], name=col_name)
     return out
 
 
-def di(f1, f2):
+def di(example_feat, rule_feat, min_max):
     """
-    Computes the Euclidean distance for numeric values. Assumes that the data is normalized.
+    Computes the (squared) partial distance for numeric values.
 
     Parameters
     ----------
-    f1: pd.Series - features of input 1.
-    f2: pd.Series - features of input 2.
+    example_feat: pd.Series - column (=feature) containing all examples.
+    rule_feat: pd.Series - column (=feature) of the rule.
+    min_max: pd.DataFrame - min and max value per numeric feature.
 
     Returns
     -------
-    float - distance
+    pd.Series
+    (squared) distance of each example.
 
     """
     # If NaN is included anywhere
@@ -359,14 +373,29 @@ def di(f1, f2):
         # if f1.isnull().values.any() or f2.isnull().values.any():
         print("NaN(s) in di()")
         return 1.
-    dist = 0.
-    for col_idx, _ in enumerate(df):
-        col = df.iloc[:, col_idx]
-        if is_numeric_dtype(col):
-            min_val = col.min()
-            max_val = col.max()
-            df.iloc[:, col_idx] = (col - min_val) / (max_val - min_val)
-    return dist
+    col_name = example_feat.name
+    dists = []
+    lower_rule_val, upper_rule_val = rule_feat[col_name]
+    for idx, example_val in example_feat.iteritems():
+        # print("processing", example_val)
+        min_rule_val = min_max.at["min", col_name]
+        max_rule_val = min_max.at["max", col_name]
+        # print("min({})={}".format(col_name, min_rule_val))
+        # print("max({})={}".format(col_name, max_rule_val))
+        if example_val > upper_rule_val:
+            # print("example > upper")
+            # print("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
+            dist = (example_val - upper_rule_val) / (max_rule_val - min_rule_val)
+        elif example_val < lower_rule_val:
+            # print("example < lower")
+            # print("({} - {}) / ({} - {})".format(lower_rule_val, example_val, max_rule_val, min_rule_val))
+            dist = (lower_rule_val - example_val) / (max_rule_val - min_rule_val)
+        else:
+            dist = 0
+        dists.append((idx, dist*dist))
+    zlst = list(zip(*dists))
+    out = pd.Series(zlst[1], index=zlst[0], name=col_name)
+    return out
 
 
 def sklearn_to_df(sklearn_dataset):
@@ -384,7 +413,7 @@ if __name__ == "__main__":
     df = sklearn_to_df(sklearn.datasets.load_iris())
     print(df)
     src = os.path.join(base_dir, "datasets", "iris.csv")
-    dataset, lookup = read_dataset(src)
+    dataset, lookup, _, _ = read_dataset(src)
     print("own function")
     print(dataset)
     print(dataset.columns)
