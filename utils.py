@@ -1,4 +1,3 @@
-import math
 from collections import Counter
 import os
 import itertools
@@ -17,6 +16,11 @@ TYPE_MAPPING = {""}
 DATA_TYPES = []
 CONDITIONAL = "Conditional"
 CLASSES = []
+SAFE = "safe"
+NOISY = "noisy"
+BORDERLINE = "borderline"
+TAG = "tag"
+DISTANCE_MATRIX = {}
 
 
 def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
@@ -54,7 +58,6 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
     minmax = {}
-    df = add_tags(df, class_col_name)
     # Create lookup matrix for nominal features for SVDM + normalize numerical features columnwise, but ignore labels
     for col_name in df:
         if col_name == class_col_name:
@@ -78,6 +81,9 @@ def extract_initial_rules(df, class_col_name):
     A   B ...                                                   A        B ...
     ---------- in the dataset, the corresponding rule stores:  ---------------
     1.0 x ...                                                  (1.0,1.0) x
+
+    Parameters
+    ----------
     df: pd.DataFrame - dataset
     class_col_name: str - name of the column holding the class labels
 
@@ -98,18 +104,23 @@ def extract_initial_rules(df, class_col_name):
     return rules
 
 
-def add_tags(df, class_col_name):
+def add_tags(df, k, class_col_name, counts, min_max, classes):
     """
     Assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY", "BORDERLINE".
     SAFE: example is classified correctly when looking at its k neighbors
     UNSAFE: example is misclassified when looking at its k neighbors
     NOISY: example is UNSAFE and all its k neighbors belong to the opposite class
-    BORDERLINE: example is UNSAFE and it's not NOISY
+    BORDERLINE: example is UNSAFE and it's not NOISY.
+    Assumes that <df> contains at least 2 rows.
 
     Parameters
     ----------
     df: pd.DataFrame - dataset
-    class_col_name: str - name of the column holding the class labels
+    k: int - number of neighbors to consider
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset.
 
     Returns
     -------
@@ -117,7 +128,56 @@ def add_tags(df, class_col_name):
     Dataset with an additional column containing the tag.
 
     """
+    converted_examples = extract_initial_rules(df, class_col_name)
+    tags = []
+    for idx, converted_example in converted_examples.iterrows():
+        # Ignore current row
+        ignored_rows = converted_examples.index.isin([idx])
+        examples_for_pairwise_distance = df[~ignored_rows]
+        if examples_for_pairwise_distance.shape[0] > 0:
+            print("pairwise distances for:\n{}".format(converted_example))
+            print("compute distance to:\n{}".format(examples_for_pairwise_distance))
+            neighbors = find_neighbors(examples_for_pairwise_distance, k, converted_example, class_col_name, counts,
+                                       min_max, classes, use_same_label=False)
+            labels = Counter(neighbors[class_col_name].values)
+            tag = assign_tag(labels, converted_example[class_col_name])
+            tags.append(tag)
+    df[TAG] = pd.Series(tags)
     return df
+
+
+def assign_tag(labels, label):
+    """
+    Assigns a tag to an example ("safe", "noisy" or "borderline").
+
+    Parameters
+    ----------
+    labels: collections.Counter - frequency of labels
+    label: str - label of the example
+
+    Returns
+    -------
+    string.
+    Tag, either "safe", "noisy" or "borderline".
+
+    """
+    total_labels = sum(labels.values())
+    frequencies = labels.most_common(2)
+    print(frequencies)
+    most_common = frequencies[0]
+    tag = SAFE
+    if most_common[1] == total_labels and most_common[0] != label:
+        tag = NOISY
+    elif most_common[1] < total_labels:
+        second_most_common = frequencies[1]
+        print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
+
+        # Tie
+        if most_common[1] == second_most_common[1] or most_common[0] != label:
+            tag = BORDERLINE
+    print("neighbor labels: {} vs. {}".format(labels, label))
+    print("tag:", tag)
+    return tag
 
 
 def normalize_dataframe(df):
@@ -179,7 +239,7 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     return c
 
 
-def find_neighbors(df, k, rule, class_col_name, counts, min_max):
+def find_neighbors(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True):
     """
     Finds k nearest examples for a given rule with the same class label as the rule.
     If less than k examples exist, a warning is issued.
@@ -192,22 +252,33 @@ def find_neighbors(df, k, rule, class_col_name, counts, min_max):
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset.
+    use_same_label: bool - True if only examples with the same label as the rule should be considered as neighbors.
+    Otherwise all labels are used.
 
     Returns
     -------
-    list.
+    pd.DataFrame.
     k nearest examples for the given rule.
 
     """
-    class_label = rule[class_col_name]
-    examples_with_same_label = df.loc[df[class_col_name] == class_label]
+    if use_same_label:
+        class_label = rule[class_col_name]
+        examples_with_same_label = df.loc[df[class_col_name] == class_label]
+    else:
+        examples_with_same_label = df.copy()
+    print("examples:\n{}".format(examples_with_same_label))
     neighbors = examples_with_same_label.shape[0]
+    print("neighbors:", neighbors)
     if neighbors < k:
         warnings.warn("Only {} neighbors for {}".format(examples_with_same_label.shape[0], examples_with_same_label),
                       UserWarning)
     if neighbors > 0:
-        # for i, example in df.iterrows():
-        dists = hvdm(neighbors, rule, counts, min_max, class_col_name)
+        dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
+        neighbor_ids = dists.index[: k]
+        print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
+        return df.loc[neighbor_ids]
+    return None
 
 
 def most_specific_generalization(example, rule, class_col_name, i):
@@ -254,6 +325,7 @@ def most_specific_generalization(example, rule, class_col_name, i):
 def hvdm(examples, rule, counts, classes, min_max, class_col_name):
     """
     Computes the distance (Heterogenous Value Difference Metrics) between a rule/example and another example.
+    Assumes that there's at least 1 feature shared between <rule> and <examples>.
 
     Parameters
     ----------
@@ -281,15 +353,15 @@ def hvdm(examples, rule, counts, classes, min_max, class_col_name):
         example_feature_col = examples[col_name]
         # Compute nominal/numeric distance
         if pd.api.types.is_numeric_dtype(example_feature_col):
-            dist_squared = di(example_feature_col, rule, min_max)
+                dist_squared = di(example_feature_col, rule, min_max)
         else:
             dist_squared = svdm(example_feature_col, rule, counts, classes)
         dists.append(dist_squared)
-    distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists])
+    # Note: this line assumes that there's at least 1 feature
+    distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
     # Sum up rows to compute HVDM - no need to square the distances as the order won't change
     distances["dist"] = distances.select_dtypes(float).sum(1)
     distances = distances.sort_values("dist", ascending=True)
-    # print(distances)
     return distances
 
 
@@ -352,13 +424,13 @@ def svdm(example_feat, rule_feat, counts, classes):
     return out
 
 
-def di(example_feat, rule_feat, min_max):
+def di(example_feats, rule_feat, min_max):
     """
-    Computes the (squared) partial distance for numeric values.
+    Computes the (squared) partial distance for numeric values between an example and a rule.
 
     Parameters
     ----------
-    example_feat: pd.Series - column (=feature) containing all examples.
+    example_feats: pd.Series - column (=feature) containing all examples.
     rule_feat: pd.Series - column (=feature) of the rule.
     min_max: pd.DataFrame - min and max value per numeric feature.
 
@@ -369,14 +441,15 @@ def di(example_feat, rule_feat, min_max):
 
     """
     # If NaN is included anywhere
-    if example_feat.isna().sum() > 0 or rule_feat.isna().sum() > 0:
+    if example_feats.isna().sum() > 0 or rule_feat.isna().sum() > 0:
         # if f1.isnull().values.any() or f2.isnull().values.any():
         print("NaN(s) in di()")
         return 1.
-    col_name = example_feat.name
+    col_name = example_feats.name
     dists = []
     lower_rule_val, upper_rule_val = rule_feat[col_name]
-    for idx, example_val in example_feat.iteritems():
+    # Per row
+    for idx, example_val in example_feats.iteritems():
         # print("processing", example_val)
         min_rule_val = min_max.at["min", col_name]
         max_rule_val = min_max.at["max", col_name]
@@ -412,8 +485,13 @@ if __name__ == "__main__":
     # Iris dataset
     df = sklearn_to_df(sklearn.datasets.load_iris())
     print(df)
+
     src = os.path.join(base_dir, "datasets", "iris.csv")
-    dataset, lookup, _, _ = read_dataset(src)
+    class_col_name = "Class"
+    k = 3
+    classes = ["apple", "banana"]
+    dataset, lookup, rules, min_max = read_dataset(src)
+    df = add_tags(df, k, class_col_name, lookup, min_max, classes)
     print("own function")
     print(dataset)
     print(dataset.columns)
