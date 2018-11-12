@@ -135,8 +135,8 @@ def add_tags(df, k, class_col_name, counts, min_max, classes):
         ignored_rows = converted_examples.index.isin([idx])
         examples_for_pairwise_distance = df[~ignored_rows]
         if examples_for_pairwise_distance.shape[0] > 0:
-            print("pairwise distances for:\n{}".format(converted_example))
-            print("compute distance to:\n{}".format(examples_for_pairwise_distance))
+            # print("pairwise distances for:\n{}".format(converted_example))
+            # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors = find_neighbors(examples_for_pairwise_distance, k, converted_example, class_col_name, counts,
                                        min_max, classes, use_same_label=False)
             labels = Counter(neighbors[class_col_name].values)
@@ -163,20 +163,20 @@ def assign_tag(labels, label):
     """
     total_labels = sum(labels.values())
     frequencies = labels.most_common(2)
-    print(frequencies)
+    # print(frequencies)
     most_common = frequencies[0]
     tag = SAFE
     if most_common[1] == total_labels and most_common[0] != label:
         tag = NOISY
     elif most_common[1] < total_labels:
         second_most_common = frequencies[1]
-        print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
+        # print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
 
         # Tie
         if most_common[1] == second_most_common[1] or most_common[0] != label:
             tag = BORDERLINE
-    print("neighbor labels: {} vs. {}".format(labels, label))
-    print("tag:", tag)
+    # print("neighbor labels: {} vs. {}".format(labels, label))
+    # print("tag:", tag)
     return tag
 
 
@@ -267,16 +267,16 @@ def find_neighbors(df, k, rule, class_col_name, counts, min_max, classes, use_sa
         examples_with_same_label = df.loc[df[class_col_name] == class_label]
     else:
         examples_with_same_label = df.copy()
-    print("examples:\n{}".format(examples_with_same_label))
+    # print("examples:\n{}".format(examples_with_same_label))
     neighbors = examples_with_same_label.shape[0]
-    print("neighbors:", neighbors)
+    # print("neighbors:", neighbors)
     if neighbors < k:
         warnings.warn("Only {} neighbors for {}".format(examples_with_same_label.shape[0], examples_with_same_label),
                       UserWarning)
     if neighbors > 0:
         dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
         neighbor_ids = dists.index[: k]
-        print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
+        # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
         return df.loc[neighbor_ids]
     return None
 
