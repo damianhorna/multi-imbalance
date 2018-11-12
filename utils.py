@@ -139,6 +139,7 @@ def add_tags(df, k, class_col_name, counts, min_max, classes):
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors = find_neighbors(examples_for_pairwise_distance, k, converted_example, class_col_name, counts,
                                        min_max, classes, use_same_label=False)
+            # print("neighbors:\n{}".format(neighbors))
             labels = Counter(neighbors[class_col_name].values)
             tag = assign_tag(labels, converted_example[class_col_name])
             tags.append(tag)
@@ -353,11 +354,10 @@ def hvdm(examples, rule, counts, classes, min_max, class_col_name):
         example_feature_col = examples[col_name]
         # Compute nominal/numeric distance
         if pd.api.types.is_numeric_dtype(example_feature_col):
-                dist_squared = di(example_feature_col, rule, min_max)
+            dist_squared = di(example_feature_col, rule, min_max)
         else:
             dist_squared = svdm(example_feature_col, rule, counts, classes)
         dists.append(dist_squared)
-    print(dists)
     # Note: this line assumes that there's at least 1 feature
     distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
     # Sum up rows to compute HVDM - no need to square the distances as the order won't change
@@ -388,7 +388,7 @@ def svdm(example_feat, rule_feat, counts, classes):
     dists = []
     # Feature is NaN in rule -> all distances will become 1 automatically by definition
     if pd.isnull(rule_val):
-        print("column {} is NaN in rule".format(col_name))
+        print("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
         dists = [(idx, 1.0) for idx,_ in example_feat.iteritems()]
         zlst = list(zip(*dists))
         out = pd.Series(zlst[1], index=zlst[0], name=col_name)
@@ -448,7 +448,7 @@ def di(example_feat, rule_feat, min_max):
     dists = []
     # Feature is NaN in rule -> all distances will become 1 automatically by definition
     if pd.isnull(lower_rule_val) or pd.isnull(upper_rule_val):
-        print("column {} is NaN in rule".format(col_name))
+        print("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
         dists = [(idx, 1.0) for idx, _ in example_feat.iteritems()]
         zlst = list(zip(*dists))
         out = pd.Series(zlst[1], index=zlst[0], name=col_name)
