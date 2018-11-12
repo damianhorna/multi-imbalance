@@ -357,6 +357,7 @@ def hvdm(examples, rule, counts, classes, min_max, class_col_name):
         else:
             dist_squared = svdm(example_feature_col, rule, counts, classes)
         dists.append(dist_squared)
+    print(dists)
     # Note: this line assumes that there's at least 1 feature
     distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
     # Sum up rows to compute HVDM - no need to square the distances as the order won't change
@@ -382,55 +383,57 @@ def svdm(example_feat, rule_feat, counts, classes):
     (squared) distance of each example.
 
     """
-    # If NaN is included anywhere
-    # if example_feat.hasnans or rule_feat.hashnans:
-    if example_feat.isna().sum() > 0 or rule_feat.isna().sum() > 0:
-        print("NaN(s) in svdm()")
-        return 1.
     col_name = example_feat.name
-    # Use all single value counts that don't depend on the class label
-    singles = set()
-    for k in counts[col_name]:
-        if k != CONDITIONAL:
-            singles.add(k)
     rule_val = rule_feat[col_name]
-    n_rule = counts[col_name][rule_val]
-    # print("value in rule", rule_val)
     dists = []
-    # For every row
+    # Feature is NaN in rule -> all distances will become 1 automatically by definition
+    if pd.isnull(rule_val):
+        print("column {} is NaN in rule".format(col_name))
+        dists = [(idx, 1.0) for idx,_ in example_feat.iteritems()]
+        zlst = list(zip(*dists))
+        out = pd.Series(zlst[1], index=zlst[0], name=col_name)
+        return out
+    n_rule = counts[col_name][rule_val]
+    # For every row/example
     for idx, example_val in example_feat.iteritems():
-        # print("compute example", idx)
-        # print("------------------")
-        # print(example_val)
-        dist = 0.
-        for k in classes:
-            # print("processing class", k)
-            n_example = counts[col_name][example_val]
-            nk_example = counts[col_name][CONDITIONAL][example_val][k]
-            nk_rule = counts[col_name][CONDITIONAL][rule_val][k]
-            # print("n_example", n_example)
-            # print("nk_example", nk_example)
-            # print("n_rule", n_rule)
-            # print("nk_rule", nk_rule)
-            res = abs(nk_example/n_example - nk_rule/n_rule)
-            dist += res
-            # print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
-            # print("d={}".format(dist))
+        if pd.isnull(example_val):
+            print("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
+            dist = 1.0
+        else:
+            # print("compute example", idx)
+            # print("------------------")
+            # print(example_val)
+            dist = 0.
+            if example_val != rule_val:
+                for k in classes:
+                    # print("processing class", k)
+                    n_example = counts[col_name][example_val]
+                    nk_example = counts[col_name][CONDITIONAL][example_val][k]
+                    nk_rule = counts[col_name][CONDITIONAL][rule_val][k]
+                    # print("n_example", n_example)
+                    # print("nk_example", nk_example)
+                    # print("n_rule", n_rule)
+                    # print("nk_rule", nk_rule)
+                    res = abs(nk_example/n_example - nk_rule/n_rule)
+                    dist += res
+                    # print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
+                    # print("d={}".format(dist))
+            # else:
+            #     print("same val ({}) in row {}".format(example_val, idx))
         dists.append((idx, dist*dist))
-    # print("distances:", dists)
     # Split tuples into 2 separate lists, one containing the indices and the other one containing the values
     zlst = list(zip(*dists))
     out = pd.Series(zlst[1], index=zlst[0], name=col_name)
     return out
 
 
-def di(example_feats, rule_feat, min_max):
+def di(example_feat, rule_feat, min_max):
     """
     Computes the (squared) partial distance for numeric values between an example and a rule.
 
     Parameters
     ----------
-    example_feats: pd.Series - column (=feature) containing all examples.
+    example_feat: pd.Series - column (=feature) containing all examples.
     rule_feat: pd.Series - column (=feature) of the rule.
     min_max: pd.DataFrame - min and max value per numeric feature.
 
@@ -440,31 +443,37 @@ def di(example_feats, rule_feat, min_max):
     (squared) distance of each example.
 
     """
-    # If NaN is included anywhere
-    if example_feats.isna().sum() > 0 or rule_feat.isna().sum() > 0:
-        # if f1.isnull().values.any() or f2.isnull().values.any():
-        print("NaN(s) in di()")
-        return 1.
-    col_name = example_feats.name
-    dists = []
+    col_name = example_feat.name
     lower_rule_val, upper_rule_val = rule_feat[col_name]
-    # Per row
-    for idx, example_val in example_feats.iteritems():
+    dists = []
+    # Feature is NaN in rule -> all distances will become 1 automatically by definition
+    if pd.isnull(lower_rule_val) or pd.isnull(upper_rule_val):
+        print("column {} is NaN in rule".format(col_name))
+        dists = [(idx, 1.0) for idx, _ in example_feat.iteritems()]
+        zlst = list(zip(*dists))
+        out = pd.Series(zlst[1], index=zlst[0], name=col_name)
+        return out
+    # For every row/example
+    for idx, example_val in example_feat.iteritems():
         # print("processing", example_val)
-        min_rule_val = min_max.at["min", col_name]
-        max_rule_val = min_max.at["max", col_name]
-        # print("min({})={}".format(col_name, min_rule_val))
-        # print("max({})={}".format(col_name, max_rule_val))
-        if example_val > upper_rule_val:
-            # print("example > upper")
-            # print("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
-            dist = (example_val - upper_rule_val) / (max_rule_val - min_rule_val)
-        elif example_val < lower_rule_val:
-            # print("example < lower")
-            # print("({} - {}) / ({} - {})".format(lower_rule_val, example_val, max_rule_val, min_rule_val))
-            dist = (lower_rule_val - example_val) / (max_rule_val - min_rule_val)
+        if pd.isnull(example_val):
+            print("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
+            dist = 1.0
         else:
-            dist = 0
+            min_rule_val = min_max.at["min", col_name]
+            max_rule_val = min_max.at["max", col_name]
+            # print("min({})={}".format(col_name, min_rule_val))
+            # print("max({})={}".format(col_name, max_rule_val))
+            if example_val > upper_rule_val:
+                # print("example > upper")
+                # print("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
+                dist = (example_val - upper_rule_val) / (max_rule_val - min_rule_val)
+            elif example_val < lower_rule_val:
+                # print("example < lower")
+                # print("({} - {}) / ({} - {})".format(lower_rule_val, example_val, max_rule_val, min_rule_val))
+                dist = (lower_rule_val - example_val) / (max_rule_val - min_rule_val)
+            else:
+                dist = 0
         dists.append((idx, dist*dist))
     zlst = list(zip(*dists))
     out = pd.Series(zlst[1], index=zlst[0], name=col_name)
