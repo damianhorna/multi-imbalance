@@ -480,6 +480,66 @@ def di(example_feat, rule_feat, min_max):
     return out
 
 
+def evaluate_f1():
+    """Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation"""
+
+
+
+def f1(predicted_labels, true_labels, positive_class):
+    """
+    Computes the F1 score: F1 = 2 * (precision * recall) / (precision + recall)
+
+    Parameters
+    ----------
+    predicted_labels: list of str - predicted labels.
+    true_labels: list of str - actual labels.
+    positive_class: str - name of the class label considered as true positive
+
+    Returns
+    -------
+    float.
+    F1-score.
+
+    Raises
+    ------
+    Exception: if <predicted_labels> and <true_labels> have different lengths
+
+    """
+    tp = 0
+    tn = 0
+    fp = 0
+    fn = 0
+    trues = Counter(true_labels)
+    total = len(positive_class)
+    total_positive = trues.get(positive_class, 0)
+    total_negative = total - total_positive
+    print("pos: {} neg: {}".format(total_positive, total_negative) )
+    if len(predicted_labels) != len(true_labels):
+        raise Exception("Lists don't have the same lengths!")
+    for pred, true in zip(predicted_labels, true_labels):
+        print("current: pred ({}) vs. true ({})".format(pred, true))
+        if true == positive_class:
+            if pred == true:
+                tp += 1
+                print("pred: {} <-> true: {} -> tp".format(pred, true))
+            else:
+                fn += 1
+                print("pred: {} <-> true: {} -> fn".format(pred, true))
+        else:
+            if pred == true:
+                tn += 1
+                print("pred: {} <-> true: {} -> tn".format(pred, true))
+            else:
+                fp += 1
+                print("pred: {} <-> true: {} -> fp".format(pred, true))
+    print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    print("recall: {} precision: {}".format(recall, precision))
+    return 2*precision*recall / (precision + recall)
+
+
+
 def sklearn_to_df(sklearn_dataset):
     """Converts sklearn dataset into a pd.dataFrame."""
     df = pd.DataFrame(sklearn_dataset.data, columns=sklearn_dataset.feature_names)
