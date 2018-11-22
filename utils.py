@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, deque
 import os
 import itertools
 import warnings
@@ -8,7 +8,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
 
-import scripts.vars as vars
+import scripts.vars as my_vars
 
 
 def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
@@ -41,7 +41,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
     if class_index == -1:
         class_index = len(df.columns) - 1
-    vars.CLASSES = df.iloc[:, class_index].unique()
+    my_vars.CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
     minmax = {}
@@ -112,10 +112,15 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
 
     """
     rules_df = extract_initial_rules(df, class_col_name)
-    tagged = add_tags(df, k, class_col_name, counts, min_max, classes)
+    # 1 rule per example
+    assert(rules_df.shape[0] == df.shape[0])
+    my_vars.seed_mapping = dict((x, {x}) for x in range(rules_df.shape[0]))
+    my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     rules = []
     for i, rule in rules_df.iterrows():
         rules.append(rule)
+    tagged = add_tags(df, k, rules, class_col_name, counts, min_max, classes)
+    rules = deque(rules)
     return tagged, rules
 
 
@@ -150,7 +155,7 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
         # Ignore current row
         examples_for_pairwise_distance = df.loc[df.index != rule_id]
         if examples_for_pairwise_distance.shape[0] > 0:
-            # print("pairwise distances for:\n{}".format(converted_example))
+            # print("pairwise distances for:\n{}".format(rule))
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors = find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
                                               min_max, classes, use_same_label=False)
@@ -158,7 +163,7 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
             labels = Counter(neighbors[class_col_name].values)
             tag = assign_tag(labels, rule[class_col_name])
             tags.append(tag)
-    df[vars.TAG] = pd.Series(tags)
+    df[my_vars.TAG] = pd.Series(tags)
     return df
 
 
@@ -181,16 +186,16 @@ def assign_tag(labels, label):
     frequencies = labels.most_common(2)
     # print(frequencies)
     most_common = frequencies[0]
-    tag = vars.SAFE
+    tag = my_vars.SAFE
     if most_common[1] == total_labels and most_common[0] != label:
-        tag = vars.NOISY
+        tag = my_vars.NOISY
     elif most_common[1] < total_labels:
         second_most_common = frequencies[1]
         # print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
 
         # Tie
         if most_common[1] == second_most_common[1] or most_common[0] != label:
-            tag = vars.BORDERLINE
+            tag = my_vars.BORDERLINE
     # print("neighbor labels: {} vs. {}".format(labels, label))
     # print("tag:", tag)
     return tag
@@ -238,7 +243,7 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     c = {}
     nxiyi = Counter(coli.values)
     c.update(nxiyi)
-    c[vars.CONDITIONAL] = {}
+    c[my_vars.CONDITIONAL] = {}
     # print("N(xi/yi)\n", nxiyi)
     unique_xiyi = nxiyi.keys()
     # Create all pairwise combinations of two values
@@ -251,7 +256,7 @@ def create_svdm_lookup_column(df, coli, class_col_name):
             # nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
             nxiyikj = Counter(rows_with_val[class_col_name].values)
             # print("counts:\n", nxiyikj)
-            c[vars.CONDITIONAL][val] = nxiyikj
+            c[my_vars.CONDITIONAL][val] = nxiyikj
     return c
 
 
@@ -283,7 +288,11 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
         examples_with_same_label = df.loc[df[class_col_name] == class_label]
     else:
         examples_with_same_label = df.copy()
-    # print("examples:\n{}".format(examples_with_same_label))
+    # Only consider examples with same label as rule which aren't covered by the rule yet
+    covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
+    print("examples that are already covered by the rule:", covered_examples)
+    examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
+    print("examples:\n{}".format(examples_with_same_label))
     neighbors = examples_with_same_label.shape[0]
     # print("neighbors:", neighbors)
     if neighbors < k:
@@ -423,8 +432,8 @@ def svdm(example_feat, rule_feat, counts, classes):
                 for k in classes:
                     # print("processing class", k)
                     n_example = counts[col_name][example_val]
-                    nk_example = counts[col_name][vars.CONDITIONAL][example_val][k]
-                    nk_rule = counts[col_name][vars.CONDITIONAL][rule_val][k]
+                    nk_example = counts[col_name][my_vars.CONDITIONAL][example_val][k]
+                    nk_rule = counts[col_name][my_vars.CONDITIONAL][rule_val][k]
                     # print("n_example", n_example)
                     # print("nk_example", nk_example)
                     # print("n_rule", n_rule)
@@ -503,6 +512,12 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     Parameters
     ----------
 
+    Raises
+    ------
+    Exception: if no nearest examples at all exist for a certain rule - this can only happen if <df> is empty, it
+    contains only the seed of the rule for which nearest neighbors are computed and that rule doesn't cover any other
+    examples. In short, this exception might be thrown if <= 1 example are contained in <df>.
+
     Returns
     -------
     float - F1 score.
@@ -512,9 +527,25 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     # rule covers more examples
     for rule in rules:
         print("Searching nearest examples for rule:\n{}\n{}".format("------------------------------------", rule))
-        # Either it's a seed or use the next rule
-        neighbors = find_nearest_examples(df, 2, rule, class_col_name, counts, min_max, classes, use_same_label=False)
-        print("neighbors:\n{}".format(neighbors))
+        examples_covered_by_rule = len(my_vars.seed_mapping.get(rule.name, {}))
+        print("#covered examples by rule:", examples_covered_by_rule)
+        covers_multiple_examples = True if examples_covered_by_rule > 1 else False
+        if not covers_multiple_examples:
+            # Remove seed for rule
+            examples = df.loc[df.index != rule.name]
+        else:
+            examples = df
+        # Either it's a seed or use the next rule - maybe this assumption is wrong? and k+1 should be used because a
+        # rule could cover multiple examples?
+        neighbors = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
+                                          use_same_label=False)
+        if neighbors is not None:
+            print("neighbors:\n{}".format(neighbors))
+            labels = neighbors[class_col_name]
+            print("labels: {} vs. rule label: {}".format(labels, rule[class_col_name]))
+
+        else:
+            raise Exception("No neighbors for rule:\n{}".format(rule))
 
 
 

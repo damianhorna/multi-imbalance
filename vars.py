@@ -16,6 +16,8 @@ FP = "fp"
 FN = "fn"
 # {example ei: seed for rule ri}
 seed_mapping = {}
+# {rule ri: set(example ei, ej, ...)}
+examples_covered_by_rule = {}
 # {rule ri: set(closest rule for examples ei, ej)]}
 predicted_examples = {}
 # {example ei: predicted by rule ri}
