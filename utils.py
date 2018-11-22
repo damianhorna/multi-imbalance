@@ -8,19 +8,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
 
-
-MISSING_VAL = np.nan
-NOMINAL = 0
-NUMERIC = 1
-TYPE_MAPPING = {""}
-DATA_TYPES = []
-CONDITIONAL = "Conditional"
-CLASSES = []
-SAFE = "safe"
-NOISY = "noisy"
-BORDERLINE = "borderline"
-TAG = "tag"
-DISTANCE_MATRIX = {}
+import scripts.vars as vars
 
 
 def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
@@ -53,8 +41,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
     if class_index == -1:
         class_index = len(df.columns) - 1
-    global CLASSES
-    CLASSES = df.iloc[:, class_index].unique()
+    vars.CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
     minmax = {}
@@ -104,14 +91,10 @@ def extract_initial_rules(df, class_col_name):
     return rules
 
 
-def add_tags(df, k, class_col_name, counts, min_max, classes):
+def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     """
-    Assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY", "BORDERLINE".
-    SAFE: example is classified correctly when looking at its k neighbors
-    UNSAFE: example is misclassified when looking at its k neighbors
-    NOISY: example is UNSAFE and all its k neighbors belong to the opposite class
-    BORDERLINE: example is UNSAFE and it's not NOISY.
-    Assumes that <df> contains at least 2 rows.
+    Extracts initial rules and assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY",
+    "BORDERLINE".
 
     Parameters
     ----------
@@ -124,26 +107,58 @@ def add_tags(df, k, class_col_name, counts, min_max, classes):
 
     Returns
     -------
+    pd.DataFrame, list of pd.Series.
+    Dataset with an additional column containing the tag, initially extracted rules.
+
+    """
+    rules_df = extract_initial_rules(df, class_col_name)
+    tagged = add_tags(df, k, class_col_name, counts, min_max, classes)
+    rules = []
+    for i, rule in rules_df.iterrows():
+        rules.append(rule)
+    return tagged, rules
+
+
+def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
+    """
+    Assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY", "BORDERLINE".
+    SAFE: example is classified correctly when looking at its k neighbors
+    UNSAFE: example is misclassified when looking at its k neighbors
+    NOISY: example is UNSAFE and all its k neighbors belong to the opposite class
+    BORDERLINE: example is UNSAFE and it's not NOISY.
+    Assumes that <df> contains at least 2 rows.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset
+    k: int - number of neighbors to consider
+    rules: list of pd.Series - list of rules
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset.
+
+    Returns
+    -------
     pd.DataFrame.
     Dataset with an additional column containing the tag.
 
     """
-    converted_examples = extract_initial_rules(df, class_col_name)
     tags = []
-    for idx, converted_example in converted_examples.iterrows():
+    for rule in rules:
+        rule_id = rule.name
         # Ignore current row
-        ignored_rows = converted_examples.index.isin([idx])
-        examples_for_pairwise_distance = df[~ignored_rows]
+        examples_for_pairwise_distance = df.loc[df.index != rule_id]
         if examples_for_pairwise_distance.shape[0] > 0:
             # print("pairwise distances for:\n{}".format(converted_example))
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
-            neighbors = find_neighbors(examples_for_pairwise_distance, k, converted_example, class_col_name, counts,
-                                       min_max, classes, use_same_label=False)
+            neighbors = find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
+                                              min_max, classes, use_same_label=False)
             # print("neighbors:\n{}".format(neighbors))
             labels = Counter(neighbors[class_col_name].values)
-            tag = assign_tag(labels, converted_example[class_col_name])
+            tag = assign_tag(labels, rule[class_col_name])
             tags.append(tag)
-    df[TAG] = pd.Series(tags)
+    df[vars.TAG] = pd.Series(tags)
     return df
 
 
@@ -166,16 +181,16 @@ def assign_tag(labels, label):
     frequencies = labels.most_common(2)
     # print(frequencies)
     most_common = frequencies[0]
-    tag = SAFE
+    tag = vars.SAFE
     if most_common[1] == total_labels and most_common[0] != label:
-        tag = NOISY
+        tag = vars.NOISY
     elif most_common[1] < total_labels:
         second_most_common = frequencies[1]
         # print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
 
         # Tie
         if most_common[1] == second_most_common[1] or most_common[0] != label:
-            tag = BORDERLINE
+            tag = vars.BORDERLINE
     # print("neighbor labels: {} vs. {}".format(labels, label))
     # print("tag:", tag)
     return tag
@@ -223,7 +238,7 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     c = {}
     nxiyi = Counter(coli.values)
     c.update(nxiyi)
-    c[CONDITIONAL] = {}
+    c[vars.CONDITIONAL] = {}
     # print("N(xi/yi)\n", nxiyi)
     unique_xiyi = nxiyi.keys()
     # Create all pairwise combinations of two values
@@ -236,11 +251,11 @@ def create_svdm_lookup_column(df, coli, class_col_name):
             # nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
             nxiyikj = Counter(rows_with_val[class_col_name].values)
             # print("counts:\n", nxiyikj)
-            c[CONDITIONAL][val] = nxiyikj
+            c[vars.CONDITIONAL][val] = nxiyikj
     return c
 
 
-def find_neighbors(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True):
+def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True):
     """
     Finds k nearest examples for a given rule with the same class label as the rule.
     If less than k examples exist, a warning is issued.
@@ -408,8 +423,8 @@ def svdm(example_feat, rule_feat, counts, classes):
                 for k in classes:
                     # print("processing class", k)
                     n_example = counts[col_name][example_val]
-                    nk_example = counts[col_name][CONDITIONAL][example_val][k]
-                    nk_rule = counts[col_name][CONDITIONAL][rule_val][k]
+                    nk_example = counts[col_name][vars.CONDITIONAL][example_val][k]
+                    nk_rule = counts[col_name][vars.CONDITIONAL][rule_val][k]
                     # print("n_example", n_example)
                     # print("nk_example", nk_example)
                     # print("n_rule", n_rule)
@@ -480,8 +495,27 @@ def di(example_feat, rule_feat, min_max):
     return out
 
 
-def evaluate_f1():
-    """Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation"""
+def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes):
+    """
+    Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
+    Builds the initial confusion matrix.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    float - F1 score.
+
+    """
+    # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
+    # rule covers more examples
+    for rule in rules:
+        print("Searching nearest examples for rule:\n{}\n{}".format("------------------------------------", rule))
+        # Either it's a seed or use the next rule
+        neighbors = find_nearest_examples(df, 2, rule, class_col_name, counts, min_max, classes, use_same_label=False)
+        print("neighbors:\n{}".format(neighbors))
+
 
 
 
@@ -509,35 +543,34 @@ def f1(predicted_labels, true_labels, positive_class):
     tn = 0
     fp = 0
     fn = 0
-    trues = Counter(true_labels)
-    total = len(positive_class)
-    total_positive = trues.get(positive_class, 0)
-    total_negative = total - total_positive
-    print("pos: {} neg: {}".format(total_positive, total_negative) )
+    # trues = Counter(true_labels)
+    # total = len(positive_class)
+    # total_positive = trues.get(positive_class, 0)
+    # total_negative = total - total_positive
+    # print("pos: {} neg: {}".format(total_positive, total_negative) )
     if len(predicted_labels) != len(true_labels):
         raise Exception("Lists don't have the same lengths!")
     for pred, true in zip(predicted_labels, true_labels):
-        print("current: pred ({}) vs. true ({})".format(pred, true))
+        # print("current: pred ({}) vs. true ({})".format(pred, true))
         if true == positive_class:
             if pred == true:
                 tp += 1
-                print("pred: {} <-> true: {} -> tp".format(pred, true))
+                # print("pred: {} <-> true: {} -> tp".format(pred, true))
             else:
                 fn += 1
-                print("pred: {} <-> true: {} -> fn".format(pred, true))
+                # print("pred: {} <-> true: {} -> fn".format(pred, true))
         else:
             if pred == true:
                 tn += 1
-                print("pred: {} <-> true: {} -> tn".format(pred, true))
+                # print("pred: {} <-> true: {} -> tn".format(pred, true))
             else:
                 fp += 1
-                print("pred: {} <-> true: {} -> fp".format(pred, true))
-    print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
+                # print("pred: {} <-> true: {} -> fp".format(pred, true))
+    # print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
-    print("recall: {} precision: {}".format(recall, precision))
+    # print("recall: {} precision: {}".format(recall, precision))
     return 2*precision*recall / (precision + recall)
-
 
 
 def sklearn_to_df(sklearn_dataset):

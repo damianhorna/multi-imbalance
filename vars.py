@@ -3,8 +3,6 @@ import numpy as np
 MISSING_VAL = np.nan
 NOMINAL = 0
 NUMERIC = 1
-TYPE_MAPPING = {""}
-DATA_TYPES = []
 CONDITIONAL = "Conditional"
 CLASSES = []
 SAFE = "safe"
