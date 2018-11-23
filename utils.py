@@ -545,11 +545,13 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
         else:
             examples = df
         # Find the nearest example, regardless of its class label and whether the rule already covers it
-        neighbor = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
-                                         use_same_label=False, only_uncovered_neighbors=False)
-        if neighbor is not None:
-
-            update_confusion_matrix(neighbor.iloc[0], rule, my_vars.positive_class, class_col_name)
+        neighbors = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
+                                          use_same_label=False, only_uncovered_neighbors=False)
+        if neighbors is not None:
+            neighbor = neighbors.iloc[0]
+            # Update which rule predicts the label of the example
+            my_vars.example_predicted_by[neighbor.name] = rule.name
+            update_confusion_matrix(neighbor, rule, my_vars.positive_class, class_col_name)
         else:
             raise Exception("No neighbors for rule:\n{}".format(rule))
 
@@ -571,6 +573,12 @@ def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
     true = rule[class_col_name]
     print("example label: {} vs. rule label: {}".format(predicted, true))
     predicted_id = neighbor.name
+    # Potentially remove example from confusion matrix
+    my_vars.conf_matrix[my_vars.TP].discard(predicted_id)
+    my_vars.conf_matrix[my_vars.TN].discard(predicted_id)
+    my_vars.conf_matrix[my_vars.FP].discard(predicted_id)
+    my_vars.conf_matrix[my_vars.FN].discard(predicted_id)
+    # Add updated value
     if true == positive_class:
         if predicted == true:
             my_vars.conf_matrix[my_vars.TP].add(predicted_id)
@@ -586,7 +594,7 @@ def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
             my_vars.conf_matrix[my_vars.FP].add(predicted_id)
 
 
-def f1(predicted_labels, true_labels, positive_class):
+def f1():
     """
     Computes the F1 score: F1 = 2 * (precision * recall) / (precision + recall)
 
@@ -615,25 +623,29 @@ def f1(predicted_labels, true_labels, positive_class):
     # total_positive = trues.get(positive_class, 0)
     # total_negative = total - total_positive
     # print("pos: {} neg: {}".format(total_positive, total_negative) )
-    if len(predicted_labels) != len(true_labels):
-        raise Exception("Lists don't have the same lengths!")
-    for pred, true in zip(predicted_labels, true_labels):
-        # print("current: pred ({}) vs. true ({})".format(pred, true))
-        if true == positive_class:
-            if pred == true:
-                tp += 1
-                # print("pred: {} <-> true: {} -> tp".format(pred, true))
-            else:
-                fn += 1
-                # print("pred: {} <-> true: {} -> fn".format(pred, true))
-        else:
-            if pred == true:
-                tn += 1
-                # print("pred: {} <-> true: {} -> tn".format(pred, true))
-            else:
-                fp += 1
-                # print("pred: {} <-> true: {} -> fp".format(pred, true))
-    # print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
+    # if len(predicted_labels) != len(true_labels):
+    #     raise Exception("Lists don't have the same lengths! F1 score can't be computed!")
+    tp = len(my_vars.conf_matrix[my_vars.TP])
+    fp = len(my_vars.conf_matrix[my_vars.FP])
+    fn = len(my_vars.conf_matrix[my_vars.FN])
+    tn = len(my_vars.conf_matrix[my_vars.TN])
+    # for pred, true in zip(predicted_labels, true_labels):
+    #     # print("current: pred ({}) vs. true ({})".format(pred, true))
+    #     if true == positive_class:
+    #         if pred == true:
+    #             tp += 1
+    #             # print("pred: {} <-> true: {} -> tp".format(pred, true))
+    #         else:
+    #             fn += 1
+    #             # print("pred: {} <-> true: {} -> fn".format(pred, true))
+    #     else:
+    #         if pred == true:
+    #             tn += 1
+    #             # print("pred: {} <-> true: {} -> tn".format(pred, true))
+    #         else:
+    #             fp += 1
+    #             # print("pred: {} <-> true: {} -> fp".format(pred, true))
+    print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
     # print("recall: {} precision: {}".format(recall, precision))
