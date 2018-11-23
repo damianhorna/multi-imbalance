@@ -645,7 +645,7 @@ def f1():
     #         else:
     #             fp += 1
     #             # print("pred: {} <-> true: {} -> fp".format(pred, true))
-    print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
+    # print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
     # print("recall: {} precision: {}".format(recall, precision))
