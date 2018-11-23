@@ -554,6 +554,7 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
             update_confusion_matrix(neighbor, rule, my_vars.positive_class, class_col_name)
         else:
             raise Exception("No neighbors for rule:\n{}".format(rule))
+    return f1()
 
 
 def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
@@ -598,12 +599,6 @@ def f1():
     """
     Computes the F1 score: F1 = 2 * (precision * recall) / (precision + recall)
 
-    Parameters
-    ----------
-    predicted_labels: list of str - predicted labels.
-    true_labels: list of str - actual labels.
-    positive_class: str - name of the class label considered as true positive
-
     Returns
     -------
     float.
@@ -614,42 +609,23 @@ def f1():
     Exception: if <predicted_labels> and <true_labels> have different lengths
 
     """
-    tp = 0
-    tn = 0
-    fp = 0
-    fn = 0
-    # trues = Counter(true_labels)
-    # total = len(positive_class)
-    # total_positive = trues.get(positive_class, 0)
-    # total_negative = total - total_positive
-    # print("pos: {} neg: {}".format(total_positive, total_negative) )
-    # if len(predicted_labels) != len(true_labels):
-    #     raise Exception("Lists don't have the same lengths! F1 score can't be computed!")
     tp = len(my_vars.conf_matrix[my_vars.TP])
     fp = len(my_vars.conf_matrix[my_vars.FP])
     fn = len(my_vars.conf_matrix[my_vars.FN])
-    tn = len(my_vars.conf_matrix[my_vars.TN])
-    # for pred, true in zip(predicted_labels, true_labels):
-    #     # print("current: pred ({}) vs. true ({})".format(pred, true))
-    #     if true == positive_class:
-    #         if pred == true:
-    #             tp += 1
-    #             # print("pred: {} <-> true: {} -> tp".format(pred, true))
-    #         else:
-    #             fn += 1
-    #             # print("pred: {} <-> true: {} -> fn".format(pred, true))
-    #     else:
-    #         if pred == true:
-    #             tn += 1
-    #             # print("pred: {} <-> true: {} -> tn".format(pred, true))
-    #         else:
-    #             fp += 1
-    #             # print("pred: {} <-> true: {} -> fp".format(pred, true))
-    # print("TP: {} TN: {} FP: {}: FN: {}".format(tp, tn, fp, fn))
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
+    # tn = len(my_vars.conf_matrix[my_vars.TN])
+    precision = 0
+    recall = 0
+    prec_denom = tp + fp
+    rec_denom = tp + fn
+    if prec_denom > 0:
+        precision = tp / prec_denom
+    if rec_denom > 0:
+        recall = tp / rec_denom
     # print("recall: {} precision: {}".format(recall, precision))
-    return 2*precision*recall / (precision + recall)
+    f1 = 0
+    if (precision + recall) > 0:
+        f1 = 2*precision*recall / (precision + recall)
+    return f1
 
 
 def sklearn_to_df(sklearn_dataset):
