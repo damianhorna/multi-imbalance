@@ -11,13 +11,14 @@ import sklearn.datasets
 import scripts.vars as my_vars
 
 
-def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
+def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
     """
     Reads in a dataset in csv format and stores it in a dataFrame.
 
     Parameters
     ----------
-    src: string - path to input dataset
+    src: str - path to input dataset
+    positive_class: str - name of the minority class. The rest is treated as negative.
     excluded: list of int - 0-based indices of columns/features to be ignored
     skip_rows: int - number of rows to skip at the beginning of <src>
     na_values: list of str - values encoding missing values - these are represented by NaN
@@ -31,6 +32,7 @@ def read_dataset(src, excluded=[], skip_rows=0, na_values=[], normalize=False, c
     nominal classes how often the value of a feature co-occurs with each class label, min/max values per numeric column
 
     """
+    my_vars.positive_class = positive_class
     # Add column names
     if header:
         df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values)
@@ -260,7 +262,8 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     return c
 
 
-def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True):
+def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True,
+                          only_uncovered_neighbors=True):
     """
     Finds k nearest examples for a given rule with the same class label as the rule.
     If less than k examples exist, a warning is issued.
@@ -276,6 +279,8 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     classes: list of str - class labels in the dataset.
     use_same_label: bool - True if only examples with the same label as the rule should be considered as neighbors.
     Otherwise all labels are used.
+    only_uncovered_neighbors: bool - True if only examples should be considered that aren't covered by <rule> yet.
+    Otherwise, all neighbors are considered.
 
     Returns
     -------
@@ -283,15 +288,19 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     k nearest examples for the given rule.
 
     """
+    print("find neighbors with same label as rule ({}) and which aren't covered by the rule yet ({})"
+          .format(use_same_label, only_uncovered_neighbors))
     if use_same_label:
         class_label = rule[class_col_name]
         examples_with_same_label = df.loc[df[class_col_name] == class_label]
     else:
         examples_with_same_label = df.copy()
-    # Only consider examples with same label as rule which aren't covered by the rule yet
-    covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
-    print("examples that are already covered by the rule:", covered_examples)
-    examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
+    # Only consider examples, that have the same label as the rule and aren't covered by the rule yet
+    if only_uncovered_neighbors:
+        covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
+        print("examples that are already covered by the rule:", covered_examples)
+        examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
+
     print("examples:\n{}".format(examples_with_same_label))
     neighbors = examples_with_same_label.shape[0]
     # print("neighbors:", neighbors)
@@ -527,7 +536,7 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     # rule covers more examples
     for rule in rules:
         print("Searching nearest examples for rule:\n{}\n{}".format("------------------------------------", rule))
-        examples_covered_by_rule = len(my_vars.seed_mapping.get(rule.name, {}))
+        examples_covered_by_rule = len(my_vars.examples_covered_by_rule.get(rule.name, {}))
         print("#covered examples by rule:", examples_covered_by_rule)
         covers_multiple_examples = True if examples_covered_by_rule > 1 else False
         if not covers_multiple_examples:
@@ -535,19 +544,29 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
             examples = df.loc[df.index != rule.name]
         else:
             examples = df
-        # Either it's a seed or use the next rule - maybe this assumption is wrong? and k+1 should be used because a
-        # rule could cover multiple examples?
-        neighbors = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
-                                          use_same_label=False)
-        if neighbors is not None:
-            print("neighbors:\n{}".format(neighbors))
-            labels = neighbors[class_col_name]
-            print("labels: {} vs. rule label: {}".format(labels, rule[class_col_name]))
-
+        # Find the nearest example, regardless of its class label and whether the rule already covers it
+        neighbor = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
+                                          use_same_label=False, only_uncovered_neighbors=False)
+        if neighbor is not None:
+            print("neighbors:\n{}".format(neighbor))
+            label = neighbor.iloc[0][class_col_name]
+            print("labels: {} vs. rule label: {}".format(label, rule[class_col_name]))
+            update_confusion_matrix(neighbor, rule, )
         else:
             raise Exception("No neighbors for rule:\n{}".format(rule))
 
 
+def update_confusion_matrix(neighbors, rule, positive_class):
+    """
+    Updates the confusion matrix.
+
+    Parameters
+    ----------
+    neigbors: pd.DataFrame - neare.
+    true_labels: list of str - actual labels.
+    positive_class: str - name of the class label considered as true positive
+
+    """
 
 
 def f1(predicted_labels, true_labels, positive_class):

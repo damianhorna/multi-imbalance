@@ -24,3 +24,4 @@ predicted_examples = {}
 closest_rule = {}
 conf_matrix = {TP: set(), FP: set(), TN: set(), FN: {}}
 latest_id = 0
+positive_class = ""
