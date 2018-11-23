@@ -22,6 +22,6 @@ examples_covered_by_rule = {}
 predicted_examples = {}
 # {example ei: predicted by rule ri}
 closest_rule = {}
-conf_matrix = {TP: set(), FP: set(), TN: set(), FN: {}}
+conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
 latest_id = 0
 positive_class = ""

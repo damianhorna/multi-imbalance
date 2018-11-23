@@ -546,27 +546,44 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
             examples = df
         # Find the nearest example, regardless of its class label and whether the rule already covers it
         neighbor = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
-                                          use_same_label=False, only_uncovered_neighbors=False)
+                                         use_same_label=False, only_uncovered_neighbors=False)
         if neighbor is not None:
-            print("neighbors:\n{}".format(neighbor))
-            label = neighbor.iloc[0][class_col_name]
-            print("labels: {} vs. rule label: {}".format(label, rule[class_col_name]))
-            update_confusion_matrix(neighbor, rule, )
+
+            update_confusion_matrix(neighbor.iloc[0], rule, my_vars.positive_class, class_col_name)
         else:
             raise Exception("No neighbors for rule:\n{}".format(rule))
 
 
-def update_confusion_matrix(neighbors, rule, positive_class):
+def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
     """
     Updates the confusion matrix.
 
     Parameters
     ----------
-    neigbors: pd.DataFrame - neare.
-    true_labels: list of str - actual labels.
+    neighbor: pd.Series - nearest example to a rule.
+    rule: pd.Series - actual label of the rule.
     positive_class: str - name of the class label considered as true positive
+    class_col_name: str - name of the column in the series holding the class label
 
     """
+    print("neighbors:\n{}".format(neighbor))
+    predicted = neighbor[class_col_name]
+    true = rule[class_col_name]
+    print("example label: {} vs. rule label: {}".format(predicted, true))
+    predicted_id = neighbor.name
+    if true == positive_class:
+        if predicted == true:
+            my_vars.conf_matrix[my_vars.TP].add(predicted_id)
+            # print("pred: {} <-> true: {} -> tp".format(pred, true))
+        else:
+            my_vars.conf_matrix[my_vars.FN].add(predicted_id)
+            # print("pred: {} <-> true: {} -> fn".format(pred, true))
+    else:
+        if predicted == true:
+            my_vars.conf_matrix[my_vars.TN].add(predicted_id)
+            # print("pred: {} <-> true: {} -> tn".format(pred, true))
+        else:
+            my_vars.conf_matrix[my_vars.FP].add(predicted_id)
 
 
 def f1(predicted_labels, true_labels, positive_class):
