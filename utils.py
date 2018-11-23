@@ -288,8 +288,8 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     k nearest examples for the given rule, distances of the k nearest examples
 
     """
-    print("find neighbors with same label as rule ({}) and which aren't covered by the rule yet ({})"
-          .format(use_same_label, only_uncovered_neighbors))
+    # print("find neighbors with same label as rule ({}) and which aren't covered by the rule yet ({})"
+    #       .format(use_same_label, only_uncovered_neighbors))
     if use_same_label:
         class_label = rule[class_col_name]
         examples_with_same_label = df.loc[df[class_col_name] == class_label]
@@ -298,10 +298,10 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     # Only consider examples, that have the same label as the rule and aren't covered by the rule yet
     if only_uncovered_neighbors:
         covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
-        print("examples that are already covered by the rule:", covered_examples)
+        # print("examples that are already covered by the rule:", covered_examples)
         examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
 
-    print("examples:\n{}".format(examples_with_same_label))
+    # print("examples:\n{}".format(examples_with_same_label))
     neighbors = examples_with_same_label.shape[0]
     # print("neighbors:", neighbors)
     if neighbors < k:
@@ -313,6 +313,65 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
         # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
         return df.loc[neighbor_ids], dists.loc[neighbor_ids]
     return None, None
+
+
+def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes):
+    """
+    Finds the nearest rule for a given example. Certain rules are ignored, namely those for which the example is a
+    seed if the rule doesn't cover multiple examples.
+
+    Parameters
+    ----------
+    rules: list pd.Series - rules
+    example: pd.Series - example
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset.
+
+    Returns
+    -------
+    pd.Series, float.
+    Rule that is closest to an example, distance of that rule to the example.
+
+    """
+    min_dist = None
+    min_rule_id = None
+    # hvdm() expects a dataFrame of examples, not a Series
+    # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
+    example_df = example.to_frame().T.infer_objects()
+    for idx, rule in enumerate(rules):
+        rule_id = rule.name
+        # print("Now checking rule with ID {}:\n{}".format(rule_id, rule))
+        examples_covered_by_rule = len(my_vars.examples_covered_by_rule.get(rule.name, {}))
+        # print("#covered examples by rule:", examples_covered_by_rule)
+        covers_multiple_examples = True if examples_covered_by_rule > 1 else False
+        # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
+        if not covers_multiple_examples and rule_id == example.name:
+            # Remove seed for rule
+            # examples = df.loc[df.index != rule.name]
+            # print("rule is seed and doesn't cover multiple examples, so skip it")
+            continue
+        # Find the nearest example, regardless of its class label and whether the rule already covers it
+        # Here we use it to find the nearest rule for an example
+        # We find 2 because the most similar one could be the seed, then the 2nd best is chosen
+        neighbors, dists = find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
+                                                 use_same_label=False, only_uncovered_neighbors=False)
+        if neighbors is not None:
+            dist = dists.iloc[0][my_vars.DIST]
+            # print("-------")
+            # print("dist", dist)
+            # print("-------")
+            if min_dist is not None:
+                if dist < min_dist:
+                    min_dist = dist
+                    min_rule_id = idx
+            else:
+                min_dist = dist
+                min_rule_id = idx
+        else:
+            raise Exception("No neighbors for rule:\n{}".format(rule))
+    return rules[min_rule_id], min_dist
 
 
 def most_specific_generalization(example, rule, class_col_name, i):
@@ -394,8 +453,8 @@ def hvdm(examples, rule, counts, classes, min_max, class_col_name):
     # Note: this line assumes that there's at least 1 feature
     distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
     # Sum up rows to compute HVDM - no need to square the distances as the order won't change
-    distances["dist"] = distances.select_dtypes(float).sum(1)
-    distances = distances.sort_values("dist", ascending=True)
+    distances[my_vars.DIST] = distances.select_dtypes(float).sum(1)
+    distances = distances.sort_values(my_vars.DIST, ascending=True)
     return distances
 
 
@@ -534,39 +593,42 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     """
     # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
     # rule covers more examples
-    for _, example in df.iterrows():
-        dists = ()
-        print("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
-        # find_nearest_examples expects a dataFrame of examples, not a Series
-        example_df = example.T.to_frame()
-        for rule in rules:
-            print("Now checking rule:\n{}".format(rule))
-            examples_covered_by_rule = len(my_vars.examples_covered_by_rule.get(rule.name, {}))
-            print("#covered examples by rule:", examples_covered_by_rule)
-            covers_multiple_examples = True if examples_covered_by_rule > 1 else False
-            # Ignore rule because current example was seed for it and the rule doesn't cover multiple exampples
-            if not covers_multiple_examples and rule.name == example.name:
-                # Remove seed for rule
-                # examples = df.loc[df.index != rule.name]
-                continue
-            # examples = df
-            # Find the nearest example, regardless of its class label and whether the rule already covers it
-            print("example_df")
-            print(example_df)
-            print(type(example_df))
-            neighbors, dists = find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
-                                              use_same_label=False, only_uncovered_neighbors=False)
-            # if neighbors is not None:
-            #     if
+    # Problem: rules can't be stored in dataFrame because they might contain different features
+    for row_id, example in df.iterrows():
+        # print("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
+        # find_nearest_examples() expects a dataFrame of examples, not a Series
+        # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
+        # example_df = example.to_frame().T.infer_objects()
+        rule, rule_dist = find_nearest_rule(rules, example, class_col_name, counts, min_max, classes)
 
-
-            # else:
-            #     raise Exception("No neighbors for rule:\n{}".format(rule))
         # Update which rule predicts the label of the example
-
-        # my_vars.example_predicted_by_rule[neighbor.name] = rules.iloc[idx].name
-        # update_confusion_matrix(neighbor, rule, my_vars.positive_class, class_col_name)
+        # print("minimum distance ({}) by rule: {}".format(rule_dist, rule.name))
+        my_vars.closest_rule_per_example[example.name] = rule.name
+        update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name)
     return f1()
+    # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
+    # rule covers more examples
+    # for rule in rules:
+    #     print("Searching nearest examples for rule:\n{}\n{}".format("------------------------------------", rule))
+    #     examples_covered_by_rule = len(my_vars.examples_covered_by_rule.get(rule.name, {}))
+    #     print("#covered examples by rule:", examples_covered_by_rule)
+    #     covers_multiple_examples = True if examples_covered_by_rule > 1 else False
+    #     if not covers_multiple_examples:
+    #         # Remove seed for rule
+    #         examples = df.loc[df.index != rule.name]
+    #     else:
+    #         examples = df
+    #     # Find the nearest example, regardless of its class label and whether the rule already covers it
+    #     neighbor_example, dists = find_nearest_examples(examples, 1, rule, class_col_name, counts, min_max, classes,
+    #                                                     use_same_label=False, only_uncovered_neighbors=False)
+    #     if neighbor_example is not None:
+    #         neighbor = neighbor_example.iloc[0]
+    #         # Update which rule predicts the label of the example
+    #         my_vars.example_predicted_by_rule[rule.name] = neighbor.name
+    #         # my_vars.example_predicted_by_rule[neighbor.name] = rule.name
+    #         update_confusion_matrix(neighbor, rule, my_vars.positive_class, class_col_name)
+    #     else:
+    #         raise Exception("No neighbors for rule:\n{}".format(rule))
 
 
 def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
@@ -581,10 +643,10 @@ def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
     class_col_name: str - name of the column in the series holding the class label
 
     """
-    print("neighbors:\n{}".format(neighbor))
+    # print("neighbors:\n{}".format(neighbor))
     predicted = neighbor[class_col_name]
     true = rule[class_col_name]
-    print("example label: {} vs. rule label: {}".format(predicted, true))
+    # print("example label: {} vs. rule label: {}".format(predicted, true))
     predicted_id = neighbor.name
     # Potentially remove example from confusion matrix
     my_vars.conf_matrix[my_vars.TP].discard(predicted_id)
@@ -634,9 +696,10 @@ def f1():
     if rec_denom > 0:
         recall = tp / rec_denom
     # print("recall: {} precision: {}".format(recall, precision))
-    f1 = 0
-    if (precision + recall) > 0:
-        f1 = 2*precision*recall / (precision + recall)
+    f1 = 0.0
+    f1_denom = precision + recall
+    if f1_denom > 0:
+        f1 = 2*precision*recall / f1_denom
     return f1
 
 
