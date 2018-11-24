@@ -21,7 +21,7 @@ seed_mapping = {}
 examples_covered_by_rule = {}
 # {rule ri: set(closest rule for examples ei, ej)]}
 predicted_examples = {}
-# {example ei: rule ri}
+# {example ei: (rule ri, distance di )}
 closest_rule_per_example = {}
 conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
 latest_id = 0

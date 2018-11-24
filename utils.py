@@ -579,6 +579,12 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
 
     Parameters
     ----------
+    df: pd.DataFrame - examples
+    rules: list of pd.Series - list of rules
+    class_col_name: str - name of the column in the series holding the class label
+    counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    min_max: pd.DataFrame - min and max value per numeric feature.
+    classes: list of str - class labels in the dataset.
 
     Raises
     ------
@@ -603,7 +609,7 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
 
         # Update which rule predicts the label of the example
         # print("minimum distance ({}) by rule: {}".format(rule_dist, rule.name))
-        my_vars.closest_rule_per_example[example.name] = rule.name
+        my_vars.closest_rule_per_example[example.name] = (rule.name, rule_dist)
         update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name)
     return f1()
     # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
@@ -629,6 +635,55 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     #         update_confusion_matrix(neighbor, rule, my_vars.positive_class, class_col_name)
     #     else:
     #         raise Exception("No neighbors for rule:\n{}".format(rule))
+
+
+def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, min_max, classes, conf_matrix,
+                                        rule_mapping):
+    """
+    Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
+    Assumes that the initial confusion matrix already exists, hence evaluate_f1_initialize_confusion_matrix() should
+    be called prior to it.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - examples
+    new_rule: pd.Series - new rule whose effect on the F1 score should be evaluated
+    class_col_name: str - name of the column in the series holding the class label
+    counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    min_max: pd.DataFrame - min and max value per numeric feature.
+    classes: list of str - class labels in the dataset.
+    conf_matrix: dict - confusion matrix to be updated, i.e. {"tp": set(example1, example3), "tn":{...}}
+    rule_mapping: dict - holds which rule classifies which example(s), i.e. {rule1: set(example5, example3}
+
+    Raises
+    ------
+    Exception: if no nearest examples at all exist for a certain rule - this can only happen if <df> is empty, it
+    contains only the seed of the rule for which nearest neighbors are computed and that rule doesn't cover any other
+    examples. In short, this exception might be thrown if <= 1 example are contained in <df>.
+
+    Returns
+    -------
+    float - F1 score.
+
+    """
+    rule_id = new_rule.name
+    # if rule_id in
+    # examples_to_evaluate = df.loc[]
+    # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
+    # rule covers more examples
+    # Problem: rules can't be stored in dataFrame because they might contain different features
+    for row_id, example in df.iterrows():
+        # print("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
+        # find_nearest_examples() expects a dataFrame of examples, not a Series
+        # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
+        # example_df = example.to_frame().T.infer_objects()
+        rule, rule_dist = find_nearest_rule(rules, example, class_col_name, counts, min_max, classes)
+
+        # Update which rule predicts the label of the example
+        # print("minimum distance ({}) by rule: {}".format(rule_dist, rule.name))
+        my_vars.closest_rule_per_example[example.name] = rule.name
+        update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name)
+    return f1()
 
 
 def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
