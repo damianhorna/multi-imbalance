@@ -331,8 +331,10 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes):
 
     Returns
     -------
-    pd.Series, float.
+    pd.Series, float OR None, None.
     Rule that is closest to an example, distance of that rule to the example.
+    None, None if only 1 rule and 1 example are provided and that example is seed for the rule, where the latter doesn't
+    cover multiple examples.
 
     """
     min_dist = None
@@ -342,21 +344,22 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes):
     example_df = example.to_frame().T.infer_objects()
     for idx, rule in enumerate(rules):
         rule_id = rule.name
+        print("rule id", rule_id)
         # print("Now checking rule with ID {}:\n{}".format(rule_id, rule))
         examples_covered_by_rule = len(my_vars.examples_covered_by_rule.get(rule.name, {}))
         # print("#covered examples by rule:", examples_covered_by_rule)
         covers_multiple_examples = True if examples_covered_by_rule > 1 else False
         # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
         if not covers_multiple_examples and rule_id == example.name:
-            # Remove seed for rule
-            # examples = df.loc[df.index != rule.name]
-            # print("rule is seed and doesn't cover multiple examples, so skip it")
+            # Ignore rule as it's the seed for the example
+            print("rule {} is seed for example {}".format(rule_id, example.name))
             continue
         # Find the nearest example, regardless of its class label and whether the rule already covers it
         # Here we use it to find the nearest rule for an example
         # We find 2 because the most similar one could be the seed, then the 2nd best is chosen
         neighbors, dists = find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
                                                  use_same_label=False, only_uncovered_neighbors=False)
+        print("neighbors:", neighbors)
         if neighbors is not None:
             dist = dists.iloc[0][my_vars.DIST]
             # print("-------")
@@ -371,7 +374,8 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes):
                 min_rule_id = idx
         else:
             raise Exception("No neighbors for rule:\n{}".format(rule))
-    return rules[min_rule_id], min_dist
+        return rules[min_rule_id], min_dist
+    return None, None
 
 
 def most_specific_generalization(example, rule, class_col_name, i):
@@ -637,8 +641,7 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
     #         raise Exception("No neighbors for rule:\n{}".format(rule))
 
 
-def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, min_max, classes, conf_matrix,
-                                        rule_mapping):
+def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, min_max, classes):
     """
     Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
     Assumes that the initial confusion matrix already exists, hence evaluate_f1_initialize_confusion_matrix() should
@@ -652,8 +655,6 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
     min_max: pd.DataFrame - min and max value per numeric feature.
     classes: list of str - class labels in the dataset.
-    conf_matrix: dict - confusion matrix to be updated, i.e. {"tp": set(example1, example3), "tn":{...}}
-    rule_mapping: dict - holds which rule classifies which example(s), i.e. {rule1: set(example5, example3}
 
     Raises
     ------
@@ -666,43 +667,53 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
     float - F1 score.
 
     """
-    rule_id = new_rule.name
-    # if rule_id in
-    # examples_to_evaluate = df.loc[]
-    # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
-    # rule covers more examples
-    # Problem: rules can't be stored in dataFrame because they might contain different features
-    for row_id, example in df.iterrows():
-        # print("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
+    print("closest rule per example")
+    print(my_vars.closest_rule_per_example)
+    print("checking new rule:")
+    print(new_rule)
+    # Go through all examples and check if the new rule's distance to any example is smaller than the current minimum
+    # distance, i.e. if the new rule is closer to an example than any other rules
+    for example_id, example in df.iterrows():
+        print("Potentially update nearest rule for example:\n{}\n{}".format("------------------------------------", example))
         # find_nearest_examples() expects a dataFrame of examples, not a Series
         # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
         # example_df = example.to_frame().T.infer_objects()
-        rule, rule_dist = find_nearest_rule(rules, example, class_col_name, counts, min_max, classes)
-
-        # Update which rule predicts the label of the example
-        # print("minimum distance ({}) by rule: {}".format(rule_dist, rule.name))
-        my_vars.closest_rule_per_example[example.name] = rule.name
-        update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name)
+        _, new_dist = find_nearest_rule([new_rule], example, class_col_name, counts, min_max, classes)
+        if new_dist is not None:
+            print("current min value", my_vars.closest_rule_per_example[example_id][1])
+            print("new dist", new_dist)
+            cur_min_dist = my_vars.closest_rule_per_example[example_id][1]
+            if new_dist < cur_min_dist:
+                print("**************")
+                print("update mapping")
+                print("**************")
+                print("old mapping:", my_vars.closest_rule_per_example[example_id])
+                my_vars.closest_rule_per_example[example_id] = (new_rule.name, new_dist)
+                print("new mapping", my_vars.closest_rule_per_example[example_id])
+                print("old confusion matrix:", my_vars.conf_matrix)
+                print("update entry for example", example.name)
+                update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name)
+                print("new confusion matrix:", my_vars.conf_matrix)
     return f1()
 
 
-def update_confusion_matrix(neighbor, rule, positive_class, class_col_name):
+def update_confusion_matrix(example, rule, positive_class, class_col_name):
     """
     Updates the confusion matrix.
 
     Parameters
     ----------
-    neighbor: pd.Series - nearest example to a rule.
+    example: pd.Series - nearest example to a rule.
     rule: pd.Series - actual label of the rule.
     positive_class: str - name of the class label considered as true positive
     class_col_name: str - name of the column in the series holding the class label
 
     """
     # print("neighbors:\n{}".format(neighbor))
-    predicted = neighbor[class_col_name]
+    predicted = example[class_col_name]
     true = rule[class_col_name]
     # print("example label: {} vs. rule label: {}".format(predicted, true))
-    predicted_id = neighbor.name
+    predicted_id = example.name
     # Potentially remove example from confusion matrix
     my_vars.conf_matrix[my_vars.TP].discard(predicted_id)
     my_vars.conf_matrix[my_vars.TN].discard(predicted_id)
