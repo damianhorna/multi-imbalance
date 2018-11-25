@@ -378,7 +378,7 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes):
     return None, None
 
 
-def most_specific_generalization(example, rule, class_col_name, i):
+def most_specific_generalization(example, rule, class_col_name, dtypes):
     """
     Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
 
@@ -387,7 +387,7 @@ def most_specific_generalization(example, rule, class_col_name, i):
     example: pd.Series - row from the dataset.
     rule: pd.Series - rule that will be potentially generalized.
     class_col_name: str - name of the column hold the class labels.
-    i: int - row index of <example>.
+    dtypes: pd.Series - data types of the respective columns in the dataset.
 
     Returns
     -------
@@ -395,13 +395,10 @@ def most_specific_generalization(example, rule, class_col_name, i):
     Generalized rule
 
     """
-    for col_name in example:
+    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
         if col_name == class_col_name:
             continue
-        example_dtype = example[col_name].dtype
-        # print("example feature:", example[col_name], type(example[col_name]), col_name)
-        example_val = example[col_name][i]
-        # print("example val:", example_val)
+        example_dtype = dtype
         if col_name in rule:
             # Cast object to tuple datatype -> this is only automatically done if it's not a string
             rule_val = (rule[col_name])
@@ -667,8 +664,6 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
     float - F1 score.
 
     """
-    print("closest rule per example")
-    print(my_vars.closest_rule_per_example)
     print("checking new rule:")
     print(new_rule)
     # Go through all examples and check if the new rule's distance to any example is smaller than the current minimum
@@ -767,6 +762,33 @@ def f1():
     if f1_denom > 0:
         f1 = 2*precision*recall / f1_denom
     return f1
+
+
+def add_one_best_rule(neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
+    """
+    Implements AddOneBestRule() from the paper, i.e. Algorithm 3.
+
+    Parameters
+    ----------
+    neighbors: pd.DataFrame - nearest examples for <rule>
+    rule: pd.Series - rule whose effect on the F1 score should be evaluated
+    rules: list of pd.Series - list of all rules in the rule set RS
+    class_col_name: str - name of the column in the series holding the class label
+    counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    min_max: pd.DataFrame - min and max value per numeric feature.
+    classes: list of str - class labels in the dataset.
+
+    Returns
+    -------
+    bool.
+    True if a generalized version of the rule improves the F1 score, False otherwise.
+
+    """
+    best_f1 = f1
+    best_generalization = rule
+    # for example_id, example in neighbors.iterrows():
+
+
 
 
 def sklearn_to_df(sklearn_dataset):
