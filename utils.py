@@ -383,9 +383,11 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
                     min_rule_id = idx
             else:
                 raise MyException("No neighbors for rule:\n{}".format(rule))
+        if min_rule_id is not None:
+            return rules[min_rule_id], min_dist
+        return None, None
     except MyException:
         return None, None
-    return rules[min_rule_id], min_dist
 
 
 def most_specific_generalization(example, rule, class_col_name, dtypes):
