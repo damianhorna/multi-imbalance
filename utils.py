@@ -611,7 +611,8 @@ def evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, m
         # Update which rule predicts the label of the example
         # print("minimum distance ({}) by rule: {}".format(rule_dist, rule.name))
         my_vars.closest_rule_per_example[example.name] = (rule.name, rule_dist)
-        update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name)
+        my_vars.conf_matrix = update_confusion_matrix(example, rule, my_vars.positive_class, class_col_name,
+                                                      my_vars.conf_matrix)
     return f1()
     # Let closest rule classify an example, but this example mustn't be the seed for the closest rule unless that
     # rule covers more examples
@@ -687,12 +688,68 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
                 print("new mapping", my_vars.closest_rule_per_example[example_id])
                 print("old confusion matrix:", my_vars.conf_matrix)
                 print("update entry for example", example.name)
-                update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name)
+                conf_matrix = update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name,
+                                                      my_vars.conf_matrix)
                 print("new confusion matrix:", my_vars.conf_matrix)
     return f1()
 
 
-def update_confusion_matrix(example, rule, positive_class, class_col_name):
+def evaluate_f1_temporarily(df, new_rule, class_col_name, counts, min_max, classes):
+    """
+    Same as evaluate_f1_update_confusion_matrix(), with the difference that the actual confusion matrix isn't updated,
+    but a copy of it.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - examples
+    new_rule: pd.Series - new rule whose effect on the F1 score should be evaluated
+    class_col_name: str - name of the column in the series holding the class label
+    counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    min_max: pd.DataFrame - min and max value per numeric feature.
+    classes: list of str - class labels in the dataset.
+
+    Raises
+    ------
+    Exception: if no nearest examples at all exist for a certain rule - this can only happen if <df> is empty, it
+    contains only the seed of the rule for which nearest neighbors are computed and that rule doesn't cover any other
+    examples. In short, this exception might be thrown if <= 1 example are contained in <df>.
+
+    Returns
+    -------
+    float, dict.
+    F1 score, confusion matrix.
+
+    """
+    print("checking new rule:")
+    print(new_rule)
+    # Go through all examples and check if the new rule's distance to any example is smaller than the current minimum
+    # distance, i.e. if the new rule is closer to an example than any other rules
+    for example_id, example in df.iterrows():
+        print("Potentially update nearest rule for example:\n{}\n{}".format("------------------------------------", example))
+        # find_nearest_examples() expects a dataFrame of examples, not a Series
+        # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
+        # example_df = example.to_frame().T.infer_objects()
+        _, new_dist = find_nearest_rule([new_rule], example, class_col_name, counts, min_max, classes)
+        if new_dist is not None:
+            print("current min value", my_vars.closest_rule_per_example[example_id][1])
+            print("new dist", new_dist)
+            cur_min_dist = my_vars.closest_rule_per_example[example_id][1]
+            if new_dist < cur_min_dist:
+                print("**************")
+                print("update mapping")
+                print("**************")
+                print("old mapping:", my_vars.closest_rule_per_example[example_id])
+                my_vars.closest_rule_per_example[example_id] = (new_rule.name, new_dist)
+                print("new mapping", my_vars.closest_rule_per_example[example_id])
+                print("old confusion matrix:", my_vars.conf_matrix)
+                print("update entry for example", example.name)
+                my_vars.conf_matrix = update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name,
+                                                              my_vars.conf_matrix)
+                print("new confusion matrix:", my_vars.conf_matrix)
+    return f1()
+
+
+def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_matrix):
     """
     Updates the confusion matrix.
 
@@ -702,6 +759,12 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name):
     rule: pd.Series - actual label of the rule.
     positive_class: str - name of the class label considered as true positive
     class_col_name: str - name of the column in the series holding the class label
+    conf_matrix: dict - confusion matrix holding a set of example IDs for my_vars.TP/TN/FP/FN
+
+    Returns
+    -------
+    dict.
+    Updated confusion matrix.
 
     """
     # print("neighbors:\n{}".format(neighbor))
@@ -710,24 +773,25 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name):
     # print("example label: {} vs. rule label: {}".format(predicted, true))
     predicted_id = example.name
     # Potentially remove example from confusion matrix
-    my_vars.conf_matrix[my_vars.TP].discard(predicted_id)
-    my_vars.conf_matrix[my_vars.TN].discard(predicted_id)
-    my_vars.conf_matrix[my_vars.FP].discard(predicted_id)
-    my_vars.conf_matrix[my_vars.FN].discard(predicted_id)
+    conf_matrix[my_vars.TP].discard(predicted_id)
+    conf_matrix[my_vars.TN].discard(predicted_id)
+    conf_matrix[my_vars.FP].discard(predicted_id)
+    conf_matrix[my_vars.FN].discard(predicted_id)
     # Add updated value
     if true == positive_class:
         if predicted == true:
-            my_vars.conf_matrix[my_vars.TP].add(predicted_id)
+            conf_matrix[my_vars.TP].add(predicted_id)
             # print("pred: {} <-> true: {} -> tp".format(pred, true))
         else:
-            my_vars.conf_matrix[my_vars.FN].add(predicted_id)
+            conf_matrix[my_vars.FN].add(predicted_id)
             # print("pred: {} <-> true: {} -> fn".format(pred, true))
     else:
         if predicted == true:
-            my_vars.conf_matrix[my_vars.TN].add(predicted_id)
+            conf_matrix[my_vars.TN].add(predicted_id)
             # print("pred: {} <-> true: {} -> tn".format(pred, true))
         else:
-            my_vars.conf_matrix[my_vars.FP].add(predicted_id)
+            conf_matrix[my_vars.FP].add(predicted_id)
+    return conf_matrix
 
 
 def f1():
@@ -764,7 +828,7 @@ def f1():
     return f1
 
 
-def add_one_best_rule(neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
+def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
     """
     Implements AddOneBestRule() from the paper, i.e. Algorithm 3.
 
@@ -786,7 +850,11 @@ def add_one_best_rule(neighbors, rule, rules, f1,  class_col_name, counts, min_m
     """
     best_f1 = f1
     best_generalization = rule
-    # for example_id, example in neighbors.iterrows():
+    dtypes = neighbors.dtypes
+    for example_id, example in neighbors.iterrows():
+        generalization = most_specific_generalization(example, rule, class_col_name, dtypes)
+        current_f1 = evaluate_f1_update_confusion_matrix()
+
 
 
 
