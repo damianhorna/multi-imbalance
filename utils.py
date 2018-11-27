@@ -267,6 +267,44 @@ def create_svdm_lookup_column(df, coli, class_col_name):
     return c
 
 
+def does_rule_cover_example(example, rule, dtypes):
+    """
+    Tests if a rule covers a given example.
+
+    Parameters
+    ----------
+    example: pd.Series - example
+    rule: pd.Series - rule
+    dtypes: pd.Series - data types of the respective columns in the dataset
+
+    Returns
+    -------
+    bool.
+    True if the rule covers the example else False.
+
+    """
+    is_covered = True
+    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
+        example_dtype = dtype
+        if col_name in rule:
+            # Cast object to tuple datatype -> this is only automatically done if it's not a string
+            rule_val = (rule[col_name])
+            # print("rule_val", rule_val, "\nrule type:", type(rule_val))
+            if is_string_dtype(example_dtype) and example_val != rule_val:
+                is_covered = False
+                break
+            elif is_numeric_dtype(example_dtype):
+                if rule_val[0] > example_val or rule_val[1] < example_val:
+                    is_covered = False
+                    break
+    return is_covered
+
+
+def is_empty(df):
+    """Tests if a pd.DataFrame is empty or not"""
+    return len(df.index) == 0
+
+
 def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True,
                           only_uncovered_neighbors=True):
     """
@@ -285,12 +323,14 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     use_same_label: bool - True if only examples with the same label as the rule should be considered as neighbors.
     Otherwise all labels are used.
     only_uncovered_neighbors: bool - True if only examples should be considered that aren't covered by <rule> yet.
-    Otherwise, all neighbors are considered.
+    Otherwise, all neighbors are considered. An example is covered by a rule if the example satisfies all conditions
+    imposed by <rule>.
 
     Returns
     -------
-    pd.DataFrame, pd.DataFrame
-    k nearest examples for the given rule, distances of the k nearest examples
+    pd.DataFrame, pd.DataFrame OR None, None
+    k nearest examples for the given rule, distances of the k nearest examples. Returns None, None if there are no
+    neighbors
 
     """
     # print("find neighbors with same label as rule ({}) and which aren't covered by the rule yet ({})"
@@ -304,20 +344,29 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     if only_uncovered_neighbors:
         covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
         # print("examples that are already covered by the rule:", covered_examples)
+        # Select only examples which aren't covered yet
         examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
+        # Check if any remaining examples are covered as well
+        examples_with_same_label[my_vars.COVERED] = examples_with_same_label.loc[:, :]\
+            .apply(does_rule_cover_example, axis=1, args=(rule, examples_with_same_label.dtypes))
+        # Only keep the uncovered examples
+        examples_with_same_label = examples_with_same_label.loc[examples_with_same_label["is_covered"] == False]
+    print("examples:\n{}".format(examples_with_same_label))
 
-    # print("examples:\n{}".format(examples_with_same_label))
+    if is_empty(examples_with_same_label):
+        return None, None
+
     neighbors = examples_with_same_label.shape[0]
     # print("neighbors:", neighbors)
     if neighbors < k:
-        warnings.warn("Only {} neighbors for {}".format(examples_with_same_label.shape[0], examples_with_same_label),
+        warnings.warn("Only {} neighbors for\n{}".format(examples_with_same_label.shape[0], examples_with_same_label),
                       UserWarning)
-    if neighbors > 0:
-        dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
-        neighbor_ids = dists.index[: k]
-        # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
-        return df.loc[neighbor_ids], dists.loc[neighbor_ids]
-    return None, None
+    # if neighbors > 0:
+    dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
+    neighbor_ids = dists.index[: k]
+    # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
+    return df.loc[neighbor_ids], dists.loc[neighbor_ids]
+    # return None, None
 
 
 def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, examples_covered_by_rule):
@@ -860,19 +909,37 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
 
     Returns
     -------
-    bool.
+    bool, list of pd.Series.
     True if a generalized version of the rule improves the F1 score, False otherwise.
 
     """
     best_f1 = f1
     best_generalization = rule
+    improved = False
+    print("rule:\n{}".format(rule))
+    print("best f1:", best_f1)
     dtypes = neighbors.dtypes
     for example_id, example in neighbors.iterrows():
-        generalization = most_specific_generalization(example, rule, class_col_name, dtypes)
-        current_f1 = evaluate_f1_temporarily()
+        print("generalize rule for:\n{}".format(example))
+        generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
+        print("generalized rule:\n{}".format(generalized_rule))
+        print("f1")
+        current_f1, _, _ = evaluate_f1_temporarily(df, generalized_rule, class_col_name, counts, min_max, classes)
+        if current_f1 > best_f1:
+            print("{} > {}".format(current_f1, f1))
+            best_f1 = current_f1
+            best_generalization = generalized_rule
 
-
-
+    if best_generalization.name != rule.name:
+        print("improvement!")
+        # Replace old rule with new one
+        for idx, r in enumerate(rules):
+            if rule.name == r.name:
+                print("replace rule {}".format(rule.name))
+                rules[idx] = best_generalization
+                improved = True
+                break
+    return improved, rules
 
 
 def sklearn_to_df(sklearn_dataset):
