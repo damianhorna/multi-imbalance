@@ -4,6 +4,7 @@ MISSING_VAL = np.nan
 NOMINAL = 0
 NUMERIC = 1
 CONDITIONAL = "Conditional"
+COVERED = "is_covered"
 CLASSES = []
 SAFE = "safe"
 NOISY = "noisy"
