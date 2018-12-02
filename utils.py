@@ -951,7 +951,8 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
                 print("updated best rule per example for example {}:\n{}"
                       .format(best_example_id, (r.name, best_closest_rule_dist[best_example_id])))
                 print(best_closest_rule_dist)
-                my_vars.closest_rule_per_example[best_example_id] = best_closest_rule_dist[best_example_id]
+                # my_vars.closest_rule_per_example[best_example_id] = best_closest_rule_dist[best_example_id]
+                my_vars.closest_rule_per_example = best_closest_rule_dist
                 my_vars.conf_matrix = best_conf_matrix
                 break
     return improved, rules
@@ -1010,7 +1011,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1,  class_col_name, counts, 
                         print("updated best rule per example for example {}:\n{}"
                               .format(example_id, (r.name, current_closest_rule[example_id])))
                         print(current_closest_rule)
-                        my_vars.closest_rule_per_example[example_id] = current_closest_rule[example_id]
+                        my_vars.closest_rule_per_example = current_closest_rule
                         my_vars.conf_matrix = current_conf_matrix
                         break
                 # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
