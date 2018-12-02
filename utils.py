@@ -166,7 +166,8 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
             # print("pairwise distances for:\n{}".format(rule))
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors, _ = find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
-                                                 min_max, classes, use_same_label=False, only_uncovered_neighbors=False)
+                                                 min_max, classes, label_type=my_vars.ALL_LABELS,
+                                                 only_uncovered_neighbors=False)
             # print("neighbors:\n{}".format(neighbors))
             labels = Counter(neighbors[class_col_name].values)
             tag = assign_tag(labels, rule[class_col_name])
@@ -306,10 +307,10 @@ def is_empty(df):
     return len(df.index) == 0
 
 
-def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, use_same_label=True,
+def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes, label_type=my_vars.ALL_LABELS,
                           only_uncovered_neighbors=True):
     """
-    Finds k nearest examples for a given rule with the same class label as the rule.
+    Finds k-nearest examples for a given rule with the same class label as the rule.
     If less than k examples exist, a warning is issued.
 
     Parameters
@@ -320,27 +321,40 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
-    classes: list of str - class labels in the dataset.
-    use_same_label: bool - True if only examples with the same label as the rule should be considered as neighbors.
-    Otherwise all labels are used.
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    label_type: str - consider only examples of the specified type as neighbors. Valid values:
+    scripts.vars.ALL_LABELS - ignore the label and choose the k-nearest examples across all class labels
+    scripts.vars.SAME_LABEL_AS_RULE - consider only examples as k-nearest examples with they have the same label as
+    <rule>
+    scripts.vars.OPPOSITE_LABEL_TO_RULE - consider only examples as k-nearest examples with they have the opposite
+    label of <rule>
     only_uncovered_neighbors: bool - True if only examples should be considered that aren't covered by <rule> yet.
     Otherwise, all neighbors are considered. An example is covered by a rule if the example satisfies all conditions
     imposed by <rule>.
 
+    Raises
+    ------
+
     Returns
     -------
     pd.DataFrame, pd.DataFrame OR None, None
-    k nearest examples for the given rule, distances of the k nearest examples. Returns None, None if there are no
-    neighbors
+    k-nearest examples for the given rule, distances of the k nearest examples. Returns None, None if there are no
+    neighbors.
 
     """
     # print("find neighbors with same label as rule ({}) and which aren't covered by the rule yet ({})"
     #       .format(use_same_label, only_uncovered_neighbors))
-    if use_same_label:
-        class_label = rule[class_col_name]
+    class_label = rule[class_col_name]
+    if label_type == my_vars.ALL_LABELS:
+        examples_with_same_label = df.copy()
+    elif label_type == my_vars.OPPOSITE_LABEL_TO_RULE:
+        opposite_label = classes[0] if classes[0] != class_label else classes[1]
+        print("opposite class label:", opposite_label)
+        examples_with_same_label = df.loc[df[class_col_name] == opposite_label]
+    elif label_type == my_vars.SAME_LABEL_AS_RULE:
         examples_with_same_label = df.loc[df[class_col_name] == class_label]
     else:
-        examples_with_same_label = df.copy()
+        raise MyException("'{}' is an invalid option for the label_type!".format(label_type))
     # Only consider examples, that have the same label as the rule and aren't covered by the rule yet
     if only_uncovered_neighbors:
         covered_examples = my_vars.examples_covered_by_rule.get(rule.name, set())
@@ -417,7 +431,7 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             # Here we use it to find the nearest rule for an example
             # We find 2 because the most similar one could be the seed, then the 2nd best is chosen
             neighbors, dists = find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
-                                                     use_same_label=False, only_uncovered_neighbors=False)
+                                                     label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("neighbors:", neighbors)
             if neighbors is not None:
                 dist = dists.iloc[0][my_vars.DIST]

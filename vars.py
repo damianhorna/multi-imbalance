@@ -16,6 +16,9 @@ TP = "tp"
 TN = "tn"
 FP = "fp"
 FN = "fn"
+OPPOSITE_LABEL_TO_RULE = "opposite"
+ALL_LABELS = "all"
+SAME_LABEL_AS_RULE = "same"
 # {example ei: seed for rule ri}
 seed_mapping = {}
 # {rule ri: set(example ei)}
