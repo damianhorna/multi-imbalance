@@ -3,6 +3,7 @@ import os
 import itertools
 import warnings
 import copy
+from operator import itemgetter
 
 import numpy as np
 import pandas as pd
@@ -165,7 +166,7 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
             # print("pairwise distances for:\n{}".format(rule))
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors, _ = find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
-                                                 min_max, classes, use_same_label=False)
+                                                 min_max, classes, use_same_label=False, only_uncovered_neighbors=False)
             # print("neighbors:\n{}".format(neighbors))
             labels = Counter(neighbors[class_col_name].values)
             tag = assign_tag(labels, rule[class_col_name])
@@ -741,14 +742,13 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
             print("new dist", new_dist)
             cur_min_dist = my_vars.closest_rule_per_example[example_id][1]
             if new_dist < cur_min_dist:
-                print("**************")
-                print("update mapping")
-                print("**************")
+                print("****************************")
+                print("update mapping for example", example.name)
+                print("****************************")
                 print("old mapping:", my_vars.closest_rule_per_example[example_id])
                 my_vars.closest_rule_per_example[example_id] = (new_rule.name, new_dist)
                 print("new mapping", my_vars.closest_rule_per_example[example_id])
                 print("old confusion matrix:", my_vars.conf_matrix)
-                print("update entry for example", example.name)
                 my_vars.conf_matrix = update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name,
                                                               my_vars.conf_matrix)
                 print("new confusion matrix:", my_vars.conf_matrix)
@@ -783,9 +783,9 @@ def evaluate_f1_temporarily(df, new_rule, class_col_name, counts, min_max, class
     """
     # print("checking new rule:")
     # print(new_rule)
-    initial_closest_rule_per_example = copy.deepcopy(my_vars.closest_rule_per_example)
+    # initial_closest_rule_per_example = copy.deepcopy(my_vars.closest_rule_per_example)
     closest_rule_per_example = copy.deepcopy(my_vars.closest_rule_per_example)
-    initial_conf_matrix = copy.deepcopy(my_vars.conf_matrix)
+    # initial_conf_matrix = copy.deepcopy(my_vars.conf_matrix)
     conf_matrix = copy.deepcopy(my_vars.conf_matrix)
     # Go through all examples and check if the new rule's distance to any example is smaller than the current minimum
     # distance, i.e. if the new rule is closer to an example than any other rules
@@ -799,14 +799,13 @@ def evaluate_f1_temporarily(df, new_rule, class_col_name, counts, min_max, class
             # print("new dist", new_dist)
             cur_min_dist = closest_rule_per_example[example_id][1]
             if new_dist < cur_min_dist:
-                print("**************")
-                print("update mapping")
-                print("**************")
+                print("*****************************")
+                print("update mapping for example", example.name)
+                print("*****************************")
                 print("old mapping:", closest_rule_per_example[example_id])
                 closest_rule_per_example[example_id] = (new_rule.name, new_dist)
                 print("new mapping", closest_rule_per_example[example_id])
                 print("old confusion matrix:", conf_matrix)
-                print("update entry for example", example.name)
                 conf_matrix = update_confusion_matrix(example, new_rule, my_vars.positive_class, class_col_name,
                                                       conf_matrix)
                 print("new confusion matrix:", conf_matrix)
@@ -832,8 +831,8 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_
 
     """
     # print("neighbors:\n{}".format(neighbor))
-    predicted = example[class_col_name]
-    true = rule[class_col_name]
+    predicted = rule[class_col_name]
+    true = example[class_col_name]
     # print("example label: {} vs. rule label: {}".format(predicted, true))
     predicted_id = example.name
     # Potentially remove example from confusion matrix
@@ -845,16 +844,17 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_
     if true == positive_class:
         if predicted == true:
             conf_matrix[my_vars.TP].add(predicted_id)
-            # print("pred: {} <-> true: {} -> tp".format(pred, true))
+            print("pred: {} <-> true: {} -> tp".format(predicted, true))
         else:
             conf_matrix[my_vars.FN].add(predicted_id)
-            # print("pred: {} <-> true: {} -> fn".format(pred, true))
+            print("pred: {} <-> true: {} -> fn".format(predicted, true))
     else:
         if predicted == true:
             conf_matrix[my_vars.TN].add(predicted_id)
-            # print("pred: {} <-> true: {} -> tn".format(pred, true))
+            print("pred: {} <-> true: {} -> tn".format(predicted, true))
         else:
             conf_matrix[my_vars.FP].add(predicted_id)
+            print("pred: {} <-> true: {} -> fp".format(predicted, true))
     return conf_matrix
 
 
@@ -954,6 +954,79 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
                 my_vars.closest_rule_per_example[best_example_id] = best_closest_rule_dist[best_example_id]
                 my_vars.conf_matrix = best_conf_matrix
                 break
+    return improved, rules
+
+
+def add_all_good_rules(df, neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
+    """
+    Implements AddAllGoodRules() from the paper, i.e. Algorithm 3.
+
+    Parameters
+    ----------
+    neighbors: pd.DataFrame - nearest examples for <rule>
+    rule: pd.Series - rule whose effect on the F1 score should be evaluated
+    rules: list of pd.Series - list of all rules in the rule set RS
+    class_col_name: str - name of the column in the series holding the class label
+    counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
+    min_max: pd.DataFrame - min and max value per numeric feature.
+    classes: list of str - class labels in the dataset.
+
+    Returns
+    -------
+    bool, list of pd.Series.
+    True if a generalized version of the rule improves the F1 score, False otherwise.
+
+    """
+    improved = False
+    print("rule:\n{}".format(rule))
+    print("best f1:", f1)
+    dtypes = neighbors.dtypes
+    best_f1 = f1
+    while not is_empty(neighbors):
+        for example_id, example in neighbors.iterrows():
+            print("generalize rule for:\n{}".format(example))
+            generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
+            print("generalized rule:\n{}".format(generalized_rule))
+            current_f1, current_conf_matrix, current_closest_rule = \
+                evaluate_f1_temporarily(df, generalized_rule, class_col_name, counts, min_max, classes)
+            print("neighbors before dropping:")
+            print(neighbors)
+            # Remove current example
+            neighbors.drop(example_id, inplace=True)
+            print("neighbors after dropping:")
+            print(neighbors)
+            print("current f1")
+            print(current_f1)
+            # Generalized rule is better
+            if current_f1 >= best_f1:
+                print("{} >= {}".format(current_f1, f1))
+                best_f1 = current_f1
+                improved = True
+                print("improvement!")
+                # Replace old rule with new one
+                for idx, r in enumerate(rules):
+                    if rule.name == r.name:
+                        rules[idx] = generalized_rule
+                        print("updated best rule per example for example {}:\n{}"
+                              .format(example_id, (r.name, current_closest_rule[example_id])))
+                        print(current_closest_rule)
+                        my_vars.closest_rule_per_example[example_id] = current_closest_rule[example_id]
+                        my_vars.conf_matrix = current_conf_matrix
+                        break
+                # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
+                dists = []
+                for neighbor_id, neighbor in neighbors.iterrows():
+                    _, dist = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts, min_max, classes,
+                                                my_vars.examples_covered_by_rule)
+                    dists.append((neighbor_id, dist))
+                # At least 1 example still existed after dropping the previous one
+                if len(dists) > 0:
+                    dists.sort(key=itemgetter(1))
+                    print("recomputed distances:", dists)
+                    example_ids, dists = map(list, (zip(*dists)))
+                    neighbors = neighbors.loc[example_ids]
+                    # Stop current loop because neighbors' distance was recomputed
+                    break
     return improved, rules
 
 
