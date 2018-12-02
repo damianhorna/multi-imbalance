@@ -5,7 +5,6 @@ import warnings
 import copy
 from operator import itemgetter
 
-import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
@@ -427,9 +426,6 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
                 # Ignore rule as it's the seed for the example
                 print("rule {} is seed for example {}".format(rule_id, example.name))
                 continue
-            # Find the nearest example, regardless of its class label and whether the rule already covers it
-            # Here we use it to find the nearest rule for an example
-            # We find 2 because the most similar one could be the seed, then the 2nd best is chosen
             neighbors, dists = find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
                                                      label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("neighbors:", neighbors)
@@ -1043,6 +1039,57 @@ def add_all_good_rules(df, neighbors, rule, rules, f1,  class_col_name, counts, 
                     # Stop current loop because neighbors' distance was recomputed
                     break
     return improved, rules
+
+
+def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
+    """
+    Extends a rule in terms of numeric features according to algorithm 4 of the paper, i.e. extend().
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset
+    k: int - number of neighbors with opposite label of <rule> to consider
+    rule: pd.Series - rule
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+
+    Returns
+    -------
+    pd.Series.
+    Extended rule.
+
+    """
+    neighbors, _ = find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
+                                         label_type=my_vars.OPPOSITE_LABEL_TO_RULE, only_uncovered_neighbors=True)
+    print("rule before extension:\n{}".format(rule))
+    dtypes = rule.apply(type).tolist()
+    print("data types", dtypes)
+    for col_name, col_val in rule.iteritems():
+        # Only numeric features - they're stored in a tuple
+        if isinstance(col_val, tuple):
+            lower_rule, upper_rule = col_val
+            print("lower: {} upper: {}".format(lower_rule, upper_rule))
+            remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
+            remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
+            print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
+            print("neighbors meeting upper constraint:\n{}".format(remaining_upper))
+            new_lower = 0
+            new_upper = 0
+            # Extend left towards nearest neighbor
+            if not is_empty(remaining_lower):
+                lower_example = remaining_lower[col_name].max()
+                print("lower val", lower_example)
+                new_lower = 0.5 * (lower_rule - lower_example)
+            # Extend right towards nearest neighbor
+            if not is_empty(remaining_upper):
+                upper_example = remaining_upper[col_name].min()
+                print("upper val", upper_example)
+                new_upper = 0.5 * (upper_example - upper_rule)
+            rule[col_name] = (lower_rule - new_lower, upper_rule + new_upper)
+    print("rule after extension:\n{}".format(rule))
+    return rule
 
 
 def sklearn_to_df(sklearn_dataset):
