@@ -1071,6 +1071,8 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
         if isinstance(col_val, tuple):
             lower_rule, upper_rule = col_val
             print("lower: {} upper: {}".format(lower_rule, upper_rule))
+            print("neighbors")
+            print(neighbors)
             remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
             remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
             print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
@@ -1088,7 +1090,7 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
                 print("upper val", upper_example)
                 new_upper = 0.5 * (upper_example - upper_rule)
             rule[col_name] = (lower_rule - new_lower, upper_rule + new_upper)
-    print("rule after extension:\n{}".format(rule))
+            print("rule after extension of current column:\n{}".format(rule))
     return rule
 
 
