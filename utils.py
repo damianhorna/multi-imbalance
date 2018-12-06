@@ -513,7 +513,7 @@ def hvdm(examples, rule, counts, classes, min_max, class_col_name):
     dists = []
     # Compute distance for j-th feature (=column)
     for col_name in examples:
-        if col_name == class_col_name:
+        if col_name == class_col_name or col_name == my_vars.TAG or col_name == my_vars.COVERED:
             continue
         # Extract column from both dataframes into numpy array
         example_feature_col = examples[col_name]
@@ -1099,6 +1099,48 @@ def sklearn_to_df(sklearn_dataset):
     df = pd.DataFrame(sklearn_dataset.data, columns=sklearn_dataset.feature_names)
     df['class'] = pd.Series(sklearn_dataset.target)
     return df
+
+
+def bracid(df, k, rule, class_col_name, counts, min_max, classes, minority_label):
+    """
+    Implements the actual BRACID algorithm according to Algorithm 1 in the paper.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset
+    k: int - number of neighbors with opposite label of <rule> to consider
+    rule: pd.Series - rule
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    minority_label: str - class label of the minority class. Note that all other labels are grouped into the same class.
+
+    Returns
+    -------
+    list of pd.Series.
+    List of rules.
+
+    """
+    my_vars.positive_class = minority_label
+    print("minority class label:", my_vars.positive_class)
+    df, rules = add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
+    final_rules = []
+    iteration = 0
+    keep_running = True
+    f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
+    while keep_running:
+        improved = False
+        for r in rules:
+            pass
+
+        # At end after checking all rules
+        if not improved:
+            keep_running = False
+    return rules
+
+
+
 
 
 if __name__ == "__main__":
