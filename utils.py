@@ -377,9 +377,39 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
     if neighbors < k:
         warnings.warn("Only {} neighbors for\n{}".format(examples_with_same_label.shape[0], examples_with_same_label),
                       UserWarning)
-    # if neighbors > 0:
     dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
     neighbor_ids = dists.index[: k]
+    # TODO: update closest_examples_per_rule and closest_rule_per_example here
+    # Potentially update closest rule per example
+    for example_id, row in dists.iterrows():
+        print("example id:{}\ndata:{}".format(example_id, row[my_vars.DIST]))
+        dist = row[my_vars.DIST]
+        old_rule_id = None
+        has_changed = False
+        if example_id not in my_vars.closest_rule_per_example:
+            my_vars.closest_rule_per_example[example_id] = (rule.name, dist)
+            has_changed = True
+        else:
+            old_rule_id, old_dist = my_vars.closest_rule_per_example[example_id]
+            if dist < old_dist:
+                my_vars.closest_rule_per_example[example_id] = (rule.name, dist)
+                has_changed = True
+        if has_changed:
+            my_vars.closest_examples_per_rule.setdefault(rule.name, set()).add(example_id)
+            # Delete old entry and possibly the whole rule
+            if old_rule_id is not None:
+                my_vars.closest_examples_per_rule[old_rule_id].discard(example_id)
+                if len(my_vars.closest_examples_per_rule[old_rule_id]) == 0:
+                    del my_vars.closest_examples_per_rule[old_rule_id]
+        # Special case: rule covers example
+        if row[my_vars.DIST] == 0:
+            print("update covered examples by rule {}".format(rule.name))
+            print("because {} has distance 0".format(example_id))
+            print(my_vars.examples_covered_by_rule)
+            print("after update")
+            my_vars.examples_covered_by_rule.setdefault(rule.name, set()).add(example_id)
+            print(my_vars.examples_covered_by_rule)
+
     # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
     return df.loc[neighbor_ids], dists.loc[neighbor_ids]
     # return None, None
