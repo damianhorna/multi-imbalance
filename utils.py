@@ -379,10 +379,26 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
                       UserWarning)
     dists = hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
     neighbor_ids = dists.index[: k]
-    # TODO: update closest_examples_per_rule and closest_rule_per_example here
-    # Potentially update closest rule per example
+    _update_data_about_closest_rule(rule, dists)
+
+    # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
+    return df.loc[neighbor_ids], dists.loc[neighbor_ids]
+    # return None, None
+
+
+def _update_data_about_closest_rule(rule, dists):
+    """
+    Potentially update closest rule per example, covered examples by rule, and closest examples per rule.
+
+    Parameters
+    ----------
+    rule: pd.Series - rule
+    dists: pd.dataFrame - distances of neighbors
+
+    """
+
     for example_id, row in dists.iterrows():
-        print("example id:{}\ndata:{}".format(example_id, row[my_vars.DIST]))
+        # print("example id:{}\ndata:{}".format(example_id, row[my_vars.DIST]))
         dist = row[my_vars.DIST]
         old_rule_id = None
         has_changed = False
@@ -401,18 +417,14 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
                 my_vars.closest_examples_per_rule[old_rule_id].discard(example_id)
                 if len(my_vars.closest_examples_per_rule[old_rule_id]) == 0:
                     del my_vars.closest_examples_per_rule[old_rule_id]
-        # Special case: rule covers example
+        # Special case: rule covers example - an example could be covered by multiple rules theoretically
         if row[my_vars.DIST] == 0:
-            print("update covered examples by rule {}".format(rule.name))
-            print("because {} has distance 0".format(example_id))
-            print(my_vars.examples_covered_by_rule)
-            print("after update")
+            # print("update covered examples by rule {}".format(rule.name))
+            # print("because {} has distance 0".format(example_id))
+            # print(my_vars.examples_covered_by_rule)
+            # print("after update")
             my_vars.examples_covered_by_rule.setdefault(rule.name, set()).add(example_id)
-            print(my_vars.examples_covered_by_rule)
-
-    # print("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
-    return df.loc[neighbor_ids], dists.loc[neighbor_ids]
-    # return None, None
+            # print(my_vars.examples_covered_by_rule)
 
 
 def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, examples_covered_by_rule):
@@ -1268,15 +1280,15 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         example_id = my_vars.seed_rule_example[rule_id]
                         del my_vars.seed_rule_example[rule_id]
                         my_vars.seed_example_rule[example_id].discard(rule_id)
-                        print("remaining entries for {}: {}".format(rule_id, my_vars.seed_example_rule[example_id]))
+                        # print("remaining entries for {}: {}".format(rule_id, my_vars.seed_example_rule[example_id]))
                         if len(my_vars.seed_example_rule[example_id]) == 0:
-                            print("deleted the empty entry!")
+                            # print("deleted the empty entry!")
                             del my_vars.seed_example_rule[example_id]
-                        print("rules before deletion:")
+                        # print("rules before deletion:")
                         print(rules)
                         del rules[rule_idx]
-                        print("rules after deletion:")
-                        print(rules)
+                        # print("rules after deletion:")
+                        # print(rules)
                     else:
                         final_rules.append(rule)
 
