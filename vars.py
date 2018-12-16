@@ -12,6 +12,8 @@ BORDERLINE = "borderline"
 TAG = "tag"
 DIST = "dist"
 DISTANCE_MATRIX = {}
+# Number of digits used for precision when comparing floats
+PRECISION = 0.00001
 TP = "tp"
 TN = "tn"
 FP = "fp"
@@ -33,4 +35,4 @@ conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
 # {hash of rule ri: ID of rule ri}
 unique_rules = {}
 latest_id = 0
-positive_class = ""
+minority_class = ""
