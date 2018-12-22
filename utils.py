@@ -4,6 +4,8 @@ import itertools
 import warnings
 import copy
 from operator import itemgetter
+import random
+import math
 
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
@@ -16,11 +18,17 @@ class MyException(Exception):
     pass
 
 
-# (ID of rule, distance of rule to the closest example) is stored in a named tuple
+# (ID of rule, distance of rule to the closest example, number of features in closest rule) is stored per example in a
+# named tuple
 Data = namedtuple("Data", ["rule_id", "dist"])
+# Data = namedtuple("Data", ["rule_id", "dist", "features"])
+Bounds = namedtuple("Bounds", ["lower", "upper"])
+
+random.seed(189)
 
 
-def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
+def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1,
+                 header=True):
     """
     Reads in a dataset in csv format and stores it in a dataFrame.
 
@@ -127,10 +135,12 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     assert(rules_df.shape[0] == df.shape[0])
     my_vars.seed_example_rule = dict((x, x) for x in range(rules_df.shape[0]))
     my_vars.seed_rule_example = dict((x, x) for x in range(rules_df.shape[0]))
-    my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
+    # Don't store that seeds are covered by initial rules - that's given implicitly
+    # my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     rules = []
     for i, rule in rules_df.iterrows():
         rules.append(rule)
+        my_vars.all_rules[rule.name] = rule
     tagged = add_tags(df, k, rules, class_col_name, counts, min_max, classes)
     rules = deque(rules)
     return tagged, rules
@@ -167,7 +177,7 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
         # Ignore current row
         examples_for_pairwise_distance = df.loc[df.index != rule_id]
         if examples_for_pairwise_distance.shape[0] > 0:
-            # print("pairwise distances for:\n{}".format(rule))
+            # print("pairwise distances for rule {}:".format(rule.name))
             # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
             neighbors, _, _ = find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
                                                     min_max, classes, label_type=my_vars.ALL_LABELS,
@@ -175,6 +185,8 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
             # print("neighbors:\n{}".format(neighbors))
             labels = Counter(neighbors[class_col_name].values)
             tag = assign_tag(labels, rule[class_col_name])
+            # print("=>", tag)
+
             tags.append(tag)
     df[my_vars.TAG] = pd.Series(tags)
     return df
@@ -404,6 +416,9 @@ def _update_data_about_closest_rule(rule, dists):
     bool.
     True if data was updated, else False.
 
+    Raises Exception:
+    if rule doesn't contain a name/index, i.e. rule.name = None
+
     """
     was_updated = False
     for example_id, row in dists.iterrows():
@@ -412,15 +427,31 @@ def _update_data_about_closest_rule(rule, dists):
         old_rule_id = None
         has_changed = False
         if example_id not in my_vars.closest_rule_per_example:
+            print("old closest rule per example:", my_vars.closest_rule_per_example)
+            print("add new entry for example {}: {}".format(example_id, Data(rule_id=rule.name, dist=dist)))
             my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
             has_changed = True
         else:
             old_rule_id, old_dist = my_vars.closest_rule_per_example[example_id]
+            # if old_rule_id is None:
+            #     error = "name is None in the closest rule for example {}, i.e. name=... wasn't set in the rule!"\
+            #         .format(example_id)
+            #     raise Exception(error)
+            print("rule {} was closest so far with dist={}, maybe now it's rule {} with dist={}".format(old_rule_id, old_dist, rule.name, dist))
+            old_features = my_vars.all_rules[old_rule_id].size
+            features = rule.size
             if dist < old_dist:
+                print("new rule is closer ({}) vs. old ({})".format(dist, old_dist))
+                my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
+                has_changed = True
+            # Occam's razor, i.e. 2 distances are the same, prefer the simpler (=shorter) rule
+            if abs(dist - old_dist) < my_vars.PRECISION and features < old_features:
+                print("occam's razor: dist: {} and #old {} vs. #new features in rule {}".format(abs(dist - old_dist), old_features, features, rule.name))
                 my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                 has_changed = True
         if has_changed:
             was_updated = True
+            print("nearest rule was updated for example ({})".format(example_id))
             my_vars.closest_examples_per_rule.setdefault(rule.name, set()).add(example_id)
             # Delete old entry and possibly the whole rule, but only if the rule is now closest to a different rule
             if old_rule_id is not None and rule.name != old_rule_id:
@@ -441,7 +472,10 @@ def _update_data_about_closest_rule(rule, dists):
 def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, examples_covered_by_rule):
     """
     Finds the nearest rule for a given example. Certain rules are ignored, namely those for which the example is a
-    seed if the rule doesn't cover multiple examples.
+    seed if the rule doesn't cover multiple examples. Deals with ties if multiple rules cover an example. In this case
+    Occam's razor (simplest explanation is used) applies, i.e. the rule with fewest features is selected. In case of
+    a tie, then the rule with the most common class label is selected. If the tie still prevails, a random rule is
+    selected from the remaining set of candidate rules.
 
     Parameters
     ----------
@@ -461,54 +495,103 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
     doesn't cover multiple examples.
 
     """
-    min_dist = None
+    min_dist = math.inf
     min_rule_id = None
+    if example.name in my_vars.closest_rule_per_example:
+        min_rule_id, min_dist = my_vars.closest_rule_per_example[example.name]
+        print("entry exists for example {}: {}".format(example.name, my_vars.closest_rule_per_example[example.name]))
+    # has_zero_dist = False
     # hvdm() expects a dataFrame of examples, not a Series
     # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
     example_df = example.to_frame().T.infer_objects()
     # print("rules")
     # print(rules)
+    print("\nexample", example.name)
     try:
         was_updated = False
+        covering_rule_ids = []
         for idx, rule in enumerate(rules):
             rule_id = rule.name
             # print("rule id", rule_id)
             # print("Now checking rule with ID {}:\n{}".format(rule_id, rule))
-            examples = len(examples_covered_by_rule.get(rule.name, {}))
+            examples = len(examples_covered_by_rule.get(rule.name, set()))
             # print("#covered examples by rule:", examples_covered_by_rule.get(rule.name, {}))
-            covers_multiple_examples = True if examples > 1 else False
+            # > 0 because seeds aren't stored in this dict, so we implicitly add 1
+            covers_multiple_examples = True if examples > 0 else False
+            print("is rule {} seed for example {}? {}".format(rule_id, example.name, my_vars.seed_example_rule.get(example.name, set()) == rule_id))
+            print("does rule {} cover multiple examples? {}".format(rule_id, covers_multiple_examples))
+            if covers_multiple_examples:
+                print("covered:", examples_covered_by_rule.get(rule.name, set()))
+
             # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
-            if not covers_multiple_examples and rule_id == example.name:
+            if not covers_multiple_examples and my_vars.seed_example_rule[example.name] == rule_id:
                 # Ignore rule as it's the seed for the example
                 print("rule {} is seed for example {}".format(rule_id, example.name))
                 continue
             neighbors, dists, is_closest = \
                 find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
                                       label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
+            print("is closest", is_closest)
             # print("neighbors:", neighbors)
             if neighbors is not None:
                 dist = dists.iloc[0][my_vars.DIST]
-                # print("-------")
-                # print("dist", dist)
-                # print("-------")
-                # print("updated?", is_closest)
+                if dist == 0:
+                    covering_rule_ids.append(rule_id)
                 if min_dist is not None:
                     # print("to update:", dist, min_dist, abs(dist - min_dist) < my_vars.PRECISION)
                     if is_closest:
                         # print("updated again")
-                        was_updated = is_closest
+                        was_updated = True
                         min_dist = dist
                         min_rule_id = idx
                 else:
                     # print("init update")
                     min_dist = dist
                     min_rule_id = idx
-                    was_updated = is_closest
+                    was_updated = True
             else:
                 raise MyException("No neighbors for rule:\n{}".format(rule))
-        if min_rule_id is not None:
-            return rules[min_rule_id], min_dist, was_updated
-        return None, None, None
+        print(min_dist, min_rule_id, was_updated, covering_rule_ids)
+        # >= 1 rule other than seed rule covers the example
+        if len(covering_rule_ids) > 1:
+            # {number of features: [rule id 1, ...]}
+            features_per_rule = {}
+            for other_rule_id in covering_rule_ids:
+                other_features = my_vars.all_rules[other_rule_id].size
+                features_per_rule.setdefault(other_features, []).append(other_rule_id)
+            print("features per rule", features_per_rule)
+            sorted_features = sorted(features_per_rule)
+            # Choose from list of rules with fewest features
+            rules_by_features = sorted_features[0]
+            # Tie-breaker is necessary as there are >= 2 rule covering the example
+            if len(features_per_rule[rules_by_features]) > 1:
+                print("tie breaker")
+                print("rule(s) with fewest features", rules_by_features)
+                rule_ids_with_min_features = features_per_rule[rules_by_features]
+                # Random selection
+                if len(rule_ids_with_min_features) > 1:
+                    selected_rule_id = random.choice(rule_ids_with_min_features)
+                    print("random choice:", selected_rule_id)
+                else:
+                    # Occam's razor
+                    print("occam's")
+                    selected_rule_id = rule_ids_with_min_features[rules_by_features]
+            else:
+                print("only 1 covering rule")
+                # Only 1 covering rule
+                selected_rule_id = features_per_rule[rules_by_features][0]
+                min_dist = 0
+            was_updated = True
+            print("pick rule with id", selected_rule_id)
+            selected_rule = my_vars.all_rules[selected_rule_id]
+            return selected_rule, min_dist, was_updated
+        else:
+            print("no tie breaker")
+            print("#rules", len(rules))
+            print(min_rule_id, min_dist)
+            if min_dist is not None:
+                return my_vars.all_rules[min_rule_id], min_dist, was_updated
+            return None, None, None
     except MyException:
         return None, None, None
 
@@ -805,8 +888,9 @@ def evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, counts, mi
     for example_id, example in df.iterrows():
         print("Potentially update nearest rule for example {}:\n{}\n{}"
               .format(example.name, "------------------------------------", example))
+
         _, new_dist, is_closest = find_nearest_rule([new_rule], example, class_col_name, counts, min_max, classes,
-                                        my_vars.examples_covered_by_rule)
+                                                    my_vars.examples_covered_by_rule)
         if new_dist is not None:
             print("current min value", my_vars.closest_rule_per_example[example_id].dist)
             print("new dist", new_dist)
@@ -930,8 +1014,8 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_
 
     Parameters
     ----------
-    example: pd.Series - nearest example to a rule.
-    rule: pd.Series - actual label of the rule.
+    example: pd.Series - nearest example to a rule
+    rule: pd.Series - respective rule
     positive_class: str - name of the class label considered as true positive
     class_col_name: str - name of the column in the series holding the class label
     conf_matrix: dict - confusion matrix holding a set of example IDs for my_vars.TP/TN/FP/FN
@@ -956,17 +1040,17 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_
     if true == positive_class:
         if predicted == true:
             conf_matrix[my_vars.TP].add(predicted_id)
-            # print("pred: {} <-> true: {} -> tp".format(predicted, true))
+            print("pred: {} <-> true: {} -> tp".format(predicted, true))
         else:
             conf_matrix[my_vars.FN].add(predicted_id)
-            # print("pred: {} <-> true: {} -> fn".format(predicted, true))
+            print("pred: {} <-> true: {} -> fn".format(predicted, true))
     else:
         if predicted == true:
             conf_matrix[my_vars.TN].add(predicted_id)
-            # print("pred: {} <-> true: {} -> tn".format(predicted, true))
+            print("pred: {} <-> true: {} -> tn".format(predicted, true))
         else:
             conf_matrix[my_vars.FP].add(predicted_id)
-            # print("pred: {} <-> true: {} -> fp".format(predicted, true))
+            print("pred: {} <-> true: {} -> fp".format(predicted, true))
     return conf_matrix
 
 
@@ -1055,6 +1139,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
             improved = True
             best_example_id = example_id
             best_conf_matrix = current_conf_matrix
+            my_vars.all_rules[best_generalization.name] = best_generalization
             print("closest")
             print(current_closest_rule)
             best_closest_rule_dist = current_closest_rule
@@ -1139,6 +1224,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
 
     Parameters
     ----------
+    df: pd.DataFrame - examples
     neighbors: pd.DataFrame - nearest examples for <rule>
     rule: pd.Series - rule whose effect on the F1 score should be evaluated
     rules: list of pd.Series - list of all rules in the rule set RS
@@ -1181,6 +1267,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 print("{} >= {}".format(current_f1, f1))
                 best_f1 = current_f1
                 improved = True
+                my_vars.all_rules[generalized_rule.name] = generalized_rule
                 print("improvement!")
                 if iteration == 0:
                     print("replace rule!!!")
@@ -1266,7 +1353,7 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
     print("data types", dtypes)
     for col_name, col_val in rule.iteritems():
         # Only numeric features - they're stored in a tuple
-        if isinstance(col_val, tuple):
+        if isinstance(col_val, Bounds):
             lower_rule, upper_rule = col_val
             print("lower: {} upper: {}".format(lower_rule, upper_rule))
             print("neighbors")
@@ -1289,6 +1376,7 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
                 new_upper = 0.5 * (upper_example - upper_rule)
             rule[col_name] = (lower_rule - new_lower, upper_rule + new_upper)
             print("rule after extension of current column:\n{}".format(rule))
+    my_vars.all_rules[rule.name] = rule
     return rule
 
 
