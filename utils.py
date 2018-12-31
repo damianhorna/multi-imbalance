@@ -351,6 +351,7 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
 
     Raises
     ------
+    MyException: if invalid option for <label_type> is supplied
 
     Returns
     -------
@@ -511,7 +512,7 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
     try:
         was_updated = False
         covering_rule_ids = []
-        for idx, rule in enumerate(rules):
+        for rule in rules:
             rule_id = rule.name
             # print("rule id", rule_id)
             # print("Now checking rule with ID {}:\n{}".format(rule_id, rule))
@@ -544,11 +545,11 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
                         # print("updated again")
                         was_updated = True
                         min_dist = dist
-                        min_rule_id = idx
+                        min_rule_id = rule_id
                 else:
                     # print("init update")
                     min_dist = dist
-                    min_rule_id = idx
+                    min_rule_id = rule_id
                     was_updated = True
             else:
                 raise MyException("No neighbors for rule:\n{}".format(rule))
@@ -590,7 +591,7 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             print("no tie breaker")
             print("#rules", len(rules))
             print(min_rule_id, min_dist)
-            if min_dist is not None:
+            if min_rule_id is not None:
                 return my_vars.all_rules[min_rule_id], min_dist, was_updated
             return None, None, None
     except MyException:
@@ -1100,7 +1101,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     ----------
     neighbors: pd.DataFrame - nearest examples for <rule>
     rule: pd.Series - rule whose effect on the F1 score should be evaluated
-    rules: list of pd.Series - list of all rules in the rule set RS
+    rules: list of pd.Series - list of all rules in the rule set RS and <rule> is at the end in that list
     class_col_name: str - name of the column in the series holding the class label
     counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
     min_max: pd.DataFrame - min and max value per numeric feature.
@@ -1151,73 +1152,75 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     if improved:
         print("improvement!")
         # Replace old rule with new one
-        for idx, r in enumerate(rules):
-            if rule.name == r.name:
-                rules[idx] = best_generalization
-                print("updated best rule per example for example {}:\n{}"
-                      .format(best_example_id, (r.name, best_closest_rule_dist[best_example_id])))
-                print(best_closest_rule_dist)
-                my_vars.closest_rule_per_example = best_closest_rule_dist
-                print("closest rule per example updated", my_vars.closest_rule_per_example)
-                my_vars.closest_examples_per_rule = best_closest_examples_per_rule
-                print("closest examples per rule updated", my_vars.closest_examples_per_rule)
-                my_vars.examples_covered_by_rule = best_covered
-                print("covered examples by rule updated", my_vars.examples_covered_by_rule)
-                my_vars.conf_matrix = best_conf_matrix
-                rule_hash = compute_hash(best_generalization)
-                # Remove duplicate rules
-                if rule_hash in my_vars.unique_rules:
-                    # 2 rules have now become identical
-                    existing_rule_id = my_vars.unique_rules[rule_hash]
-                    if rule.name != existing_rule_id:
-                        print("Duplicate rules!!!!")
-                        print("rules before deletion:")
-                        print(rules)
-                        print("Existing rule: \n{}".format(existing_rule_id))
-                        print("best rule according to add_best_rule():\n{}".format(best_generalization))
-                        del rules[idx]
-                        print("rules after deletion")
-                        print(rules)
-                        # my_vars.seed_rule_example[existing_rule_id] = best_example_id
-                        print("delete seed rule_example entry: {}:{} "
-                              .format(rule.name, my_vars.seed_rule_example[rule.name]))
-                        old_seed_example_id = my_vars.seed_rule_example[rule.name]
-                        del my_vars.seed_rule_example[rule.name]
-                        print("remaining entries:", my_vars.seed_rule_example)
+        # for idx, r in enumerate(rules):
+        # <rule> is the last rule in <rules>
+        idx = -1
+        # if rule.name == rules[idx].name:
+        rules[idx] = best_generalization
+        print("updated best rule per example for example {}:\n{}"
+              .format(best_example_id, (rule.name, best_closest_rule_dist[best_example_id])))
+        print(best_closest_rule_dist)
+        my_vars.closest_rule_per_example = best_closest_rule_dist
+        print("closest rule per example updated", my_vars.closest_rule_per_example)
+        my_vars.closest_examples_per_rule = best_closest_examples_per_rule
+        print("closest examples per rule updated", my_vars.closest_examples_per_rule)
+        my_vars.examples_covered_by_rule = best_covered
+        print("covered examples by rule updated", my_vars.examples_covered_by_rule)
+        my_vars.conf_matrix = best_conf_matrix
+        rule_hash = compute_hash(best_generalization)
+        # Remove duplicate rules
+        if rule_hash in my_vars.unique_rules:
+            # 2 rules have now become identical
+            existing_rule_id = my_vars.unique_rules[rule_hash]
+            if rule.name != existing_rule_id:
+                print("Duplicate rules!!!!")
+                print("rules before deletion:")
+                print(rules)
+                print("Existing rule: \n{}".format(existing_rule_id))
+                print("best rule according to add_best_rule():\n{}".format(best_generalization))
+                del rules[idx]
+                print("rules after deletion")
+                print(rules)
+                # my_vars.seed_rule_example[existing_rule_id] = best_example_id
+                print("delete seed rule_example entry: {}:{} "
+                      .format(rule.name, my_vars.seed_rule_example[rule.name]))
+                old_seed_example_id = my_vars.seed_rule_example[rule.name]
+                del my_vars.seed_rule_example[rule.name]
+                print("remaining entries:", my_vars.seed_rule_example)
 
-                        print("delete seed example_rule entry:", my_vars.seed_example_rule[old_seed_example_id])
-                        del my_vars.seed_example_rule[old_seed_example_id]
-                        print("remaining entries:", my_vars.seed_example_rule)
+                print("delete seed example_rule entry:", my_vars.seed_example_rule[old_seed_example_id])
+                del my_vars.seed_example_rule[old_seed_example_id]
+                print("remaining entries:", my_vars.seed_example_rule)
 
-                        # print("before updating examples covered by rule:", my_vars.examples_covered_by_rule)
-                        # print("after update:", my_vars.examples_covered_by_rule)
-                        print("updating which rule covers which examples:", my_vars.examples_covered_by_rule)
-                        covered = my_vars.examples_covered_by_rule[rule.name]
-                        del my_vars.examples_covered_by_rule[rule.name]
-                        print("currently covered by rule {}: {}".format(rule.name, covered))
-                        print("rule that covers it now:", existing_rule_id)
-                        my_vars.examples_covered_by_rule[existing_rule_id] = \
-                            my_vars.examples_covered_by_rule[existing_rule_id].union(covered)
+                # print("before updating examples covered by rule:", my_vars.examples_covered_by_rule)
+                # print("after update:", my_vars.examples_covered_by_rule)
+                print("updating which rule covers which examples:", my_vars.examples_covered_by_rule)
+                covered = my_vars.examples_covered_by_rule[rule.name]
+                del my_vars.examples_covered_by_rule[rule.name]
+                print("currently covered by rule {}: {}".format(rule.name, covered))
+                print("rule that covers it now:", existing_rule_id)
+                my_vars.examples_covered_by_rule[existing_rule_id] = \
+                    my_vars.examples_covered_by_rule[existing_rule_id].union(covered)
 
-                        print("updated:", my_vars.examples_covered_by_rule)
-                        print("closest examples per rule before update:", my_vars.closest_examples_per_rule)
-                        affected_examples = my_vars.closest_examples_per_rule.get(rule.name, set())
-                        print("affected examples that were closest to the deleted rule:", affected_examples)
-                        # if existing_rule_id in my_vars.closest_examples_per_rule:
-                        my_vars.closest_examples_per_rule[existing_rule_id] = \
-                            my_vars.closest_examples_per_rule.setdefault(existing_rule_id, set())\
-                            .union(affected_examples)
-                        # else:
-                        #     my_vars.closest_examples_per_rule[existing_rule_id] = affected_examples
-                        del my_vars.closest_examples_per_rule[rule.name]
-                        print("closest examples per rule after update:", my_vars.closest_examples_per_rule)
-                        print("closest rule before update:", my_vars.closest_rule_per_example)
-                        # Distance doesn't change, but the rule
-                        for example_id in affected_examples:
-                            old_id, dist = my_vars.closest_rule_per_example[example_id]
-                            my_vars.closest_rule_per_example[example_id] = Data(rule_id=existing_rule_id, dist=dist)
-                        print("closest rule after update:", my_vars.closest_rule_per_example)
-                break
+                print("updated:", my_vars.examples_covered_by_rule)
+                print("closest examples per rule before update:", my_vars.closest_examples_per_rule)
+                affected_examples = my_vars.closest_examples_per_rule.get(rule.name, set())
+                print("affected examples that were closest to the deleted rule:", affected_examples)
+                # if existing_rule_id in my_vars.closest_examples_per_rule:
+                my_vars.closest_examples_per_rule[existing_rule_id] = \
+                    my_vars.closest_examples_per_rule.setdefault(existing_rule_id, set())\
+                    .union(affected_examples)
+                # else:
+                #     my_vars.closest_examples_per_rule[existing_rule_id] = affected_examples
+                del my_vars.closest_examples_per_rule[rule.name]
+                print("closest examples per rule after update:", my_vars.closest_examples_per_rule)
+                print("closest rule before update:", my_vars.closest_rule_per_example)
+                # Distance doesn't change, but the rule
+                for example_id in affected_examples:
+                    old_id, dist = my_vars.closest_rule_per_example[example_id]
+                    my_vars.closest_rule_per_example[example_id] = Data(rule_id=existing_rule_id, dist=dist)
+                print("closest rule after update:", my_vars.closest_rule_per_example)
+            # break
     return improved, rules
 
 
@@ -1435,8 +1438,11 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
     while keep_running:
         improved = False
-        for rule_idx, rule in enumerate(rules):
+
+        for rule_idx, rule in enumerate(list(rules)):
             rule_id = rule.name
+            rule = rules.popleft()
+            rules.append(rule)
             print("rule id", rule_id)
             seed_id = my_vars.seed_rule_example[rule_id]
             print("seed id", seed_id)
@@ -1448,9 +1454,8 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
             print("seed label:", seed_label)
             # Minority class label
             if seed_label == minority_label:
-                neighbors, dists = find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes)
+                neighbors, dists, _ = find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes)
                 # Neighbors exist
-                # TODO: what to do with rule in this case -> final or not?
                 if neighbors is not None:
                     if seed_tag == my_vars.SAFE:
                         improved, generalized_rules = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
@@ -1463,16 +1468,15 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         if iteration != 0:
                             extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
                             final_rules.append(extended_rule)
-                else:
-                    final_rules.append(rule)
+                # else:
+                #     final_rules.append(rule)
             # Majority label
             else:
                 n = k
                 if seed_tag == my_vars.SAFE:
                     n = 1
-                neighbors, dists = find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes)
+                neighbors, dists, _ = find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes)
                 # Neighbors exist
-                # TODO: what to do with rule in this case -> final or not?
                 if neighbors is not None:
                     improved, generalized_rules = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
                                                                     counts, min_max, classes)
@@ -1498,9 +1502,9 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                             # # print(rules)
                         else:
                             final_rules.append(rule)
-                else:
-                    example_id = my_vars.seed_rule_example[rule_id]
-                    df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx)
+                # else:
+                #     example_id = my_vars.seed_rule_example[rule_id]
+                #     df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx)
 
         if not improved:
             keep_running = False
