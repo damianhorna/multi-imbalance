@@ -21,7 +21,7 @@ FN = "fn"
 OPPOSITE_LABEL_TO_RULE = "opposite"
 ALL_LABELS = "all"
 SAME_LABEL_AS_RULE = "same"
-# {example ei: rule ri for which ei is the seed}
+# {example ei: set(rule ri for which ei is the seed)}
 seed_example_rule = {}
 # {rule ri: example ei is seed for ri}
 seed_rule_example = {}

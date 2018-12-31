@@ -134,14 +134,14 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     my_vars.latest_id = rules_df.shape[0] - 1
     # 1 rule per example
     assert(rules_df.shape[0] == df.shape[0])
-    my_vars.seed_example_rule = dict((x, x) for x in range(rules_df.shape[0]))
+    my_vars.seed_example_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     my_vars.seed_rule_example = dict((x, x) for x in range(rules_df.shape[0]))
     # Don't store that seeds are covered by initial rules - that's given implicitly
     # my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     rules = []
-    for i, rule in rules_df.iterrows():
+    for rule_id, rule in rules_df.iterrows():
         rules.append(rule)
-        my_vars.all_rules[rule.name] = rule
+        my_vars.all_rules[rule_id] = rule
     tagged = add_tags(df, k, rules, class_col_name, counts, min_max, classes)
     rules = deque(rules)
     return tagged, rules
@@ -517,16 +517,16 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             # print("rule id", rule_id)
             # print("Now checking rule with ID {}:\n{}".format(rule_id, rule))
             examples = len(examples_covered_by_rule.get(rule.name, set()))
-            # print("#covered examples by rule:", examples_covered_by_rule.get(rule.name, {}))
-            # > 0 because seeds aren't stored in this dict, so we implicitly add 1
+            # > 0 (instead of 1) because seeds aren't stored in this dict, so we implicitly add 1
             covers_multiple_examples = True if examples > 0 else False
-            print("is rule {} seed for example {}? {}".format(rule_id, example.name, my_vars.seed_example_rule.get(example.name, set()) == rule_id))
+            print("is rule {} seed for example {}? {}".format(rule_id, example.name, rule_id in my_vars.seed_example_rule.get(example.name, set())))
             print("does rule {} cover multiple examples? {}".format(rule_id, covers_multiple_examples))
             if covers_multiple_examples:
                 print("covered:", examples_covered_by_rule.get(rule.name, set()))
 
             # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
-            if not covers_multiple_examples and my_vars.seed_example_rule[example.name] == rule_id:
+            # if not covers_multiple_examples and my_vars.seed_example_rule[example.name] == rule_id:
+            if not covers_multiple_examples and rule_id in my_vars.seed_example_rule.get(example.name, set()):
                 # Ignore rule as it's the seed for the example
                 print("rule {} is seed for example {}".format(rule_id, example.name))
                 continue
@@ -1308,6 +1308,13 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     print("original rule id:", generalized_rule.name)
                     new_rule_id = my_vars.latest_id
                     generalized_rule.name = new_rule_id
+                    print("before updating seed: example_rule:", my_vars.seed_example_rule)
+                    my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
+                    print("after updating seed: example_rule:", my_vars.seed_example_rule)
+                    print("before updating seed: rule_example_rule:", my_vars.seed_rule_example)
+                    my_vars.seed_rule_example[new_rule_id] = example_id
+                    print("after updating seed: rule_example_rule:", my_vars.seed_rule_example)
+
                     print("new rule id:", generalized_rule.name)
                     print("added rule for example {}:\n{}"
                           .format(example_id, (generalized_rule.name, current_closest_rule[example_id])))
@@ -1471,10 +1478,13 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         if iteration != 0:
                             extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
                             final_rules.append(extended_rule)
+                            # Delete rule
+                            removed = rules.pop()
+                            print("removed rule after extension:\n{}".format(removed))
                 else:
                     # Delete rule
                     removed = rules.pop()
-                    print("removed rule:\n{}".format(removed))
+                    print("removed rule no neighbors minority:\n{}".format(removed))
 
             # Majority label
             else:
@@ -1491,7 +1501,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         if iteration == 0:
                             # # Delete rule and corresponding seed (=noisy example)
                             example_id = my_vars.seed_rule_example[rule_id]
-                            df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx)
+                            df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
                             # print("noise!")
                             # print("delete example id", example_id)
                             # del my_vars.seed_rule_example[rule_id]
@@ -1508,10 +1518,13 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                             # # print(rules)
                         else:
                             final_rules.append(rule)
+                            # Delete rule
+                            removed = rules.pop()
+                            print("removed rule after adding majority final rule:\n{}".format(removed))
                 else:
                     # Delete rule
                     removed = rules.pop()
-                    print("removed rule:\n{}".format(removed))
+                    print("removed rule no neighbors majority:\n{}".format(removed))
                 #     example_id = my_vars.seed_rule_example[rule_id]
                 #     df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx)
             iteration += 1
@@ -1520,7 +1533,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     return final_rules
 
 
-def treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx):
+def treat_majority_example_as_noise(df, example_id, rules, rule_id):
     """
     Deletes a noisy majority example and the rule for which it's a seed and updates corresponding statistics.
 
@@ -1529,8 +1542,7 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx):
     df: pd.dataFrame - dataset
     example_id: int - id of row in <dataset> to be removed
     rules: list of pd.Series - list of rules
-    rule_id: int - id of rule for which <example_id> is the seed
-    rule_idx: int - index in <rules> of rule for which <example_id> is the seed
+    rule_id: int - id of rule for which <example_id> is the seed - it's at the last position in <rules>
 
     Returns
     -------
@@ -1555,7 +1567,9 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx):
         del my_vars.seed_example_rule[example_id]
     # print("rules before deletion:")
     print(rules)
-    del rules[rule_idx]
+    # Delete rule
+    removed = rules.pop()
+    print("removed rule in majority noisy label:\n{}".format(removed))
     print("rules after deletion:")
     print(rules)
     return df, rules
