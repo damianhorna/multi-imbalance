@@ -1282,18 +1282,19 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 print("improvement!")
                 if iteration == 0:
                     print("replace rule!!!")
-                    # Replace old rule with new one
-                    for idx, r in enumerate(rules):
-                        if rule.name == r.name:
-                            rules[idx] = generalized_rule
-                            print("updated best rule per example for example {}:\n{}"
-                                  .format(example_id, (r.name, current_closest_rule[example_id])))
-                            print(current_closest_rule)
-                            my_vars.closest_rule_per_example = current_closest_rule
-                            my_vars.closest_examples_per_rule = current_closest_examples
-                            my_vars.conf_matrix = current_conf_matrix
-                            my_vars.examples_covered_by_rule = current_covered
-                            break
+                    idx = -1
+                    # Replace old rule with new one - old rule is at the end of the list
+                    # for idx, r in enumerate(rules):
+                    #     if rule.name == r.name:
+                    rules[idx] = generalized_rule
+                    print("updated best rule per example for example {}:\n{}"
+                          .format(example_id, (rules[idx].name, current_closest_rule[example_id])))
+                    print(current_closest_rule)
+                    my_vars.closest_rule_per_example = current_closest_rule
+                    my_vars.closest_examples_per_rule = current_closest_examples
+                    my_vars.conf_matrix = current_conf_matrix
+                    my_vars.examples_covered_by_rule = current_covered
+                    # break
                 else:
                     # Add generalized rule instead of replacing the original one
                     print("add rule!!!")
@@ -1438,10 +1439,12 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
     while keep_running:
         improved = False
-
-        for rule_idx, rule in enumerate(list(rules)):
-            rule_id = rule.name
+        while len(rules) > 0:
             rule = rules.popleft()
+            # for rule_idx, rule in enumerate(list(rules)):
+            rule_id = rule.name
+            # rule = rules.popleft()
+            # Add current rule at the end
             rules.append(rule)
             print("rule id", rule_id)
             seed_id = my_vars.seed_rule_example[rule_id]
@@ -1468,8 +1471,11 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         if iteration != 0:
                             extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
                             final_rules.append(extended_rule)
-                # else:
-                #     final_rules.append(rule)
+                else:
+                    # Delete rule
+                    removed = rules.pop()
+                    print("removed rule:\n{}".format(removed))
+
             # Majority label
             else:
                 n = k
@@ -1502,13 +1508,15 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                             # # print(rules)
                         else:
                             final_rules.append(rule)
-                # else:
+                else:
+                    # Delete rule
+                    removed = rules.pop()
+                    print("removed rule:\n{}".format(removed))
                 #     example_id = my_vars.seed_rule_example[rule_id]
                 #     df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id, rule_idx)
-
+            iteration += 1
         if not improved:
             keep_running = False
-        iteration += 1
     return final_rules
 
 
