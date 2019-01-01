@@ -536,7 +536,7 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             # if not covers_multiple_examples and my_vars.seed_example_rule[example.name] == rule_id:
             if not covers_multiple_examples and rule_id in my_vars.seed_example_rule.get(example.name, set()):
                 # Ignore rule as it's the seed for the example
-                # print("rule {} is seed for example {}".format(rule_id, example.name))
+                # print("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
                 continue
             neighbors, dists, is_closest = \
                 find_nearest_examples(example_df, 1, rule, class_col_name, counts, min_max, classes,
