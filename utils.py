@@ -622,6 +622,8 @@ def most_specific_generalization(example, rule, class_col_name, dtypes):
     Generalized rule
 
     """
+    # Without a deep copy, any changes to the returned rule, will also affect <rule>, i.e. the original rule
+    rule = copy.deepcopy(rule)
     for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
         if col_name == class_col_name:
             continue
@@ -1182,6 +1184,9 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     (that isn't updated), it'll be ignored.
 
     """
+    # Without deep copy, a shallow copy of <rules> is used, hence changing the returned rules would change the original
+    # rules
+    rules = copy.deepcopy(rules)
     best_f1 = f1
     best_generalization = rule
     improved = False
@@ -1332,6 +1337,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
             print("\ngeneralize rule for: {}".format(example_id))
             print("-------------------------")
             # print("old rule:\n{}".format(rule))
+            print("id of original rule:", rule.name)
             generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
             # print("generalized rule:\n{}".format(generalized_rule))
             current_f1, current_conf_matrix, current_closest_rule, current_closest_examples, current_covered = \
@@ -1352,7 +1358,6 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 print("{} >= {}".format(current_f1, f1))
                 best_f1 = current_f1
                 improved = True
-                my_vars.all_rules[generalized_rule.name] = generalized_rule
                 print("improvement!")
                 if iteration == 0:
                     print("replace rule!!!")
@@ -1361,6 +1366,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     # for idx, r in enumerate(rules):
                     #     if rule.name == r.name:
                     rules[idx] = generalized_rule
+                    my_vars.all_rules[generalized_rule.name] = generalized_rule
                     print("updated best rule per example for example {}:\n{}"
                           .format(example_id, (rules[idx].name, current_closest_rule[example_id])))
                     print(current_closest_rule)
@@ -1379,9 +1385,11 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     my_vars.examples_covered_by_rule = current_covered
 
                     my_vars.latest_rule_id += 1
+                    print("rule id", rule.name)
                     print("original rule id:", generalized_rule.name)
                     new_rule_id = my_vars.latest_rule_id
                     generalized_rule.name = new_rule_id
+                    print("rule id", rule.name)
 
                     print("before adding unique hash:", my_vars.unique_rules)
                     new_hash = compute_hashable_key(generalized_rule)
@@ -1407,6 +1415,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             is_added = False
                     print("after adding unique hash:", my_vars.unique_rules)
                     if is_added:
+                        my_vars.all_rules[generalized_rule.name] = generalized_rule
                         print("before updating seed: example_rule:", my_vars.seed_example_rule)
                         my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
                         print("after updating seed: example_rule:", my_vars.seed_example_rule)
@@ -1424,6 +1433,9 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         my_vars.all_rules[generalized_rule.name] = generalized_rule
 
                         rules.append(generalized_rule)
+                    else:
+                        # Rule was a duplicate, so reset the last ID
+                        my_vars.latest_rule_id -= 1
 
                 iteration += 1
 
