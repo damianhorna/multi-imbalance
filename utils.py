@@ -84,9 +84,9 @@ def extract_initial_rules(df, class_col_name):
     Creates the initial rule set for a given dataset, which corresponds to the examples in the dataset, i.e.
     lower and upper bound (of numeric) features are the same. Note that for every feature in the dataset,
     two values are stored per rule, namely lower and upper bound. For example, if we have
-    A   B ...                                                   A        B ...
-    ---------- in the dataset, the corresponding rule stores:  ---------------
-    1.0 x ...                                                  (1.0,1.0) x
+    A   B ...                                                   A                           B ...
+    ---------- in the dataset, the corresponding rule stores:  ----------------------------------
+    1.0 x ...                                                  Bounds(lower=1.0, upper=1.0) x
 
     Parameters
     ----------
@@ -105,8 +105,9 @@ def extract_initial_rules(df, class_col_name):
             continue
         col = df[col_name]
         if is_numeric_dtype(col):
-            # Assuming the value is x, we now store tuples of (x, x) per row
-            rules[col_name] = [tuple([row[col_name], row[col_name]]) for _, row in df.iterrows()]
+            # Assuming the value is x, we now store named tuples of Bounds(lower=x, upper=x) per row
+            # rules[col_name] = [tuple([row[col_name], row[col_name]]) for _, row in df.iterrows()]
+            rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name]) for _, row in df.iterrows()]
     return rules
 
 
@@ -140,6 +141,19 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     # my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     rules = []
     for rule_id, rule in rules_df.iterrows():
+        # TODO: convert tuples into Bounds
+        # converted_rule = pd.Series(name=rule_id)
+        # for feat_name, val in rule.iteritems():
+        #     if isinstance(val, Bounds):
+        #         print("convert {} to Bounds".format(val))
+        #         lower, upper = val
+        #         converted_rule[feat_name] = Bounds(lower=lower, upper=upper)
+        #         print(converted_rule[feat_name])
+        #         print(isinstance(converted_rule[feat_name], Bounds))
+        #     else:
+        #         converted_rule[feat_name] = val
+        # print("converted rule")
+        # print(converted_rule)
         rules.append(rule)
         my_vars.all_rules[rule_id] = rule
     tagged = add_tags(df, k, rules, class_col_name, counts, min_max, classes)
@@ -621,10 +635,10 @@ def most_specific_generalization(example, rule, class_col_name, dtypes):
             elif is_numeric_dtype(example_dtype):
                 if example_val > rule_val[1]:
                     # print("new upper limit", (rule_val[0], example_val))
-                    rule[col_name] = (rule_val[0], example_val)
+                    rule[col_name] = Bounds(lower=rule_val[0], upper=example_val)
                 elif example_val < rule_val[0]:
                     # print("new lower limit", (example_val, rule_val[1]))
-                    rule[col_name] = (example_val, rule_val[1])
+                    rule[col_name] = Bounds(lower=example_val, upper=rule_val[1])
                     # print("updated:", rule)
     return rule
 
@@ -1223,8 +1237,13 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
         rule_hash = compute_hashable_key(best_generalization)
         # Remove duplicate rules
         if rule_hash in my_vars.unique_rules:
+            print("possible new rule")
+            print(best_generalization)
             # Hash collisions might occur, so there could be multiple rules with the same hash value
             existing_rule_ids = my_vars.unique_rules[rule_hash]
+            print("existing rule ids", existing_rule_ids)
+            for rid in existing_rule_ids:
+                print("possible duplicate:", my_vars.all_rules[rid])
             existing_rule_id = is_duplicate(best_generalization, existing_rule_ids)
             # Duplicate exists
             if existing_rule_id != -1:
@@ -1368,33 +1387,44 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     # TODO: add hash of new rule
                     new_hash = compute_hashable_key(generalized_rule)
 
+                    is_added = True
                     if new_hash not in my_vars.unique_rules:
-                        my_vars.unique_rules[new_hash] = new_rule_id
+                        my_vars.unique_rules[new_hash] = {new_rule_id}
                     else:
                         print("hash collision when adding new rule!")
-                        print("existing rule:")
-                        print(my_vars.all_rules[my_vars.unique_rules[new_hash]])
                         print("new rule:")
                         print(generalized_rule)
+                        # Hash collisions might occur, so there could be multiple rules with the same hash value
+                        existing_rule_ids = my_vars.unique_rules[new_hash]
+                        existing_rule_id = is_duplicate(generalized_rule, existing_rule_ids)
+                        print("existing rule:")
+                        print(my_vars.all_rules[my_vars.all_rules[existing_rule_id]])
+                        # No duplicate exists
+                        if existing_rule_id == -1:
+                            print("added new rule")
+                            my_vars.unique_rules[new_hash].add(new_rule_id)
+                        else:
+                            print("duplicate exists!, so ignore the new rule")
+                            is_added = False
                     print("after adding unique hash:", my_vars.unique_rules)
+                    if is_added:
+                        print("before updating seed: example_rule:", my_vars.seed_example_rule)
+                        my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
+                        print("after updating seed: example_rule:", my_vars.seed_example_rule)
+                        print("before updating seed: rule_example_rule:", my_vars.seed_rule_example)
+                        my_vars.seed_rule_example[new_rule_id] = example_id
+                        print("after updating seed: rule_example_rule:", my_vars.seed_rule_example)
 
-                    print("before updating seed: example_rule:", my_vars.seed_example_rule)
-                    my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
-                    print("after updating seed: example_rule:", my_vars.seed_example_rule)
-                    print("before updating seed: rule_example_rule:", my_vars.seed_rule_example)
-                    my_vars.seed_rule_example[new_rule_id] = example_id
-                    print("after updating seed: rule_example_rule:", my_vars.seed_rule_example)
+                        print("new rule id:", generalized_rule.name)
+                        print("added rule for example {}:\n{}"
+                              .format(example_id, (generalized_rule.name, current_closest_rule[example_id])))
+                        print("covered:", my_vars.examples_covered_by_rule)
+                        print("closest rule per example", my_vars.closest_rule_per_example)
+                        print("closest examples per rule", my_vars.closest_examples_per_rule)
+                        print("conf matrix", my_vars.conf_matrix)
+                        my_vars.all_rules[generalized_rule.name] = generalized_rule
 
-                    print("new rule id:", generalized_rule.name)
-                    print("added rule for example {}:\n{}"
-                          .format(example_id, (generalized_rule.name, current_closest_rule[example_id])))
-                    print("covered:", my_vars.examples_covered_by_rule)
-                    print("closest rule per example", my_vars.closest_rule_per_example)
-                    print("closest examples per rule", my_vars.closest_examples_per_rule)
-                    print("conf matrix", my_vars.conf_matrix)
-                    my_vars.all_rules[generalized_rule.name] = generalized_rule
-
-                    rules.append(generalized_rule)
+                        rules.append(generalized_rule)
 
                 iteration += 1
 
