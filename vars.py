@@ -36,5 +36,5 @@ conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
 unique_rules = {}
 # {ID of rule ri: rule ri (=pd.Series)}
 all_rules = {}
-latest_id = 0
+latest_rule_id = 0
 minority_class = ""
