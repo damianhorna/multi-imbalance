@@ -1384,7 +1384,6 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     generalized_rule.name = new_rule_id
 
                     print("before adding unique hash:", my_vars.unique_rules)
-                    # TODO: add hash of new rule
                     new_hash = compute_hashable_key(generalized_rule)
 
                     is_added = True
@@ -1397,14 +1396,14 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         # Hash collisions might occur, so there could be multiple rules with the same hash value
                         existing_rule_ids = my_vars.unique_rules[new_hash]
                         existing_rule_id = is_duplicate(generalized_rule, existing_rule_ids)
-                        print("existing rule:")
-                        print(my_vars.all_rules[my_vars.all_rules[existing_rule_id]])
                         # No duplicate exists
                         if existing_rule_id == -1:
-                            print("added new rule")
+                            print("hash collision, but they are different rules")
                             my_vars.unique_rules[new_hash].add(new_rule_id)
                         else:
                             print("duplicate exists!, so ignore the new rule")
+                            print("existing rule:")
+                            print(my_vars.all_rules[my_vars.unique_rules[existing_rule_id]])
                             is_added = False
                     print("after adding unique hash:", my_vars.unique_rules)
                     if is_added:
@@ -1683,7 +1682,7 @@ def compute_hashable_key(series):
     cp = series.copy()
     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
     cp.name = 1
-    return str(cp)
+    return hash(str(cp))
     # print("string for hashing:", tuple(cp))
     # hash_val = 0
     # for rule_id, val in cp.iteritems():
