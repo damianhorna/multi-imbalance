@@ -32,7 +32,7 @@ closest_rule_per_example = {}
 # {rule ri: set(example ei, example ej)}
 closest_examples_per_rule = {}
 conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
-# {hash of rule ri: ID of rule ri}
+# {hash of rule ri: set(ID of rule ri, ID of rule rj)}
 unique_rules = {}
 # {ID of rule ri: rule ri (=pd.Series)}
 all_rules = {}

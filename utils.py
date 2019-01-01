@@ -1086,6 +1086,66 @@ def f1(conf_matrix):
     return f1
 
 
+def is_duplicate(new_rule, existing_rule_ids):
+    """
+
+    Parameters
+    ----------
+    new_rule: pd.Series - new rule which is a potential duplicate rule
+    existing_rule_ids: list of int - rule IDs that have the same hash as <new_rule> and are thus potential duplicates
+
+    Returns
+    -------
+    int.
+    ID of the duplicate rule or -1 otherwise.
+
+    """
+    # Check potential rules value by value if they are identical
+    duplicate_rule_id = -1
+    # Since rule ID doesn't exist for the hashed rule, there might be a rule with a different ID but same values
+    if new_rule.name not in existing_rule_ids:
+        for rule_id in existing_rule_ids:
+            possible_duplicate = my_vars.all_rules[rule_id]
+            if _are_duplicates(new_rule, possible_duplicate):
+                duplicate_rule_id = possible_duplicate.name
+                break
+    return duplicate_rule_id
+
+
+def _are_duplicates(rule_i, rule_j):
+    """Returns True if two rules are duplicates (= all values of the rules are identical) of each other and
+    False otherwise"""
+    are_identical = True
+    # Same number of features in both rules
+    if len(rule_i) == len(rule_j):
+        for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.iteritems(), rule_j.iteritems()):
+            # Same feature
+            if idx_i == idx_j:
+                # Strings
+                if isinstance(val_i, str):
+                    if val_i != val_j:
+                        are_identical = False
+                        break
+                # Tuples
+                elif isinstance(val_i, Bounds):
+                    lower_i, upper_i = val_i
+                    lower_j, upper_j = val_j
+                    if abs(lower_i - lower_j) > my_vars.PRECISION or abs(upper_i - upper_j > my_vars.PRECISION):
+                        are_identical = False
+                        break
+                # Numbers
+                else:
+                    if abs(val_i - val_j) > my_vars.PRECISION:
+                        are_identical = False
+                        break
+            else:
+                are_identical = False
+                break
+    else:
+        are_identical = False
+    return are_identical
+
+
 def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
     """
     Implements AddOneBestRule() from the paper, i.e. Algorithm 3.
@@ -1120,7 +1180,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     print("best f1:", best_f1)
     dtypes = neighbors.dtypes
     for example_id, example in neighbors.iterrows():
-        print("generalize rule for:\n{}".format(example))
+        print("generalize rule for example {}".format(example.name))
         generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
         # print("generalized rule:\n{}".format(generalized_rule))
         current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered = \
@@ -1160,16 +1220,18 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
         my_vars.examples_covered_by_rule = best_covered
         # print("covered examples by rule updated", my_vars.examples_covered_by_rule)
         my_vars.conf_matrix = best_conf_matrix
-        rule_hash = compute_hash(best_generalization)
+        rule_hash = compute_hashable_key(best_generalization)
         # Remove duplicate rules
         if rule_hash in my_vars.unique_rules:
-            # 2 rules have now become identical
-            existing_rule_id = my_vars.unique_rules[rule_hash]
-            if rule.name != existing_rule_id:
+            # Hash collisions might occur, so there could be multiple rules with the same hash value
+            existing_rule_ids = my_vars.unique_rules[rule_hash]
+            existing_rule_id = is_duplicate(best_generalization, existing_rule_ids)
+            # Duplicate exists
+            if existing_rule_id != -1:
                 print("Duplicate rules!!!!")
                 print("rules before deletion:")
                 print(rules)
-                print("Existing rule: \n{}".format(existing_rule_id))
+                print("Duplicate rule: \n{}".format(existing_rule_id))
                 print("best rule according to add_best_rule():\n{}".format(best_generalization))
                 del rules[idx]
                 print("rules after deletion")
@@ -1213,7 +1275,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
                     old_id, dist = my_vars.closest_rule_per_example[example_id]
                     my_vars.closest_rule_per_example[example_id] = Data(rule_id=existing_rule_id, dist=dist)
                 print("closest rule after update:", my_vars.closest_rule_per_example)
-            # break
+                # break
     return improved, rules
 
 
@@ -1255,14 +1317,14 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
             # print("generalized rule:\n{}".format(generalized_rule))
             current_f1, current_conf_matrix, current_closest_rule, current_closest_examples, current_covered = \
                 evaluate_f1_temporarily(df, generalized_rule, class_col_name, counts, min_max, classes)
-            print("neighbors before dropping:")
-            print(neighbors)
+            # print("neighbors before dropping:")
+            # print(neighbors)
             # Remove current example
             neighbors.drop(example_id, inplace=True)
-            print("neighbors after dropping:")
-            print(neighbors)
-            print("current f1")
-            print(current_f1)
+            # print("neighbors after dropping:")
+            # print(neighbors)
+            # print("current f1")
+            # print(current_f1)
             print(my_vars.closest_examples_per_rule)
             print(my_vars.closest_rule_per_example)
             print(my_vars.conf_matrix)
@@ -1301,6 +1363,21 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     print("original rule id:", generalized_rule.name)
                     new_rule_id = my_vars.latest_rule_id
                     generalized_rule.name = new_rule_id
+
+                    print("before adding unique hash:", my_vars.unique_rules)
+                    # TODO: add hash of new rule
+                    new_hash = compute_hashable_key(generalized_rule)
+
+                    if new_hash not in my_vars.unique_rules:
+                        my_vars.unique_rules[new_hash] = new_rule_id
+                    else:
+                        print("hash collision when adding new rule!")
+                        print("existing rule:")
+                        print(my_vars.all_rules[my_vars.unique_rules[new_hash]])
+                        print("new rule:")
+                        print(generalized_rule)
+                    print("after adding unique hash:", my_vars.unique_rules)
+
                     print("before updating seed: example_rule:", my_vars.seed_example_rule)
                     my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
                     print("after updating seed: example_rule:", my_vars.seed_example_rule)
@@ -1361,36 +1438,36 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
     """
     neighbors, _, _ = find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
                                             label_type=my_vars.OPPOSITE_LABEL_TO_RULE, only_uncovered_neighbors=True)
-    print("neighbors")
-    print(neighbors)
-    print("rule before extension:\n{}".format(rule))
-    dtypes = rule.apply(type).tolist()
-    print("data types", dtypes)
+    # print("neighbors")
+    # print(neighbors)
+    # print("rule before extension:\n{}".format(rule))
+    # dtypes = rule.apply(type).tolist()
+    # print("data types", dtypes)
     for col_name, col_val in rule.iteritems():
         # Only numeric features - they're stored in a tuple
         if isinstance(col_val, Bounds):
             lower_rule, upper_rule = col_val
-            print("lower: {} upper: {}".format(lower_rule, upper_rule))
-            print("neighbors")
-            print(neighbors)
+            # print("lower: {} upper: {}".format(lower_rule, upper_rule))
+            # print("neighbors")
+            # print(neighbors)
             remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
             remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
-            print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
-            print("neighbors meeting upper constraint:\n{}".format(remaining_upper))
+            # print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
+            # print("neighbors meeting upper constraint:\n{}".format(remaining_upper))
             new_lower = 0
             new_upper = 0
             # Extend left towards nearest neighbor
             if not is_empty(remaining_lower):
                 lower_example = remaining_lower[col_name].max()
-                print("lower val", lower_example)
+                # print("lower val", lower_example)
                 new_lower = 0.5 * (lower_rule - lower_example)
             # Extend right towards nearest neighbor
             if not is_empty(remaining_upper):
                 upper_example = remaining_upper[col_name].min()
-                print("upper val", upper_example)
+                # print("upper val", upper_example)
                 new_upper = 0.5 * (upper_example - upper_rule)
             rule[col_name] = (lower_rule - new_lower, upper_rule + new_upper)
-            print("rule after extension of current column:\n{}".format(rule))
+            # print("rule after extension of current column:\n{}".format(rule))
     my_vars.all_rules[rule.name] = rule
     return rule
 
@@ -1430,7 +1507,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     iteration = 0
     keep_running = True
     for rule in rules:
-        rule_hash = compute_hash(rule)
+        rule_hash = compute_hashable_key(rule)
         print("rule/ hash:", rule_hash)
         print(rule)
         if rule_hash not in my_vars.unique_rules:
@@ -1441,13 +1518,15 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     while keep_running:
         improved = False
         while len(rules) > 0:
+            print("\nthere are {} rules left for evaluation:".format(len(rules)))
+            print(rules)
             rule = rules.popleft()
             # for rule_idx, rule in enumerate(list(rules)):
             rule_id = rule.name
-            # rule = rules.popleft()
+            print("rule {} is currently being processed:\n{}".format(rule_id, rule))
             # Add current rule at the end
             rules.append(rule)
-            print("rule id", rule_id)
+            print("it was now added to the end of all rules:\n{}".format(rules))
             seed_id = my_vars.seed_rule_example[rule_id]
             print("seed id", seed_id)
             print(df)
@@ -1569,12 +1648,23 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id):
     return df, rules
 
 
-def compute_hash(series):
-    """Returns the hash (as a string) of a pd.Series object"""
+def compute_hashable_key(series):
+    """Returns a hashable (=immutable) representation of a pd.Series object"""
     cp = series.copy()
     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
     cp.name = 1
-    return hash(str(cp))
+    return str(cp)
+    # print("string for hashing:", tuple(cp))
+    # hash_val = 0
+    # for rule_id, val in cp.iteritems():
+    #     # Compute hash separately for lower and upper bound
+    #     if isinstance(val, Bounds):
+    #         lower, upper = val
+    #         hash_val += hash(lower) + hash(upper)
+    #     else:
+    #         hash_val += hash(val)
+    # # return hash(str(cp).encode("utf-8"))
+    # return hash_val
 
 
 if __name__ == "__main__":
