@@ -458,7 +458,7 @@ def _update_data_about_closest_rule(rule, dists):
             old_features = my_vars.all_rules[old_rule_id].size
             features = rule.size
             if dist < old_dist:
-                # print("new rule is closer ({}) vs. old ({})".format(dist, old_dist))
+                print("new rule is closer ({}) vs. old ({})".format(dist, old_dist))
                 my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                 has_changed = True
             # Occam's razor, i.e. 2 distances are the same, prefer the simpler (=less features) rule
@@ -598,8 +598,6 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             return selected_rule, min_dist, was_updated
         else:
             print("no tie breaker")
-            print("#rules", len(rules))
-            print(min_rule_id, min_dist)
             if min_rule_id is not None:
                 return my_vars.all_rules[min_rule_id], min_dist, was_updated
             return None, None, None
@@ -1027,11 +1025,15 @@ def evaluate_f1_temporarily(df, new_rule, new_rule_id, class_col_name, counts, m
                 # print("new distance", new_dist)
                 if new_dist == 0:
                     print("new rule id", new_rule_id)
-                    print("before covered examples by rule old:", covered_examples)
+                    print("before covered examples by rule:", covered_examples)
                     # TODO: replaced
                     # covered_examples.setdefault(new_rule.name, set()).add(example_id)
                     covered_examples.setdefault(new_rule_id, set()).add(example_id)
-                    print("after covered examples by rule old:", covered_examples)
+                    if old_rule_id in covered_examples:
+                        covered_examples[old_rule_id].discard(example_id)
+                        if len(covered_examples[old_rule_id]) == 0:
+                            del covered_examples[old_rule_id]
+                    print("after covered examples by rule:", covered_examples)
 
     # Reset data because it was updated in find_nearest_examples() in find_nearest_rule(), namely in
     # _update_data_about_closest_rule()
