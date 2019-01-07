@@ -442,6 +442,7 @@ def _update_data_about_closest_rule(rule, dists):
         dist = row[my_vars.DIST]
         old_rule_id = None
         has_changed = False
+        # No closest rule exists for the example yet
         if example_id not in my_vars.closest_rule_per_example:
             # print("old closest rule per example:", my_vars.closest_rule_per_example)
             # print("add new entry for example {}: {}".format(example_id, Data(rule_id=rule.name, dist=dist)))
@@ -460,7 +461,7 @@ def _update_data_about_closest_rule(rule, dists):
                 # print("new rule is closer ({}) vs. old ({})".format(dist, old_dist))
                 my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                 has_changed = True
-            # Occam's razor, i.e. 2 distances are the same, prefer the simpler (=shorter) rule
+            # Occam's razor, i.e. 2 distances are the same, prefer the simpler (=less features) rule
             if abs(dist - old_dist) < my_vars.PRECISION and features < old_features:
                 print("occam's razor: dist: {} and #old {} vs. #new features in rule {}".format(abs(dist - old_dist), old_features, features, rule.name))
                 my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
@@ -471,6 +472,7 @@ def _update_data_about_closest_rule(rule, dists):
             my_vars.closest_examples_per_rule.setdefault(rule.name, set()).add(example_id)
             # Delete old entry and possibly the whole rule, but only if the rule is now closest to a different rule
             if old_rule_id is not None and rule.name != old_rule_id:
+                print(my_vars.closest_examples_per_rule)
                 my_vars.closest_examples_per_rule[old_rule_id].discard(example_id)
                 if len(my_vars.closest_examples_per_rule[old_rule_id]) == 0:
                     del my_vars.closest_examples_per_rule[old_rule_id]
@@ -1036,7 +1038,8 @@ def evaluate_f1_temporarily(df, new_rule, new_rule_id, class_col_name, counts, m
         my_vars.closest_rule_per_example = backup_closest_rule
         my_vars.closest_examples_per_rule = backup_closest_examples_per_rule
         my_vars.examples_covered_by_rule = backup_covered
-    return f1(conf_matrix), conf_matrix, closest_rule_per_example, closest_examples_per_rule, covered_examples, updated_example_ids
+    return f1(conf_matrix), conf_matrix, closest_rule_per_example, closest_examples_per_rule, covered_examples, \
+        updated_example_ids
 
 
 def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_matrix):
@@ -1122,6 +1125,7 @@ def f1(conf_matrix):
 
 def is_duplicate(new_rule, existing_rule_ids):
     """
+    Checks if a rule is a duplicate of existing rules.
 
     Parameters
     ----------
@@ -1368,17 +1372,9 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 updated_example_ids = \
                 evaluate_f1_temporarily(df, generalized_rule, my_vars.latest_rule_id, class_col_name, counts, min_max,
                                         classes)
-            # print("neighbors before dropping:")
-            # print(neighbors)
             # Remove current example
             neighbors.drop(example_id, inplace=True)
-            # print("neighbors after dropping:")
-            # print(neighbors)
-            # print("current f1")
-            # print(current_f1)
-            print(my_vars.closest_examples_per_rule)
-            print(my_vars.closest_rule_per_example)
-            print(my_vars.conf_matrix)
+
             # Generalized rule is better
             if current_f1 >= best_f1:
                 print("{} >= {}".format(current_f1, f1))
@@ -1609,11 +1605,11 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     for rule in rules:
         rule_hash = compute_hashable_key(rule)
         print("rule/ hash:", rule_hash)
-        print(rule)
         if rule_hash not in my_vars.unique_rules:
-            my_vars.unique_rules[rule_hash] = rule.name
+            my_vars.unique_rules[rule_hash] = {rule.name}
         else:
             print("hashing collision ({}): {} <-> {}".format(rule_hash, my_vars.unique_rules[rule_hash], rule.name))
+            my_vars.unique_rules[rule_hash].add(rule.name)
     f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
     while keep_running:
         improved = False
