@@ -930,10 +930,9 @@ def evaluate_f1_temporarily(df, new_rule, new_rule_id, class_col_name, counts, m
 
     Returns
     -------
-    float, dict, dict, dict, dict, list, bool.
+    float, dict, dict, dict, dict, list.
     F1 score, confusion matrix, closest rule per example, closest examples per rule, covered examples per rule,
-    IDs of examples whose closest rule were updated, True if <new_rule> has become the closest rule for >= 1 example
-    else False
+    IDs of examples whose closest rule were updated
 
     """
     # print("\nevaluate f1 temporarily:")
@@ -1017,7 +1016,7 @@ def evaluate_f1_temporarily(df, new_rule, new_rule_id, class_col_name, counts, m
         my_vars.closest_examples_per_rule = backup_closest_examples_per_rule
         my_vars.examples_covered_by_rule = backup_covered
     return f1(conf_matrix), conf_matrix, closest_rule_per_example, closest_examples_per_rule, covered_examples, \
-        updated_example_ids, has_changed
+        updated_example_ids
 
 
 def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_matrix):
@@ -1202,8 +1201,8 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
         print("add_1 generalize rule for example {}".format(example.name))
         generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
         # print("generalized rule:\n{}".format(generalized_rule))
-        current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _, \
-            _ = evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, counts, min_max,
+        current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _\
+            = evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, counts, min_max,
                                         classes)
         # print("current f1")
         # print(current_f1)
@@ -1346,7 +1345,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
 
             # print("generalized rule:\n{}".format(generalized_rule))
             current_f1, current_conf_matrix, current_closest_rule, current_closest_examples, current_covered, \
-                updated_example_ids, was_updated = \
+                updated_example_ids = \
                 evaluate_f1_temporarily(df, generalized_rule, my_vars.latest_rule_id, class_col_name, counts, min_max,
                                         classes)
             # Remove current example
@@ -1365,7 +1364,10 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 # is closer is handled in find_nearest_rule() and that result is passed back as a Boolean variable
                 if iteration == 0:
                     # if was_updated:
-                        print("replace rule!!!")
+                    print("replace rule!!!")
+                    if my_vars.latest_rule_id not in current_closest_examples:
+                        print("rule {} isn't closest to any example, so ignore the update".format(my_vars.latest_rule_id))
+                    else:
                         print("original rule ID", original_rule_id)
                         # Rule to be replaced is at the end
                         idx = -1
