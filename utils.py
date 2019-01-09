@@ -1366,7 +1366,9 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     # if was_updated:
                     print("replace rule!!!")
                     if my_vars.latest_rule_id not in current_closest_examples:
-                        print("rule {} isn't closest to any example, so ignore the update".format(my_vars.latest_rule_id))
+                        improved = False
+                        print("new rule {} isn't closest to any example, so ignore the update".format(
+                            my_vars.latest_rule_id))
                     else:
                         print("original rule ID", original_rule_id)
                         # Rule to be replaced is at the end
@@ -1536,31 +1538,32 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
     # print("rule before extension:\n{}".format(rule))
     # dtypes = rule.apply(type).tolist()
     # print("data types", dtypes)
-    for col_name, col_val in rule.iteritems():
-        # Only numeric features - they're stored in a tuple
-        if isinstance(col_val, Bounds):
-            lower_rule, upper_rule = col_val
-            # print("lower: {} upper: {}".format(lower_rule, upper_rule))
-            # print("neighbors")
-            # print(neighbors)
-            remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
-            remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
-            # print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
-            # print("neighbors meeting upper constraint:\n{}".format(remaining_upper))
-            new_lower = 0
-            new_upper = 0
-            # Extend left towards nearest neighbor
-            if not is_empty(remaining_lower):
-                lower_example = remaining_lower[col_name].max()
-                # print("lower val", lower_example)
-                new_lower = 0.5 * (lower_rule - lower_example)
-            # Extend right towards nearest neighbor
-            if not is_empty(remaining_upper):
-                upper_example = remaining_upper[col_name].min()
-                # print("upper val", upper_example)
-                new_upper = 0.5 * (upper_example - upper_rule)
-            rule[col_name] = (lower_rule - new_lower, upper_rule + new_upper)
-            # print("rule after extension of current column:\n{}".format(rule))
+    if neighbors is not None:
+        for col_name, col_val in rule.iteritems():
+            # Only numeric features - they're stored in a named tuple
+            if isinstance(col_val, Bounds):
+                lower_rule, upper_rule = col_val
+                # print("lower: {} upper: {}".format(lower_rule, upper_rule))
+                # print("neighbors")
+                # print(neighbors)
+                remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
+                remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
+                # print("neighbors meeting lower constraint:\n{}".format(remaining_lower))
+                # print("neighbors meeting upper constraint:\n{}".format(remaining_upper))
+                new_lower = 0
+                new_upper = 0
+                # Extend left towards nearest neighbor
+                if not is_empty(remaining_lower):
+                    lower_example = remaining_lower[col_name].max()
+                    # print("lower val", lower_example)
+                    new_lower = 0.5 * (lower_rule - lower_example)
+                # Extend right towards nearest neighbor
+                if not is_empty(remaining_upper):
+                    upper_example = remaining_upper[col_name].min()
+                    # print("upper val", upper_example)
+                    new_upper = 0.5 * (upper_example - upper_rule)
+                rule[col_name] = Bounds(lower=lower_rule - new_lower, upper=upper_rule + new_upper)
+                # print("rule after extension of current column:\n{}".format(rule))
     my_vars.all_rules[rule.name] = rule
     return rule
 
