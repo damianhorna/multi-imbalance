@@ -1201,7 +1201,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
         # print("generalized rule:\n{}".format(generalized_rule))
         current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _\
             = evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, counts, min_max,
-                                        classes)
+                                      classes)
         if current_f1 >= best_f1:
             print("{} >= {}".format(current_f1, f1))
             best_f1 = current_f1
@@ -1240,7 +1240,8 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
                 print(my_vars.all_rules[existing_rule_id])
                 print("best rule according to add_best_rule():\n{}".format(best_generalization))
                 print("so doN't add the new rule")
-                # del rules[idx]
+                # Remove current rule, which was added at the end
+                del rules[idx]
                 # # my_vars.seed_rule_example[existing_rule_id] = best_example_id
                 # print("delete seed rule_example entry: {}:{} "
                 #       .format(rule.name, my_vars.seed_rule_example[rule.name]))
