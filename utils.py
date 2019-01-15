@@ -1190,13 +1190,20 @@ def _delete_old_rule_hash(rule):
 
     """
     print("before update:", my_vars.unique_rules)
-    old_hash = compute_hashable_key(rule)
-    print("remove old hash of rule {}: {}".format(rule.name, old_hash))
-    rules_with_same_hash = my_vars.unique_rules[old_hash]
+    rule_hash = compute_hashable_key(rule)
+    # print("remove old hash of rule {}: {}".format(rule.name, old_hash))
+    # rules_with_same_hash = my_vars.unique_rules[old_hash]
+    # if len(rules_with_same_hash) > 1:
+    #     my_vars.unique_rules[old_hash].discard(rule.name)
+    # else:
+    #     del my_vars.unique_rules[old_hash]
+
+    rules_with_same_hash = my_vars.unique_rules.get(rule_hash, set())
     if len(rules_with_same_hash) > 1:
-        my_vars.unique_rules[old_hash].discard(rule.name)
-    else:
-        del my_vars.unique_rules[old_hash]
+        my_vars.unique_rules[rule_hash].discard(rule.name)
+    # If a rule was extended, it wasn't added to my_vars.unique_rules, so the additional check is necessary
+    elif rule_hash in my_vars.unique_rules:
+        del my_vars.unique_rules[rule_hash]
     print("after update:", my_vars.unique_rules)
 
 
@@ -1260,12 +1267,7 @@ def merge_rule_statistics_of_duplicate(existing_rule, duplicate_rule):
 
     del my_vars.all_rules[duplicate_rule.name]
 
-    duplicate_hash = compute_hashable_key(duplicate_rule)
-    if duplicate_hash in my_vars.unique_rules:
-        if len(my_vars.unique_rules[duplicate_hash]) > 1:
-            my_vars.unique_rules[duplicate_hash].discard(duplicate_rule.name)
-        else:
-            del my_vars.unique_rules[duplicate_hash]
+    _delete_old_rule_hash(duplicate_rule)
 
 
 def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
@@ -1440,6 +1442,8 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     dtypes = neighbors.dtypes
     best_f1 = f1
     iteration = 0
+    # Keep track of how many rules were added to access the original rule in the list in O(1)
+    added_rules = 0
     print("neighbors", neighbors.shape)
     while not is_empty(neighbors):
         for example_id, example in neighbors.iterrows():
@@ -1582,7 +1586,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             existing_rule_ids = my_vars.unique_rules[new_hash]
                             existing_rule_id = is_duplicate(generalized_rule, existing_rule_ids)
                             # No duplicate exists
-                            if existing_rule_id == -1:
+                            if existing_rule_id == my_vars.UNIQUE_RULE:
                                 print("hash collision, but they are different rules")
                                 my_vars.unique_rules[new_hash].add(new_rule_id)
                             else:
@@ -1594,6 +1598,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         print("after adding unique hash:", my_vars.unique_rules)
                         # Only add if the generalized rule is no duplicate
                         if is_added:
+                            added_rules += 1
                             print("before updating seed: example_rule:", my_vars.seed_example_rule)
                             my_vars.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
                             print("after updating seed: example_rule:", my_vars.seed_example_rule)
@@ -1638,20 +1643,28 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
 
             # Generalized rule is a duplicate
             else:
+                # Initially, the original rule was added at the last position in the list, but an arbitrary number of
+                # new rules could've been added in the meantime
+                idx_original_rule = added_rules + 1
+                print("rules before", len(rules))
+                print(rules)
                 # Remove current rule that was generalized, which was added to the end of the list
-                del rules[-1]
+                del rules[-idx_original_rule]
+                print("rules after", len(rules))
+                print(rules)
                 # Remove generalized rule
                 # del my_vars.all_rules[generalized_rule.name]
                 # TODO: add the data from generalized rule that became a duplicate to existing rule
                 merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
                 # Potential infinite loop here if it's the last neighbor and only a duplicate is found, so we
                 # need to end the loop. If there are more neighbors available, continue with them
-                last_row = neighbors.iloc[-1, :]
-                if last_row.equals(example):
-                    neighbors = pd.DataFrame()
-                    break
-                else:
-                    continue
+                if not neighbors.empty:
+                    last_row = neighbors.iloc[-1, :]
+                    if last_row.equals(example):
+                        neighbors = pd.DataFrame()
+                        break
+                    else:
+                        continue
         iteration += 1
         print("end of iteration {} in add_all()".format(iteration))
         print("#####################\n")
@@ -1806,13 +1819,14 @@ def delete_rule_statistics(df, rule, rules, final_rules, class_col_name, counts,
 
         print("unique rules before", my_vars.unique_rules)
         print("rule_id", rule.name)
-        rule_hash = compute_hashable_key(rule)
-        rules_with_same_hash = my_vars.unique_rules.get(rule_hash, set())
-        if len(rules_with_same_hash) > 1:
-            my_vars.unique_rules[rule_hash].discard(rule.name)
-        # If a rule was extended, it wasn't added to my_vars.unique_rules, so the additional check is necessary
-        elif rule_hash in my_vars.unique_rules:
-            del my_vars.unique_rules[rule_hash]
+        _delete_old_rule_hash(rule)
+        # rule_hash = compute_hashable_key(rule)
+        # rules_with_same_hash = my_vars.unique_rules.get(rule_hash, set())
+        # if len(rules_with_same_hash) > 1:
+        #     my_vars.unique_rules[rule_hash].discard(rule.name)
+        # # If a rule was extended, it wasn't added to my_vars.unique_rules, so the additional check is necessary
+        # elif rule_hash in my_vars.unique_rules:
+        #     del my_vars.unique_rules[rule_hash]
         print("all rules after", my_vars.unique_rules)
     else:
         print("Rule that was deleted, but added to final rules earlier - hence, it's not deleted: \n{}\n\n\n"
@@ -1867,6 +1881,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
             # Add current rule at the end
             rules.append(rule)
             print("it was now added to the end of all rules:\n{}".format(rules))
+            print(my_vars.seed_rule_example)
             seed_id = my_vars.seed_rule_example[rule_id]
             print("seed id", seed_id)
             print(df)
@@ -1915,8 +1930,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                 neighbors, dists, _ = find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes)
                 # Neighbors exist
                 if neighbors is not None:
-                    if iteration == 7:
-                        print("f")
                     improved, generalized_rules = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
                                                                     counts, min_max, classes)
                     if not improved:
