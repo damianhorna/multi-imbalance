@@ -1452,6 +1452,21 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     # Keep track of how many rules were added to access the original rule in the list in O(1)
     added_rules = 0
     print("neighbors", neighbors.shape)
+    # TODO: remove
+    if rule.name == 3 and neighbors.shape == (3,5):
+        print("add foo stuff")
+        print(my_vars.unique_rules)
+        print(my_vars.all_rules)
+        print(neighbors)
+        print(rules)
+        print(best_f1)
+        print(my_vars.seed_rule_example)
+        print(my_vars.seed_example_rule)
+        print(my_vars.closest_rule_per_example)
+        print(my_vars.closest_examples_per_rule)
+        print(my_vars.conf_matrix)
+        print(my_vars.latest_rule_id)
+        print(my_vars.examples_covered_by_rule)
     while not is_empty(neighbors):
         for example_id, example in neighbors.iterrows():
             print("\nadd_all generalize rule {} for example {}".format(rule.name, example_id))
@@ -1567,7 +1582,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             my_vars.conf_matrix = current_conf_matrix
                     else:
                         # Add generalized rule instead of replacing the original one
-                        print("add rule!!!")
+                        print("add rule {}!!!".format(my_vars.latest_rule_id))
                         print(generalized_rule)
                         print("closest new rule per example", current_closest_rule)
                         my_vars.closest_rule_per_example = current_closest_rule
@@ -1913,6 +1928,9 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                         improved, generalized_rules = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
                                                                         counts, min_max, classes)
                     else:
+                        if rule.name == 3:
+                            print("final rules so far")
+                            print(final_rules)
                         improved, generalized_rules = add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name,
                                                                          counts, min_max, classes)
                     if not improved:
