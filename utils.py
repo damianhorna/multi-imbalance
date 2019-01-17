@@ -134,7 +134,7 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     rules_df = extract_initial_rules(df, class_col_name)
     my_vars.latest_rule_id = rules_df.shape[0] - 1
     # 1 rule per example
-    assert(rules_df.shape[0] == df.shape[0])
+    # assert(rules_df.shape[0] == df.shape[0])
     my_vars.seed_example_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     my_vars.seed_rule_example = dict((x, x) for x in range(rules_df.shape[0]))
     # Don't store that seeds are covered by initial rules - that's given implicitly
@@ -1791,7 +1791,7 @@ def delete_rule_statistics(df, rule, rules, final_rules, class_col_name, counts,
             closest_rule = rem_rule
             closest_dist = rem_dist
             # Sanity check: it's impossible that both rule sets were empty, thus a neighbor must exist
-            assert(rem_rule is not None or fin_rule is not None)
+            # assert(rem_rule is not None or fin_rule is not None)
             # Only True if a final rule was closer than one of the candidate rules - if not, there must've been at
             # least 1 candidate rule and it's closer than any of the final rules
             if fin_is_updated:
@@ -1847,11 +1847,13 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
 
     Returns
     -------
-    set of pd.Series.
-    Set of rules that classify the training data most accurately according to F1 score.
+    dictionary of pd.Series.
+    Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
+    values the corresponding rules
 
     """
     my_vars.minority_class = minority_label
+    init_statistics()
     print("minority class label:", my_vars.minority_class)
     df, rules = add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
     # {rule_id: rule}
@@ -1862,11 +1864,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
         rule_hash = compute_hashable_key(rule)
         print("rule/ hash:", rule_hash)
         my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
-        # if rule_hash not in my_vars.unique_rules:
-        #     my_vars.unique_rules[rule_hash] = {rule.name}
-        # else:
-        #     print("hashing collision ({}): {} <-> {}".format(rule_hash, my_vars.unique_rules[rule_hash], rule.name))
-        #     my_vars.unique_rules[rule_hash].add(rule.name)
     f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
     while keep_running:
         improved = False
@@ -1969,14 +1966,12 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
             # print("---")
             # print(len(rules))
             # print(rules)
-            assert ((len(rules) + len(final_rules)) >= len(my_vars.unique_rules))
+            # assert ((len(rules) + len(final_rules)) >= len(my_vars.unique_rules))
             print("end of iteration {} in bracid()".format(iteration))
             print("#####################\n")
         if not improved:
             keep_running = False
 
-    print("remaining candidate rules")
-    print(rules)
     return final_rules
 
 
@@ -2039,6 +2034,19 @@ def compute_hashable_key(series):
     #         hash_val += hash(val)
     # # return hash(str(cp).encode("utf-8"))
     # return hash_val
+
+
+def init_statistics():
+    """Initializes the global variables required in bracid() with default values"""
+    my_vars.all_rules = {}
+    my_vars.unique_rules = {}
+    my_vars.seed_example_rule = {}
+    my_vars.seed_rule_example = {}
+    my_vars.closest_rule_per_example = {}
+    my_vars.closest_examples_per_rule = {}
+    my_vars.conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.TN: set(), my_vars.FN: set()}
+    my_vars.examples_covered_by_rule = {}
+    my_vars.latest_rule_id = 0
 
 
 if __name__ == "__main__":
