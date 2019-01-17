@@ -18,11 +18,11 @@ class MyException(Exception):
     pass
 
 
-# (ID of rule, distance of rule to the closest example, number of features in closest rule) is stored per example in a
-# named tuple
+# (ID of rule, distance of rule to the closest example) is stored per example in a named tuple
 Data = namedtuple("Data", ["rule_id", "dist"])
-# Data = namedtuple("Data", ["rule_id", "dist", "features"])
 Bounds = namedtuple("Bounds", ["lower", "upper"])
+Support = namedtuple("Support", ["minority", "majority"])
+
 
 random.seed(189)
 
@@ -333,6 +333,40 @@ def does_rule_cover_example(example, rule, dtypes):
     return is_covered
 
 
+def does_rule_cover_example_without_label(example, rule, dtypes, class_col_name):
+    """
+    Tests if a rule covers a given example. In contrast to does_rule_cover_example(), the class label is ignored.
+
+    Parameters
+    ----------
+    example: pd.Series - example
+    rule: pd.Series - rule
+    dtypes: pd.Series - data types of the respective columns in the dataset
+    class_col_name: str - name of the column in <example> that holds the class label of the example
+
+    Returns
+    -------
+    bool.
+    True if the rule covers the example else False.
+
+    """
+    is_covered = True
+    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
+        example_dtype = dtype
+        if col_name in rule and col_name != class_col_name:
+            # Cast object to tuple datatype -> this is only automatically done if it's not a string
+            rule_val = (rule[col_name])
+            # print("rule_val", rule_val, "\nrule type:", type(rule_val))
+            if is_string_dtype(example_dtype) and example_val != rule_val:
+                is_covered = False
+                break
+            elif is_numeric_dtype(example_dtype):
+                if rule_val[0] > example_val or rule_val[1] < example_val:
+                    is_covered = False
+                    break
+    return is_covered
+
+
 def is_empty(df):
     """Tests if a pd.DataFrame is empty or not"""
     return len(df.index) == 0
@@ -399,7 +433,7 @@ def find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
         examples_with_same_label[my_vars.COVERED] = examples_with_same_label.loc[:, :]\
             .apply(does_rule_cover_example, axis=1, args=(rule, examples_with_same_label.dtypes))
         # Only keep the uncovered examples
-        examples_with_same_label = examples_with_same_label.loc[examples_with_same_label["is_covered"] == False]
+        examples_with_same_label = examples_with_same_label.loc[examples_with_same_label[my_vars.COVERED] == False]
     # print("neighbors:\n{}".format(examples_with_same_label))
 
     if is_empty(examples_with_same_label):
@@ -1937,7 +1971,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                             example_id = my_vars.seed_rule_example[rule_id]
                             df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
                         else:
-                            #final_rules.add(rule)
                             final_rules[rule.name] = rule
                             # Delete rule
                             removed = rules.pop()
@@ -2015,6 +2048,80 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id):
     print("rules after deletion:")
     print(rules)
     return df, rules
+
+
+def train(rules, training_examples, minority_label, class_col_name):
+    """
+    Trains the model used for predicting class labels of unknown examples. Note that BRACID was used to derive <rules>.
+    Deals only with binary labels, i.e. anything that isn't <minority_label>, will be assigned the same class label.
+
+    Parameters
+    ----------
+    rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
+    training_examples: pd.DataFrame - training set where each row represents a training example
+    minority_label: str - label of the minority class
+    class_col_name: str - name of the column with the class label in <training_examples>
+
+    Returns
+    -------
+    dict.
+    The model used for computing the support of each rule. It contains as keys the rule IDs and as value a named tuple
+    indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
+    labels, respectively
+
+    """
+    my_vars.minority_class = minority_label
+    model = {}
+    for rule_id in rules:
+        rule = rules[rule_id]
+        if my_vars.minority_class == rule[class_col_name]:
+            print("rule {} predicts minority label '{}'".format(rule.name, rule[class_col_name]))
+        else:
+            print("rule {} predicts majority label '{}'".format(rule.name, rule[class_col_name]))
+        training_examples[my_vars.COVERED] = training_examples.loc[:, :] \
+            .apply(does_rule_cover_example_without_label, axis=1, args=(rule, training_examples.dtypes, class_col_name))
+        all_covered_examples = training_examples.loc[training_examples[my_vars.COVERED] == True]
+        print("all covered")
+        print(all_covered_examples)
+        # Examples whose labels were predicted correctly by the rule - True or False
+        correct = \
+            all_covered_examples.loc[rule[class_col_name] == all_covered_examples[class_col_name]]
+        print("correctly covered")
+        print(correct)
+        counts = correct.shape[0]
+        total = all_covered_examples.shape[0]
+        # Support = #covered examples that were predicted correctly by that rule / all covered examples by that rule
+        support = counts / total
+        rest = 1 - support
+        print("support(rule {}) = {}/{} = {}".format(rule_id, counts, total, support))
+        if rule[class_col_name] == my_vars.minority_class:
+            model[rule_id] = Support(minority=support, majority=rest)
+        else:
+            model[rule_id] = Support(minority=rest, majority=support)
+    return model
+
+
+def predict(model, unlabeled_example, rules):
+    """
+    Predicts the class label of an unknown example. Sums up the support of the various rules that are closest (i.e. have
+    same distance)
+
+    Parameters
+    ----------
+    model: dict - used for predicting unknown class labels. It contains as keys the rule IDs and as value a named tuple
+    indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
+    labels respectively
+    unlabeled_example: pd.Series - unlabeled example for which the class label will be predicted
+    rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
+
+    Returns
+    -------
+    str, float.
+    Predicted label and confidence for the unlabeled example.
+
+    """
+    # Compute distance of each rule to the example
+    # Store all distances in case of ties
 
 
 def compute_hashable_key(series):
