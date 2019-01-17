@@ -39,7 +39,6 @@ class TestBracid(TestCase):
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        # my_vars.minority_class = "banana"
         minority_label = "banana"
         k = 3
         correct_rules = {
@@ -53,17 +52,7 @@ class TestBracid(TestCase):
                           "Class": "apple"}, name=0),
 
         }
-        # Duplicates: 6+7+9+10, 2+5, 3+4
         rules = bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
-        print("generalized rules")
-        print(rules)
-        print(my_vars.closest_rule_per_example)
-        print(my_vars.closest_examples_per_rule)
-        print(my_vars.conf_matrix)
-        print(my_vars.all_rules)
-        print(my_vars.seed_rule_example)
-        print(my_vars.seed_example_rule)
-        print(my_vars.examples_covered_by_rule)
         all_rules_are_equal = True
         for r in rules:
             if not rules[r].equals(correct_rules[r]):
