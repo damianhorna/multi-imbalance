@@ -22,6 +22,7 @@ class MyException(Exception):
 Data = namedtuple("Data", ["rule_id", "dist"])
 Bounds = namedtuple("Bounds", ["lower", "upper"])
 Support = namedtuple("Support", ["minority", "majority"])
+Predictions = namedtuple("Predictions", ["label", "confidence"])
 
 
 random.seed(189)
@@ -2101,27 +2102,65 @@ def train(rules, training_examples, minority_label, class_col_name):
     return model
 
 
-def predict(model, unlabeled_example, rules):
+def predict(model, test_examples, rules, classes, class_col_name):
     """
-    Predicts the class label of an unknown example. Sums up the support of the various rules that are closest (i.e. have
-    same distance)
+    Predicts the class labels of unknown examples. Sums up the support of the various rules that are closest (i.e. have
+    same distance). Note that no
 
     Parameters
     ----------
     model: dict - used for predicting unknown class labels. It contains as keys the rule IDs and as value a named tuple
     indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
     labels respectively
-    unlabeled_example: pd.Series - unlabeled example for which the class label will be predicted
+    test_examples: pd.DataFrame - unlabeled examples for which the class labels will be predicted
     rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
+    classes: list of str - list of class labels - only 2 are considered though, namely minority label and rest.
+    class_col_name: str - name of the column with the class label in <training_examples>
 
     Returns
     -------
-    str, float.
-    Predicted label and confidence for the unlabeled example.
+    dict.
+    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
+    are the predicted label and the respective confidence in a named tuple called Predictions.
+    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
 
     """
-    # Compute distance of each rule to the example
-    # Store all distances in case of ties
+    # {example_id: Support(...)}
+    supports = {}
+    # {example_id: Predictions(...)}
+    preds = {}
+    # Update support per unlabeled example by all the rules that cover it
+    for rule_id in rules:
+        rule = rules[rule_id]
+        test_examples[my_vars.COVERED] = test_examples.loc[:, :] \
+            .apply(does_rule_cover_example_without_label, axis=1, args=(rule, test_examples.dtypes, class_col_name))
+        all_covered_examples = test_examples.loc[test_examples[my_vars.COVERED] == True]
+        for example_id, example in all_covered_examples.iterrows():
+            print("rule {} covers example {}".format(rule_id, example_id))
+            if example_id not in supports:
+                supports[example_id] = Support(minority=0, majority=0)
+            print("old support", supports[example_id])
+            new_minority = supports[example_id].minority + model[rule_id].minority
+            new_majority = supports[example_id].majority + model[rule_id].majority
+            supports[example_id] = Support(minority=new_minority, majority=new_majority)
+            print("updated support", supports[example_id])
+    # Compute confidence and predicted label
+    majority_label = classes[0]
+    if my_vars.minority_class == classes[0]:
+        majority_label = classes[1]
+    minority_label = my_vars.minority_class
+    for example_id in supports:
+        predicted_label = minority_label
+        has_minority = True
+        if supports[example_id].minority <= supports[example_id].majority:
+            predicted_label = majority_label
+            has_minority = False
+        if has_minority:
+            confidence = supports[example_id].minority / (supports[example_id].minority + supports[example_id].majority)
+        else:
+            confidence = supports[example_id].majority / (supports[example_id].minority + supports[example_id].majority)
+        preds[example_id] = Predictions(label=predicted_label, confidence=confidence)
+    return preds
 
 
 def compute_hashable_key(series):
