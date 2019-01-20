@@ -133,7 +133,7 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
 
     """
     rules_df = extract_initial_rules(df, class_col_name)
-    my_vars.latest_rule_id = rules_df.shape[0] - 1
+    # my_vars.latest_rule_id = rules_df.shape[0] - 1
     # 1 rule per example
     # assert(rules_df.shape[0] == df.shape[0])
     # The next 2 lines assume that the 1st example starts with ID 0 which isn't necessarily true
@@ -511,9 +511,9 @@ def _update_data_about_closest_rule(rule, dists):
             # If both are equally simple, keep the current one
             elif abs(dist - old_dist) < my_vars.PRECISION and features < old_features:
                 print(
-                    "occam's razor: dist: {} and #old {} vs. #new features in rule {}".format(abs(dist - old_dist),
-                                                                                              old_features,
-                                                                                              features, rule.name))
+                    "occam's razor: dist: {} and #old {} vs. #new {} features in rule {}".format(abs(dist - old_dist),
+                                                                                                 old_features,
+                                                                                                 features, rule.name))
                 my_vars.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                 has_changed = True
         if has_changed:
@@ -573,7 +573,6 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
     # print("\nexample", example.name)
     try:
         was_updated = False
-        # covering_rule_ids = set()
         for rule in rules:
             rule_id = rule.name
             # print("rule id", rule_id)
@@ -599,8 +598,6 @@ def find_nearest_rule(rules, example, class_col_name, counts, min_max, classes, 
             # print("is closest", is_closest)
             if neighbors is not None:
                 dist = dists.iloc[0][my_vars.DIST]
-                # if dist == 0:
-                #     covering_rule_ids.add(rule_id)
                 if min_dist is not None:
                     # print("to update:", dist, min_dist, abs(dist - min_dist) < my_vars.PRECISION)
                     if is_closest:
@@ -1450,26 +1447,26 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     added_rules = 0
     # print("neighbors", neighbors.shape)
     # TODO: remove
-    if rule.name == 3 and neighbors.shape == (3,5):
-        print("add foo stuff")
-        print(my_vars.unique_rules)
-        print(my_vars.all_rules)
-        print(neighbors)
-        print(rules)
-        print(best_f1)
-        print(my_vars.seed_rule_example)
-        print(my_vars.seed_example_rule)
-        print(my_vars.closest_rule_per_example)
-        print(my_vars.closest_examples_per_rule)
-        print(my_vars.conf_matrix)
-        print(my_vars.latest_rule_id)
-        print(my_vars.examples_covered_by_rule)
-    if rule.name == 4:
-        print("add bar stuff")
-        print(neighbors)
-    if rule.name == 5:
-        print("add zoo stuff")
-        print(neighbors)
+    # if rule.name == 3 and neighbors.shape == (3,5):
+    #     print("add foo stuff")
+    #     print(my_vars.unique_rules)
+    #     print(my_vars.all_rules)
+    #     print(neighbors)
+    #     print(rules)
+    #     print(best_f1)
+    #     print(my_vars.seed_rule_example)
+    #     print(my_vars.seed_example_rule)
+    #     print(my_vars.closest_rule_per_example)
+    #     print(my_vars.closest_examples_per_rule)
+    #     print(my_vars.conf_matrix)
+    #     print(my_vars.latest_rule_id)
+    #     print(my_vars.examples_covered_by_rule)
+    # if rule.name == 4:
+    #     print("add bar stuff")
+    #     print(neighbors)
+    # if rule.name == 5:
+    #     print("add zoo stuff")
+    #     print(neighbors)
     while not is_empty(neighbors):
         for example_id, example in neighbors.iterrows():
             print("\nadd_all generalize rule {} for example {}".format(rule.name, example_id))
@@ -1686,12 +1683,17 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 # new rules could've been added in the meantime
                 idx_original_rule = added_rules + 1
                 # Remove current rule that was generalized, which was added to the end of the list
-                print("remove rule from added with id {}".format(rules[-idx_original_rule].name))
+                print("remove rule {} after some rules might've been added".format(rules[-idx_original_rule].name))
                 print("keep rule {} and remove rule {}".format(my_vars.all_rules[duplicate_rule_id].name, rule.name))
                 del rules[-idx_original_rule]
-                # Important: use the original rule here because otherwise the generated hash will result in the one
-                # that we want to keep because after generalization its hash became the same as the existing rule's hash
-                merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], replaced_rule)
+                # Might be None if we're still in iteration 0, but the generalized rule is already a duplicate
+                if replaced_rule is None:
+                    merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
+                else:
+                    # Important: use the original rule here because otherwise the generated hash will result in the one
+                    # that we want to keep because after generalization its hash became the same as the existing rule's
+                    # hash
+                    merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], replaced_rule)
                 # Potential infinite loop here if it's the last neighbor and only a duplicate is found, so we
                 # need to end the loop. If there are more neighbors available, continue with them
                 if not neighbors.empty:
@@ -1896,7 +1898,8 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
 
     """
     my_vars.minority_class = minority_label
-    init_statistics()
+    print("highest index:", )
+    init_statistics(df)
     print("minority class label:", my_vars.minority_class)
     df, rules = add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
     # {rule_id: rule}
@@ -2234,8 +2237,15 @@ def compute_hashable_key(series):
     # return hash_val
 
 
-def init_statistics():
-    """Initializes the global variables required in bracid() with default values"""
+def init_statistics(df):
+    """
+    Initializes the global variables required in bracid() with default values.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset.
+
+    """
     my_vars.all_rules = {}
     my_vars.unique_rules = {}
     my_vars.seed_example_rule = {}
@@ -2244,7 +2254,11 @@ def init_statistics():
     my_vars.closest_examples_per_rule = {}
     my_vars.conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.TN: set(), my_vars.FN: set()}
     my_vars.examples_covered_by_rule = {}
-    my_vars.latest_rule_id = 0
+    # Initial rule (with the highest index) will be derived from seed examples, so we already know the maximum ID now
+    max_example_id = df.index.max()
+    print(df)
+    print("max example id", max_example_id)
+    my_vars.latest_rule_id = max_example_id
 
 
 def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10):
@@ -2298,7 +2312,10 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
         print("F1-score:", f1_score)
         print("matrix:", conf_matrix)
         macro_f1.append(f1)
-        for conf_val in macro_f1:
+        for conf_val in micro_f1:
+            print(conf_val)
+            print(micro_f1[conf_val])
+            print(conf_matrix[conf_val])
             micro_f1[conf_val].add(conf_matrix[conf_val])
     macro_f1_score = sum(macro_f1) / folds
     micro_f1_score = f1(micro_f1)
