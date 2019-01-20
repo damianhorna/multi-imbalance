@@ -2053,7 +2053,8 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id):
 
 def train(rules, training_examples, minority_label, class_col_name):
     """
-    Trains the model used for predicting class labels of unknown examples. Note that BRACID was used to derive <rules>.
+    Trains the model used for predicting class labels of unknown examples. To this end, the support of the derived rules
+    is computed in the model. Note that BRACID was used to derive <rules>.
     Deals only with binary labels, i.e. anything that isn't <minority_label>, will be assigned the same class label.
 
     Parameters
@@ -2163,6 +2164,49 @@ def predict(model, test_examples, rules, classes, class_col_name):
     return preds
 
 
+def compute_f1_for_predictions(df, predicted, class_col_name, positive_class):
+    """
+    Computes the F1-score for the predicted labels of the examples, given their true labels. Therefore, it's assumed
+    that <df> contains the true labels of the examples.
+
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset with true labels
+    predicted: dict - predicted labels for some of the examples. IDs of the examples are the keys and predictions are
+    stored as a value in a named tuple called Predictions.
+    class_col_name: str - name of the column with the class label in <df>
+    positive_class: str - name of the class label considered as true positive
+
+    Returns
+    -------
+    float.
+    F1-score.
+
+    """
+    conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
+    for example_id in predicted:
+        print("example", example_id)
+        predicted_label, confidence = predicted[example_id]
+        true_label = df.loc[example_id][class_col_name]
+        # Add updated value
+        if true_label == positive_class:
+            if predicted_label == true_label:
+                conf_matrix[my_vars.TP].add(example_id)
+                print("pred: {} <-> true: {} -> tp".format(predicted_label, true_label))
+            else:
+                conf_matrix[my_vars.FN].add(example_id)
+                print("pred: {} <-> true: {} -> fn".format(predicted_label, true_label))
+        else:
+            if predicted_label == true_label:
+                conf_matrix[my_vars.TN].add(example_id)
+                print("pred: {} <-> true: {} -> tn".format(predicted_label, true_label))
+            else:
+                conf_matrix[my_vars.FP].add(example_id)
+                print("pred: {} <-> true: {} -> fp".format(predicted_label, true_label))
+    return f1(conf_matrix)
+
+
 def compute_hashable_key(series):
     """Returns a hashable (=immutable) representation of a pd.Series object"""
     cp = series.copy()
@@ -2193,6 +2237,56 @@ def init_statistics():
     my_vars.conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.TN: set(), my_vars.FN: set()}
     my_vars.examples_covered_by_rule = {}
     my_vars.latest_rule_id = 0
+
+
+def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10):
+    """
+    Performs cross-validation on a given dataset
+
+    Parameters
+    ----------
+    dataset: pd.DataFrame - dataset
+    k: int - number of neighbors with opposite label of <rule> to consider
+    class_col_name: str - name of class label
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
+    so that there's a binary classification task.
+    folds: int - number of folds in cross-validation
+
+    Returns
+    -------
+    dict.
+    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
+    are the predicted label and the respective confidence in a named tuple called Predictions.
+    Confidence = max (support for minority, support for majority) / (support for minority + support for majority). Note
+    that the predictions are
+
+    """
+    df = dataset.copy()
+    print("dimensions:", df.shape)
+    # Shuffle dataset
+    df = df.sample(frac=1).reset_index(drop=True)
+    examples = df.shape[0]
+    examples_per_fold = math.ceil(examples / folds)
+    print("pick {} examples per fold".format(examples_per_fold))
+
+    cv_datasets = []
+    # Create folds for CV
+    for i in range(folds):
+        print("fold", i+1)
+        test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
+        print("test set: {}".format(test_set.shape))
+        print(test_set)
+        train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
+        print("training set: {}".format(train_set.shape))
+        print(train_set)
+        rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+        model = train(rules, train_set, minority_label, class_col_name)
+        predict(model, test_set, rules, classes, class_col_name)
+
+
 
 
 if __name__ == "__main__":
