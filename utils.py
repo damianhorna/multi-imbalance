@@ -2180,8 +2180,8 @@ def compute_f1_for_predictions(df, predicted, class_col_name, positive_class):
 
     Returns
     -------
-    float.
-    F1-score.
+    float, dict.
+    F1-score, confusion matrix storing the IDs of the examples w.r.t. TPs, NPs, FPs, FNs.
 
     """
     conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
@@ -2204,7 +2204,7 @@ def compute_f1_for_predictions(df, predicted, class_col_name, positive_class):
             else:
                 conf_matrix[my_vars.FP].add(example_id)
                 print("pred: {} <-> true: {} -> fp".format(predicted_label, true_label))
-    return f1(conf_matrix)
+    return f1(conf_matrix), conf_matrix
 
 
 def compute_hashable_key(series):
