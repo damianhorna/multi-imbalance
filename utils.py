@@ -136,8 +136,17 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     my_vars.latest_rule_id = rules_df.shape[0] - 1
     # 1 rule per example
     # assert(rules_df.shape[0] == df.shape[0])
-    my_vars.seed_example_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
-    my_vars.seed_rule_example = dict((x, x) for x in range(rules_df.shape[0]))
+    # The next 2 lines assume that the 1st example starts with ID 0 which isn't necessarily true
+    # my_vars.seed_example_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
+    # my_vars.seed_rule_example = dict((x, x) for x in range(rules_df.shape[0]))
+    for rule_id, _ in rules_df.iterrows():
+        my_vars.seed_rule_example[rule_id] = rule_id
+        my_vars.seed_example_rule[rule_id] = {rule_id}
+
+
+
+
+
     # Don't store that seeds are covered by initial rules - that's given implicitly
     # my_vars.examples_covered_by_rule = dict((x, {x}) for x in range(rules_df.shape[0]))
     rules = []
@@ -1379,7 +1388,6 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
             # Note that a hash collision could've occurred, i.e. there are different rules with the same hash, so just
             # add to the set of IDs instead of assuming an empty set
             my_vars.unique_rules.setdefault(best_hash, set()).add(best_generalization.name)
-            _delete_old_rule_hash(rule)
             rules[idx] = best_generalization
             my_vars.all_rules[best_generalization.name] = best_generalization
             print("updated best rule per example for example {}:\n{}"
@@ -2034,7 +2042,7 @@ def treat_majority_example_as_noise(df, example_id, rules, rule_id):
     my_vars.seed_example_rule[example_id].discard(rule_id)
     print("before deleting the example")
     print(df)
-    df.drop(df.index[example_id], inplace=True)
+    df.drop(example_id, inplace=True)
     print("after")
     print(df)
     # print("remaining entries for {}: {}".format(rule_id, my_vars.seed_example_rule[example_id]))
@@ -2272,7 +2280,8 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
     examples_per_fold = math.ceil(examples / folds)
     print("pick {} examples per fold".format(examples_per_fold))
 
-    cv_datasets = []
+    macro_f1 = []
+    micro_f1 = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
     # Create folds for CV
     for i in range(folds):
         print("fold", i+1)
@@ -2284,9 +2293,17 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
         print(train_set)
         rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
         model = train(rules, train_set, minority_label, class_col_name)
-        predict(model, test_set, rules, classes, class_col_name)
-
-
+        predictions = predict(model, test_set, rules, classes, class_col_name)
+        f1_score, conf_matrix = compute_f1_for_predictions(test_set, predictions, class_col_name, minority_label)
+        print("F1-score:", f1_score)
+        print("matrix:", conf_matrix)
+        macro_f1.append(f1)
+        for conf_val in macro_f1:
+            micro_f1[conf_val].add(conf_matrix[conf_val])
+    macro_f1_score = sum(macro_f1) / folds
+    micro_f1_score = f1(micro_f1)
+    print("macro-averaged F1-score:", macro_f1_score)
+    print("micro-averaged F1-score:", micro_f1_score)
 
 
 if __name__ == "__main__":
