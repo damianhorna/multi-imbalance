@@ -6,6 +6,7 @@ import pandas as pd
 from scripts.utils import cv, Bounds, Support, Predictions
 import scripts.vars as my_vars
 
+
 class TestCv(TestCase):
     """Tests cv() in utils.py"""
 
