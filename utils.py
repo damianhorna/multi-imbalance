@@ -1309,10 +1309,11 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
 
     Returns
     -------
-    bool, list of pd.Series, float.
+    bool, list of pd.Series, float or bool, None, None.
     True if a generalized version of the rule improves the F1 score, False otherwise. Returns the updated list of
     rules - all rules in that list are unique, i.e. if the best found rule becomes identical with any existing one
     (that isn't updated), it'll be ignored. The new F1 score using the generalized rule.
+    Returns False, <rules>, None if <neighbors> is None
 
     """
     # Without deep copy, a shallow copy of <rules> is used, hence changing the returned rules would change the original
@@ -1329,6 +1330,9 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     best_hash = None
     print("rule:\n{}".format(rule))
     print("best f1:", best_f1)
+    # No neighbors
+    if neighbors is None:
+        return False, rules, None
     dtypes = neighbors.dtypes
     for example_id, example in neighbors.iterrows():
         print("add_1 generalize rule for example {}".format(example.name))
@@ -1411,10 +1415,11 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
 
     Returns
     -------
-    bool, list of pd.Series, float.
+    bool, list of pd.Series, float ; or bool, pd.Series, None.
     True if a generalized version of the rule improves the F1 score, False otherwise.  Returns the updated list of
     rules - all rules in that list are unique, i.e. if a new better rule becomes identical with any existing one
     (that isn't updated), it'll be ignored. New F1-score for the generalized and possibly added rules.
+    Returns False, <rules>, None if <neighbors> is None
 
     """
     # To be able to compute the hash of the rule that replaced <rule> in iteration 0 -
@@ -1426,6 +1431,8 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     iteration = 0
     # Keep track of how many rules were added to access the original rule in the list in O(1)
     added_rules = 0
+    if neighbors is None:
+        return False, rules, None
     # print("neighbors", neighbors.shape)
     # TODO: remove
     # if rule.name == 3 and neighbors.shape == (3,5):
@@ -1948,34 +1955,34 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                                                             label_type=my_vars.SAME_LABEL_AS_RULE,
                                                             only_uncovered_neighbors=True)
                 # Neighbors exist
-                if neighbors is not None:
-                    if seed_tag == my_vars.SAFE:
-                        improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1,
-                                                                            class_col_name, counts, min_max, classes)
-                    else:
-                        if rule.name == 3:
-                            print("final rules so far")
-                            print(final_rules)
-                        improved, generalized_rules, f1 = add_all_good_rules(df, neighbors, rule, rules, f1,
-                                                                             class_col_name, counts, min_max, classes)
-                    if not improved:
-                        # Don't extend for outlier
-                        if iteration != 0:
-                            extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
-                            final_rules[extended_rule.name] = extended_rule
-                            # Delete rule
-                            removed = rules.pop()
-                            print("removed rule after extension:\n{}".format(removed))
-                            delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
-                                                   classes)
-                    else:
-                        # Use updated rules
-                        rules = generalized_rules
+                # if neighbors is not None:
+                if seed_tag == my_vars.SAFE:
+                    improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1,
+                                                                        class_col_name, counts, min_max, classes)
                 else:
-                    # Delete rule
-                    removed = rules.pop()
-                    print("removed rule no neighbors minority:\n{}".format(removed))
-                    delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
+                    if rule.name == 3:
+                        print("final rules so far")
+                        print(final_rules)
+                    improved, generalized_rules, f1 = add_all_good_rules(df, neighbors, rule, rules, f1,
+                                                                         class_col_name, counts, min_max, classes)
+                if not improved:
+                    # Don't extend for outlier
+                    if iteration != 0:
+                        extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
+                        final_rules[extended_rule.name] = extended_rule
+                        # Delete rule
+                        removed = rules.pop()
+                        print("removed rule after extension:\n{}".format(removed))
+                        delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
+                                               classes)
+                else:
+                    # Use updated rules
+                    rules = generalized_rules
+                # else:
+                #     # Delete rule
+                #     removed = rules.pop()
+                #     print("removed rule no neighbors minority:\n{}".format(removed))
+                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
             # Majority label
             else:
                 n = k
@@ -1985,31 +1992,31 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                                                             label_type=my_vars.SAME_LABEL_AS_RULE,
                                                             only_uncovered_neighbors=True)
                 # Neighbors exist
-                if neighbors is not None:
-                    improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
-                                                                        counts, min_max, classes)
-                    if not improved:
-                        # Treat as noise
-                        if iteration == 0:
-                            # Delete rule and corresponding seed (=noisy example)
-                            example_id = my_vars.seed_rule_example[rule_id]
-                            df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
-                        else:
-                            final_rules[rule.name] = rule
-                            # Delete rule
-                            removed = rules.pop()
-                            print("removed rule after adding majority final rule:\n{}".format(removed))
-                            delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
-                                                   classes)
+                # if neighbors is not None:
+                improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
+                                                                    counts, min_max, classes)
+                if not improved:
+                    # Treat as noise
+                    if iteration == 0:
+                        # Delete rule and corresponding seed (=noisy example)
+                        example_id = my_vars.seed_rule_example[rule_id]
+                        df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
                     else:
-                        # Use updated rules
-                        rules = generalized_rules
+                        final_rules[rule.name] = rule
+                        # Delete rule
+                        removed = rules.pop()
+                        print("removed rule after adding majority final rule:\n{}".format(removed))
+                        delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
+                                               classes)
                 else:
-                    # Delete rule
-                    removed = rules.pop()
-                    print(final_rules)
-                    print("removed rule no neighbors majority:\n{}".format(removed))
-                    delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
+                    # Use updated rules
+                    rules = generalized_rules
+                # else:
+                #     # Delete rule
+                #     removed = rules.pop()
+                #     print(final_rules)
+                #     print("removed rule no neighbors majority:\n{}".format(removed))
+                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
             iteration += 1
             # print(len(my_vars.all_rules))
             # print(my_vars.all_rules)
