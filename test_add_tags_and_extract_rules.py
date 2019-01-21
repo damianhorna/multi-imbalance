@@ -38,7 +38,7 @@ class TestAddTagsAndExtractRules(TestCase):
                             }
                     }
             }
-        my_vars.latest_rule_id = 0
+        my_vars.latest_rule_id = 5
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": ["apple", "apple", "banana", "banana", "banana", "banana"],
@@ -76,8 +76,6 @@ class TestAddTagsAndExtractRules(TestCase):
         my_vars.examples_covered_by_rule = {}
         tagged, rules = add_tags_and_extract_rules(df, k, class_col_name, lookup, min_max, classes)
         self.assertTrue(tagged.equals(correct))
-        print(my_vars.seed_example_rule)
-        print(correct_seed_example_rule)
         self.assertTrue(my_vars.seed_example_rule == correct_seed_example_rule)
         self.assertTrue(my_vars.seed_rule_example == correct_seed_rule_example)
         self.assertTrue(my_vars.all_rules.keys() == correct_all_rules.keys())
