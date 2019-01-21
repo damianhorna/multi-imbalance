@@ -58,7 +58,8 @@ class TestFindNearestRule(TestCase):
         my_vars.conf_matrix = {}
         for example_id, example in df.iterrows():
             rule, dist, was_updated = find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
-                                                        my_vars.examples_covered_by_rule)
+                                                        my_vars.examples_covered_by_rule,
+                                                        label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
             self.assertTrue(was_updated is True)
 
@@ -130,7 +131,8 @@ class TestFindNearestRule(TestCase):
 
         for example_id, example in df.iterrows():
             rule, dist, was_updated = find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
-                                                        my_vars.examples_covered_by_rule)
+                                                        my_vars.examples_covered_by_rule,
+                                                        label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
             print("eid: {} rule: {} dist: {} updated: {}".format(example_id, rule.name, dist, was_updated))
             self.assertTrue(was_updated is True)
