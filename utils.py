@@ -2157,25 +2157,26 @@ def predict(model, test_examples, rules, classes, class_col_name):
 
     """
     # {example_id: Support(...)}
-    supports = {}
+    # supports = {}
     # {example_id: Predictions(...)}
     preds = {}
     # Update support per unlabeled example by all the rules that cover it
-    for rule_id in rules:
-        rule = rules[rule_id]
-        test_examples[my_vars.COVERED] = test_examples.loc[:, :] \
-            .apply(does_rule_cover_example_without_label, axis=1, args=(rule, test_examples.dtypes, class_col_name))
-        all_covered_examples = test_examples.loc[test_examples[my_vars.COVERED] == True]
-        for example_id, example in all_covered_examples.iterrows():
-            print("rule {} covers example {}".format(rule_id, example_id))
-            if example_id not in supports:
-                supports[example_id] = Support(minority=0, majority=0)
-            print("old support", supports[example_id])
-            new_minority = supports[example_id].minority + model[rule_id].minority
-            new_majority = supports[example_id].majority + model[rule_id].majority
-            supports[example_id] = Support(minority=new_minority, majority=new_majority)
-            print("updated support", supports[example_id])
+    # for rule_id in rules:
+    #     rule = rules[rule_id]
+    #     test_examples[my_vars.COVERED] = test_examples.loc[:, :] \
+    #         .apply(does_rule_cover_example_without_label, axis=1, args=(rule, test_examples.dtypes, class_col_name))
+    #     all_covered_examples = test_examples.loc[test_examples[my_vars.COVERED] == True]
+    #     for example_id, example in all_covered_examples.iterrows():
+    #         print("rule {} covers example {}".format(rule_id, example_id))
+    #         if example_id not in supports:
+    #             supports[example_id] = Support(minority=0, majority=0)
+    #         print("old support", supports[example_id])
+    #         new_minority = supports[example_id].minority + model[rule_id].minority
+    #         new_majority = supports[example_id].majority + model[rule_id].majority
+    #         supports[example_id] = Support(minority=new_minority, majority=new_majority)
+    #         print("updated support", supports[example_id])
     # Compute confidence and predicted label
+    supports = compute_rule_support_per_example(rules, test_examples, model, class_col_name)
     majority_label = classes[0]
     if my_vars.minority_class == classes[0]:
         majority_label = classes[1]
@@ -2192,6 +2193,58 @@ def predict(model, test_examples, rules, classes, class_col_name):
             confidence = supports[example_id].majority / (supports[example_id].minority + supports[example_id].majority)
         preds[example_id] = Predictions(label=predicted_label, confidence=confidence)
     return preds
+
+
+def compute_rule_support_per_example(rules, examples, model, class_col_name):
+    """
+    Computes the support of the various rules for each unlabeled example. Even if class labels exist, they are ignored.
+    Support computation takes into account that multiple rules might cover an example or that multiple rules are
+    closest to an example.
+
+    Parameters
+    ----------
+    pd.DataFrame - unlabeled examples for which the class labels will be predicted
+    rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
+    model: dict - used for predicting unknown class labels. It contains as keys the rule IDs and as value a named tuple
+    indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
+    labels respectively
+    class_col_name: str - name of the column with the class label in <training_examples>
+
+    Returns
+    -------
+    dict.
+    Support per example aggregated over the various rules for majority and minority class:
+    {example_id: Support(minority=X, majority=Y)} where X and Y are floats.
+
+    """
+    # {example_id: Support(...)}
+    supports = {}
+    uncovered_example_ids = set(examples.index.values)
+    assert(len(uncovered_example_ids) == examples.shape[0])
+    for rule_id in rules:
+        rule = rules[rule_id]
+        examples[my_vars.COVERED] = examples.loc[:, :] \
+            .apply(does_rule_cover_example_without_label, axis=1, args=(rule, examples.dtypes, class_col_name))
+        all_covered_examples = examples.loc[examples[my_vars.COVERED] == True]
+        for example_id, example in all_covered_examples.iterrows():
+            uncovered_example_ids.discard(example_id)
+            print("rule {} covers example {}".format(rule_id, example_id))
+            if example_id not in supports:
+                supports[example_id] = Support(minority=0, majority=0)
+            print("old support", supports[example_id])
+            new_minority = supports[example_id].minority + model[rule_id].minority
+            new_majority = supports[example_id].majority + model[rule_id].majority
+            supports[example_id] = Support(minority=new_minority, majority=new_majority)
+            print("updated support", supports[example_id])
+    # TODO:
+    # Compute distances for uncovered examples and take ties into account
+    print("{} remaining uncovered examples: {}".format(len(uncovered_example_ids), uncovered_example_ids))
+    for example_id in uncovered_example_ids:
+        for rule in rules:
+            closest_rule, dist, was_updated = \
+                find_nearest_rule([rule], examples.loc[example_id], class_col_name, counts, min_max, classes,
+                                  label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=True)
+    return supports
 
 
 def compute_f1_for_predictions(df, predicted, class_col_name, positive_class):
