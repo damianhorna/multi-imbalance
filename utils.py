@@ -2239,11 +2239,21 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name):
     # TODO:
     # Compute distances for uncovered examples and take ties into account
     print("{} remaining uncovered examples: {}".format(len(uncovered_example_ids), uncovered_example_ids))
+    #
+    uncovered_examples = {}
+    for eid in uncovered_example_ids:
+        uncovered_examples[eid] = [Data(rule_id=-1, dist=math.inf)]
     for example_id in uncovered_example_ids:
         for rule in rules:
+            # TODO: write as a class and don't update in find_nearest_rule (or nearest_examples), but return the
+            # updated entries to decide depending on the scenario whether to update the data or not
             closest_rule, dist, was_updated = \
                 find_nearest_rule([rule], examples.loc[example_id], class_col_name, counts, min_max, classes,
-                                  label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=True)
+                                  examples_covered_by_rule, my_vars.ALL_LABELS, only_uncovered_neighbors=True)
+            if dist < uncovered_examples[example_id][0]:
+                uncovered_examples[example_id] = [Data(rule_id=closest_rule.name, dist=dist)]
+            if abs(dist - uncovered_examples[example_id][0]) < my_vars.PRECISION:
+                uncovered_examples[example_id].append(Data(rule_id=closest_rule.name, dist=dist))
     return supports
 
 
