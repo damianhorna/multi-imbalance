@@ -2133,7 +2133,7 @@ def train(rules, training_examples, minority_label, class_col_name):
     return model
 
 
-def predict(model, test_examples, rules, classes, class_col_name):
+def predict(model, test_examples, rules, classes, class_col_name, counts, min_max):
     """
     Predicts the class labels of unknown examples. Sums up the support of the various rules that are closest (i.e. have
     same distance). Note that no
@@ -2145,8 +2145,10 @@ def predict(model, test_examples, rules, classes, class_col_name):
     labels respectively
     test_examples: pd.DataFrame - unlabeled examples for which the class labels will be predicted
     rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
-    classes: list of str - list of class labels - only 2 are considered though, namely minority label and rest.
+    classes: list of str - list of class labels - only 2 are considered though, namely minority label and rest
     class_col_name: str - name of the column with the class label in <training_examples>
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
 
     Returns
     -------
@@ -2156,27 +2158,10 @@ def predict(model, test_examples, rules, classes, class_col_name):
     Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
 
     """
-    # {example_id: Support(...)}
-    # supports = {}
     # {example_id: Predictions(...)}
     preds = {}
-    # Update support per unlabeled example by all the rules that cover it
-    # for rule_id in rules:
-    #     rule = rules[rule_id]
-    #     test_examples[my_vars.COVERED] = test_examples.loc[:, :] \
-    #         .apply(does_rule_cover_example_without_label, axis=1, args=(rule, test_examples.dtypes, class_col_name))
-    #     all_covered_examples = test_examples.loc[test_examples[my_vars.COVERED] == True]
-    #     for example_id, example in all_covered_examples.iterrows():
-    #         print("rule {} covers example {}".format(rule_id, example_id))
-    #         if example_id not in supports:
-    #             supports[example_id] = Support(minority=0, majority=0)
-    #         print("old support", supports[example_id])
-    #         new_minority = supports[example_id].minority + model[rule_id].minority
-    #         new_majority = supports[example_id].majority + model[rule_id].majority
-    #         supports[example_id] = Support(minority=new_minority, majority=new_majority)
-    #         print("updated support", supports[example_id])
     # Compute confidence and predicted label
-    supports = compute_rule_support_per_example(rules, test_examples, model, class_col_name)
+    supports = compute_rule_support_per_example(rules, test_examples, model, class_col_name, counts, min_max, classes)
     majority_label = classes[0]
     if my_vars.minority_class == classes[0]:
         majority_label = classes[1]
@@ -2195,7 +2180,7 @@ def predict(model, test_examples, rules, classes, class_col_name):
     return preds
 
 
-def compute_rule_support_per_example(rules, examples, model, class_col_name):
+def compute_rule_support_per_example(rules, examples, model, class_col_name, counts, min_max, classes):
     """
     Computes the support of the various rules for each unlabeled example. Even if class labels exist, they are ignored.
     Support computation takes into account that multiple rules might cover an example or that multiple rules are
@@ -2209,6 +2194,9 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name):
     indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
     labels respectively
     class_col_name: str - name of the column with the class label in <training_examples>
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset
 
     Returns
     -------
@@ -2228,32 +2216,73 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name):
         all_covered_examples = examples.loc[examples[my_vars.COVERED] == True]
         for example_id, example in all_covered_examples.iterrows():
             uncovered_example_ids.discard(example_id)
-            print("rule {} covers example {}".format(rule_id, example_id))
+            # print("rule {} covers example {}".format(rule_id, example_id))
             if example_id not in supports:
                 supports[example_id] = Support(minority=0, majority=0)
-            print("old support", supports[example_id])
+            # print("old support", supports[example_id])
             new_minority = supports[example_id].minority + model[rule_id].minority
             new_majority = supports[example_id].majority + model[rule_id].majority
             supports[example_id] = Support(minority=new_minority, majority=new_majority)
-            print("updated support", supports[example_id])
-    # TODO:
-    # Compute distances for uncovered examples and take ties into account
-    print("{} remaining uncovered examples: {}".format(len(uncovered_example_ids), uncovered_example_ids))
-    #
-    uncovered_examples = {}
-    for eid in uncovered_example_ids:
-        uncovered_examples[eid] = [Data(rule_id=-1, dist=math.inf)]
-    for example_id in uncovered_example_ids:
-        for rule in rules:
+            # print("updated support", supports[example_id])
+    # print("{} remaining uncovered examples: {}".format(len(uncovered_example_ids), uncovered_example_ids))
+    # Compute distances for the remaining uncovered examples and take ties into account
+    if len(uncovered_example_ids) > 0:
+        # Compute a rule's distance to all uncovered test examples
+        k = len(uncovered_example_ids)
+        # {example_id1: [Data(rule_id, dist, Data(rule_id, dist),...]}
+        uncovered_examples = {}
+        # {example_id1: set(rule_id1, rule_id5)}
+        closest_rule_ids_per_example = {}
+        for eid in uncovered_example_ids:
+            uncovered_examples[eid] = [Data(rule_id=-1, dist=math.inf)]
+            closest_rule_ids_per_example[eid] = set()
+        # find_nearest_rule() updates internal statistics of the actual model which we don't desire, so restore them
+        # later
+        rule_per_example = copy.deepcopy(my_vars.closest_rule_per_example)
+        examples_per_rule = copy.deepcopy(my_vars.closest_examples_per_rule)
+        covered_examples = copy.deepcopy(my_vars.examples_covered_by_rule)
+
+        for rule_id in rules:
+            rule = rules[rule_id]
             # TODO: write as a class and don't update in find_nearest_rule (or nearest_examples), but return the
-            # updated entries to decide depending on the scenario whether to update the data or not
-            closest_rule, dist, was_updated = \
-                find_nearest_rule([rule], examples.loc[example_id], class_col_name, counts, min_max, classes,
-                                  examples_covered_by_rule, my_vars.ALL_LABELS, only_uncovered_neighbors=True)
-            if dist < uncovered_examples[example_id][0]:
-                uncovered_examples[example_id] = [Data(rule_id=closest_rule.name, dist=dist)]
-            if abs(dist - uncovered_examples[example_id][0]) < my_vars.PRECISION:
-                uncovered_examples[example_id].append(Data(rule_id=closest_rule.name, dist=dist))
+            #         # updated entries to decide depending on the scenario whether to update the data or not
+            neighbors, dists, is_closest = \
+                find_nearest_examples(examples, k, rule, class_col_name, counts, min_max, classes,
+                                      label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
+            if neighbors is not None:
+                for example_id, row in dists.iterrows():
+                    dist = dists.loc[example_id][my_vars.DIST]
+                    if example_id not in uncovered_examples:
+                        uncovered_examples[example_id] = [Data(rule_id=rule_id, dist=dist)]
+                        closest_dist = math.inf
+                    else:
+                        closest_dist = uncovered_examples[example_id][0].dist
+                    # New closest rule
+                    if dist < closest_dist:
+                        uncovered_examples[example_id] = [Data(rule_id=rule_id, dist=dist)]
+                    # Add tie
+                    elif abs(dist - closest_dist) < my_vars.PRECISION:
+                        uncovered_examples[example_id].append(Data(rule_id=rule_id, dist=dist))
+
+        # print("closest rules for uncovered examples")
+        # print(uncovered_examples)
+
+        # Restore actual model
+        my_vars.closest_rule_per_example = rule_per_example
+        my_vars.closest_examples_per_rule = examples_per_rule
+        my_vars.examples_covered_by_rule = covered_examples
+
+        # Update support for uncovered examples
+        for example_id in uncovered_examples:
+            if example_id not in supports:
+                supports[example_id] = Support(minority=0, majority=0)
+            minority_supp = 0
+            majority_supp = 0
+            for rule_id, _ in uncovered_examples[example_id]:
+                minority_supp += model[rule_id].minority
+                majority_supp += model[rule_id].majority
+            supports[example_id] = Support(minority=minority_supp, majority=majority_supp)
+    # print(supports)
     return supports
 
 
