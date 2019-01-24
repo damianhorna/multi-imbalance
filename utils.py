@@ -1797,6 +1797,10 @@ def delete_rule_statistics(df, rule, rules, final_rules, class_col_name, counts,
     min_max: pd:DataFrame - contains min/max values per numeric feature
     classes: list of str - class labels in the dataset.
 
+    Raises
+    ------
+    AssertionError: if there's no rule left in <rules> and <final_rules> that has the same class label as <example>
+
     """
     # Only delete rule statistics if a rule wasn't added to the set of final rules earlier. This could happen if a
     # rule of the minority class was extended in extend_rule() - afterwards it would still be deleted from the set of
@@ -1855,6 +1859,8 @@ def delete_rule_statistics(df, rule, rules, final_rules, class_col_name, counts,
             if fin_is_updated:
                 closest_rule = fin_rule
                 closest_dist = fin_dist
+            if rem_rule is None and fin_rule is None:
+                raise AssertionError("no rules remain with the label '{}'".format(example[class_col_name]))
             print(rem_rule)
             print(fin_rule)
             # print("nearest rule")
