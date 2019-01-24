@@ -23,7 +23,7 @@ class TestDeleteRuleStatistics(TestCase):
         ]
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": ["apple", "apple", "apple", "apple", "apple", "apple"]})
         class_col_name = "Class"
         lookup = \
             {
@@ -96,7 +96,7 @@ class TestDeleteRuleStatistics(TestCase):
         ]
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": ["apple", "apple", "apple", "apple", "apple", "apple"]})
         class_col_name = "Class"
         lookup = \
             {
