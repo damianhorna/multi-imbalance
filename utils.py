@@ -1309,11 +1309,11 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
 
     Returns
     -------
-    bool, list of pd.Series, float or bool, None, None.
+    bool, list of pd.Series, float or bool, None, float.
     True if a generalized version of the rule improves the F1 score, False otherwise. Returns the updated list of
     rules - all rules in that list are unique, i.e. if the best found rule becomes identical with any existing one
     (that isn't updated), it'll be ignored. The new F1 score using the generalized rule.
-    Returns False, <rules>, None if <neighbors> is None
+    Returns False, <rules>, <f1> if <neighbors> is None
 
     """
     # Without deep copy, a shallow copy of <rules> is used, hence changing the returned rules would change the original
@@ -1332,7 +1332,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
     print("best f1:", best_f1)
     # No neighbors
     if neighbors is None:
-        return False, rules, None
+        return False, rules, best_f1
     dtypes = neighbors.dtypes
     for example_id, example in neighbors.iterrows():
         print("add_1 generalize rule for example {}".format(example.name))
@@ -1341,6 +1341,7 @@ def add_one_best_rule(df, neighbors, rule, rules, f1,  class_col_name, counts, m
         current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _\
             = evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, counts, min_max,
                                       classes)
+        print(current_f1, best_f1)
         if current_f1 >= best_f1:
             print("{} >= {}".format(current_f1, f1))
             best_f1 = current_f1
@@ -1419,7 +1420,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     True if a generalized version of the rule improves the F1 score, False otherwise.  Returns the updated list of
     rules - all rules in that list are unique, i.e. if a new better rule becomes identical with any existing one
     (that isn't updated), it'll be ignored. New F1-score for the generalized and possibly added rules.
-    Returns False, <rules>, None if <neighbors> is None
+    Returns False, <rules>, <f1> if <neighbors> is None
 
     """
     # To be able to compute the hash of the rule that replaced <rule> in iteration 0 -
@@ -1432,7 +1433,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     # Keep track of how many rules were added to access the original rule in the list in O(1)
     added_rules = 0
     if neighbors is None:
-        return False, rules, None
+        return False, rules, best_f1
     # print("neighbors", neighbors.shape)
     # TODO: remove
     # if rule.name == 3 and neighbors.shape == (3,5):
@@ -1658,11 +1659,13 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             my_vars.latest_rule_id -= 1
 
                     # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
+                    # Note that we use ALL_LABELS in find_nearest_rule() because we just want to re-sort the neighbors
+                    # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
                     dists = []
                     for neighbor_id, neighbor in neighbors.iterrows():
                         _, dist, _ = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
                                                        min_max, classes, my_vars.examples_covered_by_rule,
-                                                       label_type=my_vars.SAME_LABEL_AS_RULE,
+                                                       label_type=my_vars.ALL_LABELS,
                                                        only_uncovered_neighbors=False)
                         dists.append((neighbor_id, dist))
                     print("recomputed distances:")
@@ -2004,7 +2007,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                 if not improved:
                     # Treat as noise
                     if iteration == 0:
-                        # Delete rule and corresponding seed (=noisy example)
                         example_id = my_vars.seed_rule_example[rule_id]
                         df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
                     else:
