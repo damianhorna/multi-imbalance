@@ -58,4 +58,5 @@ class TestBracid(TestCase):
             if not rules[r].equals(correct_rules[r]):
                 all_rules_are_equal = False
                 break
+        print(rules)
         self.assertTrue(all_rules_are_equal)
