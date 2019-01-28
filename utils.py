@@ -1586,6 +1586,27 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
 
                         # Confusion matrix won't change, so no need to update it
                         my_vars.conf_matrix = current_conf_matrix
+
+                        # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
+                        # Note that we use ALL_LABELS in find_nearest_rule() because we just want to re-sort the
+                        # neighbors
+                        # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
+                        dists = []
+                        for neighbor_id, neighbor in neighbors.iterrows():
+                            _, dist, _ = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
+                                                           min_max, classes, my_vars.examples_covered_by_rule,
+                                                           label_type=my_vars.ALL_LABELS,
+                                                           only_uncovered_neighbors=False)
+                            dists.append((neighbor_id, dist))
+                        print("recomputed distances:")
+                        print(dists)
+                        # At least 1 example still exists after dropping the previous one
+                        if len(dists) > 0:
+                            dists.sort(key=itemgetter(1))
+                            example_ids, dists = map(list, (zip(*dists)))
+                            neighbors = neighbors.loc[example_ids]
+                        # Stop current loop because neighbors' distance was recomputed based on the generalized rule
+                        break
                     else:
                         # Add generalized rule instead of replacing the original one
                         print("add rule {}!!!".format(my_vars.latest_rule_id))
@@ -1658,25 +1679,25 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             # Rule was a duplicate, so reset the last ID
                             my_vars.latest_rule_id -= 1
 
-                    # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
-                    # Note that we use ALL_LABELS in find_nearest_rule() because we just want to re-sort the neighbors
-                    # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
-                    dists = []
-                    for neighbor_id, neighbor in neighbors.iterrows():
-                        _, dist, _ = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
-                                                       min_max, classes, my_vars.examples_covered_by_rule,
-                                                       label_type=my_vars.ALL_LABELS,
-                                                       only_uncovered_neighbors=False)
-                        dists.append((neighbor_id, dist))
-                    print("recomputed distances:")
-                    print(dists)
-                    # At least 1 example still exists after dropping the previous one
-                    if len(dists) > 0:
-                        dists.sort(key=itemgetter(1))
-                        example_ids, dists = map(list, (zip(*dists)))
-                        neighbors = neighbors.loc[example_ids]
-                    # Stop current loop because neighbors' distance was recomputed based on the generalized rule
-                    break
+                    # # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
+                    # # Note that we use ALL_LABELS in find_nearest_rule() because we just want to re-sort the neighbors
+                    # # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
+                    # dists = []
+                    # for neighbor_id, neighbor in neighbors.iterrows():
+                    #     _, dist, _ = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
+                    #                                    min_max, classes, my_vars.examples_covered_by_rule,
+                    #                                    label_type=my_vars.ALL_LABELS,
+                    #                                    only_uncovered_neighbors=False)
+                    #     dists.append((neighbor_id, dist))
+                    # print("recomputed distances:")
+                    # print(dists)
+                    # # At least 1 example still exists after dropping the previous one
+                    # if len(dists) > 0:
+                    #     dists.sort(key=itemgetter(1))
+                    #     example_ids, dists = map(list, (zip(*dists)))
+                    #     neighbors = neighbors.loc[example_ids]
+                    # # Stop current loop because neighbors' distance was recomputed based on the generalized rule
+                    # break
                 else:
                     # F1 score wasn't improved, so allow a reuse of this rule ID
                     my_vars.latest_rule_id -= 1
