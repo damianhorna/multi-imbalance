@@ -42,15 +42,16 @@ class TestBracid(TestCase):
         minority_label = "banana"
         k = 3
         correct_rules = {
+            0: pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=3.0),
+                          "Class": "apple"}, name=0),
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": "banana"}, name=2),
-            6: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                          "Class": "banana"}, name=6),
+            3: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
+                          "Class": "banana"}, name=3),
+            4: pd.Series({"B": Bounds(lower=0.5, upper=0.875), "C": Bounds(lower=2.0, upper=3.0),
+                          "Class": "banana"}, name=4),
             5: pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=4.0), "C": Bounds(lower=1.0, upper=2.5),
                           "Class": "banana"}, name=5),
-            0: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                          "Class": "apple"}, name=0),
-
         }
         rules = bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
         all_rules_are_equal = True
@@ -58,5 +59,4 @@ class TestBracid(TestCase):
             if not rules[r].equals(correct_rules[r]):
                 all_rules_are_equal = False
                 break
-        print(rules)
         self.assertTrue(all_rules_are_equal)
