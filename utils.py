@@ -1429,7 +1429,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     # it's necessary to delete old hashes later
     replaced_rule = None
     improved = False
-    dtypes = neighbors.dtypes
+
     best_f1 = f1
     is_first_rule = True
     iteration = 0
@@ -1440,6 +1440,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     duplicates = None
     if neighbors is None:
         return False, rules, best_f1
+    dtypes = neighbors.dtypes
     # print("neighbors", neighbors.shape)
     # TODO: remove
     # if rule.name == 3 and neighbors.shape == (3,5):
