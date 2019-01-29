@@ -23,6 +23,8 @@ Data = namedtuple("Data", ["rule_id", "dist"])
 Bounds = namedtuple("Bounds", ["lower", "upper"])
 Support = namedtuple("Support", ["minority", "majority"])
 Predictions = namedtuple("Predictions", ["label", "confidence"])
+# Keep original rule and delete the corresponding duplicate rule which is at duplicate_idx in the list of rules
+Duplicates = namedtuple("Duplicates", ["original", "duplicate", "duplicate_idx"])
 
 
 random.seed(189)
@@ -1238,7 +1240,7 @@ def merge_rule_statistics_of_duplicate(existing_rule, duplicate_rule):
     ----------
     existing_rule: pd.Series - existing rule whose statistics will be updated
     duplicate_rule: pd.Series - base rule that was generalized and became a duplicate, thus it's statistics will be
-                    deleted
+                    deleted once they were added to <existing_rule>
 
     """
     print("existing rule", existing_rule.name)
@@ -1429,9 +1431,13 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     improved = False
     dtypes = neighbors.dtypes
     best_f1 = f1
+    is_first_rule = True
     iteration = 0
+    changed_rules = []
     # Keep track of how many rules were added to access the original rule in the list in O(1)
     added_rules = 0
+    # Duplicate rules
+    duplicates = None
     if neighbors is None:
         return False, rules, best_f1
     # print("neighbors", neighbors.shape)
@@ -1456,6 +1462,8 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     # if rule.name == 5:
     #     print("add zoo stuff")
     #     print(neighbors)
+    print("initial neighbors")
+    print(neighbors)
     while not is_empty(neighbors):
         for example_id, example in neighbors.iterrows():
             print("\nadd_all generalize rule {} for example {}".format(rule.name, example_id))
@@ -1497,19 +1505,13 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     # as the rule that already covers it, then there's no need to update anything in my opinion.
                     # The logic that decides if a new rule is closer is handled in find_nearest_rule() and that
                     # result is passed back as a Boolean variable
-                    if iteration == 0:
-                        # print("replace rule {}!!!".format(rule.name))
-                        # # New rule didn't have any effect, i.e. it's not closest to >=1 example
-                        # if my_vars.latest_rule_id not in current_closest_examples:
-                        #     print("updated rule {} isn't closest to any example, so ignore the update".format(
-                        #         rule.name))
-                        #     # Rule wasn't used, so reset the last ID
-                        #     my_vars.latest_rule_id -= 1
-                        # else:
+                    if is_first_rule:
+                        is_first_rule = False
                         print("replace rule {} which had as original id {}".format(generalized_rule.name,
                                                                                    original_rule_id))
                         print("###############")
                         print("###############")
+                        changed_rules.append((example, generalized_rule))
                         # Note that a hash collision could've occurred, i.e. there are different rules with the same
                         # hash, so just
                         # add to the set of IDs instead of assuming an empty set
@@ -1622,7 +1624,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         print("original rule id:", generalized_rule.name)
                         new_rule_id = my_vars.latest_rule_id
                         generalized_rule.name = new_rule_id
-                        print("rule id", generalized_rule.name)
+                        print("new rule id", generalized_rule.name)
 
                         print("before adding unique hash:", my_vars.unique_rules)
                         # new_hash = compute_hashable_key(generalized_rule)
@@ -1651,6 +1653,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         print("after adding unique hash:", my_vars.unique_rules)
                         # Only add if the generalized rule is no duplicate
                         if is_added:
+
                             # Note that a hash collision could've occurred, i.e. there are different rules with the same
                             # hash, so just
                             # add to the set of IDs instead of assuming an empty set
@@ -1664,6 +1667,11 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             my_vars.seed_rule_example[new_rule_id] = example_id
                             print("after updating seed: rule_example_rule:", my_vars.seed_rule_example)
 
+                            # Use the newly generated ID as name
+                            generalized_rule.name = my_vars.latest_rule_id
+                            my_vars.all_rules[generalized_rule.name] = generalized_rule
+                            changed_rules.append((example, generalized_rule))
+                            rules.append(generalized_rule)
                             print("new rule id:", generalized_rule.name)
                             print("added rule for example {}:\n{}"
                                   .format(example_id, (generalized_rule.name, current_closest_rule[example_id])))
@@ -1671,10 +1679,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             print("closest rule per example", my_vars.closest_rule_per_example)
                             print("closest examples per rule", my_vars.closest_examples_per_rule)
                             print("conf matrix", my_vars.conf_matrix)
-                            my_vars.all_rules[generalized_rule.name] = generalized_rule
-                            # Use the newly generated ID as name
-                            generalized_rule.name = my_vars.latest_rule_id
-                            rules.append(generalized_rule)
+
                         else:
                             # Rule was a duplicate, so reset the last ID
                             my_vars.latest_rule_id -= 1
@@ -1703,18 +1708,29 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                     my_vars.latest_rule_id -= 1
             # Generalized rule is a duplicate
             else:
-                # TOOD: don't do anything here because the duplicate wasn't added at all
+                # Don't delete duplicates here because generalizing <rule> for other examples might lead to
+                # improvements - delete after loop
+
+                # Note that duplicate rules haven't been added yet, so there's no need to update any statistics - it's
+                # only necessary to delete duplicates if <rule>'s generalization isn't closer to at least 1 example -
+                # be it in iteration 0 or later
+
                 # Initially, the original rule was added at the last position in the list, but an arbitrary number of
                 # new rules could've been added in the meantime; +1 because it's 0-based
                 idx_original_rule = added_rules + 1
                 # Remove current rule that was generalized, which was added to the end of the list
                 print("remove rule {} after some rules might've been added".format(rules[-idx_original_rule].name))
                 print("keep rule {} and remove rule {}".format(my_vars.all_rules[duplicate_rule_id].name, rule.name))
+                print("existing rule")
+                print(my_vars.all_rules[duplicate_rule_id])
                 # del rules[-idx_original_rule]
                 # Might be None if we're still in iteration 0, but the generalized rule is already a duplicate
                 if replaced_rule is None:
                     print("iteration 0, replaced rule is None", replaced_rule)
                     # TODO: don't do anything????
+
+                    duplicates = Duplicates(original=my_vars.all_rules[duplicate_rule_id],
+                                            duplicate=generalized_rule, duplicate_idx=idx_original_rule)
                     # deleting rule 4 isn't possible here because it could be potentially generalized for other examples
                     # merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
                 else:
@@ -1735,6 +1751,28 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
         iteration += 1
         print("end of iteration {} in add_all()".format(iteration))
         print("#####################\n")
+    # TODO: don't delete here -> improved=False, meaning that bracid() will remove the rule after extending it
+    # If generalizations of <rule> improved F1-score, but introduced duplicates, delete <rule>
+    # if not improved:
+    #     orig_rule, duplicate_rule, duplicate_idx = duplicates
+    #     print("generalizing <rule> {} was introducing only duplicates, so <rule> will be removed"
+    #           .format(duplicate_rule.name))
+    #
+    #     print("delete rule {} and keep rule {}".format(duplicate_rule.name, orig_rule.name))
+    #     # <rule> is at the end of the list, potentially other generalizations of <rule> were added thereafter
+    #     del rules[-duplicate_idx]
+    #     merge_rule_statistics_of_duplicate(orig_rule, duplicate_rule)
+    # else:
+    #     print("no duplicates deleted in add_all() because the following rules were closer to examples:")
+    #     for example, rule in changed_rules:
+    #         print("rule {} for example {}".format(rule.name, example.name))
+
+    # if not was_replaced:
+    #     # Initially, the original rule was added at the last position in the list, but an arbitrary number of
+    #     # new rules could've been added in the meantime; +1 because it's 0-based
+    #     idx_original_rule = added_rules + 1
+    #     del rules[-idx_original_rule]
+    #     merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
     print(my_vars.closest_examples_per_rule)
     print(my_vars.closest_rule_per_example)
     print(my_vars.examples_covered_by_rule)
@@ -1864,7 +1902,6 @@ def delete_rule_statistics(df, rule, rules, final_rules, class_col_name, counts,
             example = df.loc[example_id]
             print("example: {} old rule: {}".format(example[class_col_name], rule[class_col_name]))
             # Closest rule
-            # TODO: check: shouldn't it be SAME_LABEL_AS_RULE instead of ALL_LABELS????
             rem_rule, rem_dist, rem_is_updated = find_nearest_rule(rules, example, class_col_name, counts, min_max,
                                                                    classes, my_vars.examples_covered_by_rule,
                                                                    label_type=my_vars.SAME_LABEL_AS_RULE,
