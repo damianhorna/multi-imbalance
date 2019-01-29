@@ -4,7 +4,6 @@ import itertools
 import warnings
 import copy
 from operator import itemgetter
-import random
 import math
 
 import pandas as pd
@@ -25,9 +24,6 @@ Support = namedtuple("Support", ["minority", "majority"])
 Predictions = namedtuple("Predictions", ["label", "confidence"])
 # Keep original rule and delete the corresponding duplicate rule which is at duplicate_idx in the list of rules
 Duplicates = namedtuple("Duplicates", ["original", "duplicate", "duplicate_idx"])
-
-
-random.seed(189)
 
 
 def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1,
@@ -1981,10 +1977,11 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
 
     """
     my_vars.minority_class = minority_label
-    print("highest index:", )
     init_statistics(df)
     print("minority class label:", my_vars.minority_class)
     df, rules = add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
+    print("initial rules")
+    print(rules)
     # {rule_id: rule}
     final_rules = {}
     iteration = 0
@@ -2171,8 +2168,10 @@ def train(rules, training_examples, minority_label, class_col_name):
     """
     my_vars.minority_class = minority_label
     model = {}
+    print("closest rule per example in train():", my_vars.closest_rule_per_example)
     for rule_id in rules:
         rule = rules[rule_id]
+        print(rule)
         if my_vars.minority_class == rule[class_col_name]:
             print("rule {} predicts minority label '{}'".format(rule.name, rule[class_col_name]))
         else:
@@ -2255,8 +2254,8 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
 
     Parameters
     ----------
-    pd.DataFrame - unlabeled examples for which the class labels will be predicted
     rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
+    examples: pd.DataFrame - unlabeled examples for which the class labels will be predicted
     model: dict - used for predicting unknown class labels. It contains as keys the rule IDs and as value a named tuple
     indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
     labels respectively
@@ -2272,13 +2271,17 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
     {example_id: Support(minority=X, majority=Y)} where X and Y are floats.
 
     """
+    print("model")
+    print(model)
+    # Turn off a pandas warning about making changes to a copy of the dataFrame when using .apply() below
+    pd.options.mode.chained_assignment = None  # default='warn'
     # {example_id: Support(...)}
     supports = {}
     uncovered_example_ids = set(examples.index.values)
     assert(len(uncovered_example_ids) == examples.shape[0])
     for rule_id in rules:
         rule = rules[rule_id]
-        examples[my_vars.COVERED] = examples.loc[:, :] \
+        examples[my_vars.COVERED] = examples.loc[:, :]\
             .apply(does_rule_cover_example_without_label, axis=1, args=(rule, examples.dtypes, class_col_name))
         all_covered_examples = examples.loc[examples[my_vars.COVERED] == True]
         for example_id, example in all_covered_examples.iterrows():
@@ -2291,10 +2294,8 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
             new_majority = supports[example_id].majority + model[rule_id].majority
             supports[example_id] = Support(minority=new_minority, majority=new_majority)
             # print("updated support", supports[example_id])
-    # print("{} remaining uncovered examples: {}".format(len(uncovered_example_ids), uncovered_example_ids))
     # Compute distances for the remaining uncovered examples and take ties into account
     if len(uncovered_example_ids) > 0:
-        # Compute a rule's distance to all uncovered test examples
         k = len(uncovered_example_ids)
         # {example_id1: [Data(rule_id, dist, Data(rule_id, dist),...]}
         uncovered_examples = {}
@@ -2303,6 +2304,8 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
         for eid in uncovered_example_ids:
             uncovered_examples[eid] = [Data(rule_id=-1, dist=math.inf)]
             closest_rule_ids_per_example[eid] = set()
+        remaining_examples = examples.loc[uncovered_example_ids]
+
         # find_nearest_rule() updates internal statistics of the actual model which we don't desire, so restore them
         # later
         rule_per_example = copy.deepcopy(my_vars.closest_rule_per_example)
@@ -2314,7 +2317,7 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
             # TODO: write as a class and don't update in find_nearest_rule (or nearest_examples), but return the
             #         # updated entries to decide depending on the scenario whether to update the data or not
             neighbors, dists, is_closest = \
-                find_nearest_examples(examples, k, rule, class_col_name, counts, min_max, classes,
+                find_nearest_examples(remaining_examples, k, rule, class_col_name, counts, min_max, classes,
                                       label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             if neighbors is not None:
                 for example_id, row in dists.iterrows():
@@ -2331,14 +2334,10 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
                     elif abs(dist - closest_dist) < my_vars.PRECISION:
                         uncovered_examples[example_id].append(Data(rule_id=rule_id, dist=dist))
 
-        # print("closest rules for uncovered examples")
-        # print(uncovered_examples)
-
         # Restore actual model
         my_vars.closest_rule_per_example = rule_per_example
         my_vars.closest_examples_per_rule = examples_per_rule
         my_vars.examples_covered_by_rule = covered_examples
-
         # Update support for uncovered examples
         for example_id in uncovered_examples:
             if example_id not in supports:
@@ -2349,7 +2348,6 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
                 minority_supp += model[rule_id].minority
                 majority_supp += model[rule_id].majority
             supports[example_id] = Support(minority=minority_supp, majority=majority_supp)
-    # print(supports)
     return supports
 
 
@@ -2375,7 +2373,7 @@ def compute_f1_for_predictions(df, predicted, class_col_name, positive_class):
     """
     conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
     for example_id in predicted:
-        print("example", example_id)
+        print("predict label for example", example_id)
         predicted_label, confidence = predicted[example_id]
         true_label = df.loc[example_id][class_col_name]
         # Add updated value
@@ -2434,12 +2432,10 @@ def init_statistics(df):
     my_vars.examples_covered_by_rule = {}
     # Initial rule (with the highest index) will be derived from seed examples, so we already know the maximum ID now
     max_example_id = df.index.max()
-    print(df)
-    print("max example id", max_example_id)
     my_vars.latest_rule_id = max_example_id
 
 
-def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10):
+def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
     """
     Performs cross-validation on a given dataset
 
@@ -2454,20 +2450,17 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
     minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
     so that there's a binary classification task.
     folds: int - number of folds in cross-validation
+    seed: int - seed for PRNG for reproduction of the results
 
     Returns
     -------
-    dict.
-    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
-    are the predicted label and the respective confidence in a named tuple called Predictions.
-    Confidence = max (support for minority, support for majority) / (support for minority + support for majority). Note
-    that the predictions are
+    float, float.
+    Micro-averaged F1 score, macro-averaged F1 score.
 
     """
     df = dataset.copy()
-    print("dimensions:", df.shape)
     # Shuffle dataset
-    df = df.sample(frac=1).reset_index(drop=True)
+    df = df.sample(frac=1, random_state=seed)
     examples = df.shape[0]
     examples_per_fold = math.ceil(examples / folds)
     print("pick {} examples per fold".format(examples_per_fold))
@@ -2476,29 +2469,29 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
     micro_f1 = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
     # Create folds for CV
     for i in range(folds):
+        # Delete data
         print("fold", i+1)
         test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
-        print("test set: {}".format(test_set.shape))
-        print(test_set)
+        # print("test set: {}".format(test_set.shape))
+        # print(test_set)
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
-        print("training set: {}".format(train_set.shape))
-        print(train_set)
+        # print("training set: {}".format(train_set.shape))
+        # print(train_set)
         rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+        print(my_vars.closest_rule_per_example)
         model = train(rules, train_set, minority_label, class_col_name)
-        predictions = predict(model, test_set, rules, classes, class_col_name)
+        predictions = predict(model, test_set, rules, classes, class_col_name, counts, min_max)
         f1_score, conf_matrix = compute_f1_for_predictions(test_set, predictions, class_col_name, minority_label)
-        print("F1-score:", f1_score)
-        print("matrix:", conf_matrix)
-        macro_f1.append(f1)
+        macro_f1.append(f1_score)
         for conf_val in micro_f1:
-            print(conf_val)
-            print(micro_f1[conf_val])
-            print(conf_matrix[conf_val])
-            micro_f1[conf_val].add(conf_matrix[conf_val])
+            micro_f1[conf_val] = micro_f1[conf_val].union(conf_matrix[conf_val])
+        print("updated micro f1")
+        print(micro_f1)
     macro_f1_score = sum(macro_f1) / folds
     micro_f1_score = f1(micro_f1)
     print("macro-averaged F1-score:", macro_f1_score)
     print("micro-averaged F1-score:", micro_f1_score)
+    return micro_f1_score, macro_f1_score
 
 
 if __name__ == "__main__":
