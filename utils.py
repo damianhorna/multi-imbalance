@@ -57,8 +57,8 @@ def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], no
         df.columns = [i for i in range(len(df.columns))]
     lookup = {}
     # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
-    if class_index == -1:
-        class_index = len(df.columns) - 1
+    if class_index < 0:
+        class_index = len(df.columns) + class_index
     my_vars.CLASSES = df.iloc[:, class_index].unique()
     class_col_name = df.columns[class_index]
     rules = extract_initial_rules(df, class_col_name)
