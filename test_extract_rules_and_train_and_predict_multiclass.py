@@ -2,6 +2,7 @@ from unittest import TestCase
 from collections import Counter
 
 import pandas as pd
+import numpy as np
 
 from scripts.utils import extract_rules_and_train_and_predict_multiclass
 import scripts.vars as my_vars
@@ -45,5 +46,11 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
         k = 3
-        rules, preds_dict, preds_df = \
+        rules, preds_df = \
             extract_rules_and_train_and_predict_multiclass(train_set, test_set, lookup, min_max, class_col_name, k)
+        correct_preds = pd.DataFrame({
+            my_vars.PREDICTED_LABEL: ["banana", "apple", "banana", "apple", "apple", "banana"],
+            my_vars.PREDICTION_CONFIDENCE: [0.4, 1, 0.4, 1, 1, 0.4]
+        })
+        self.assertTrue(correct_preds[my_vars.PREDICTION_CONFIDENCE].equals(preds_df[my_vars.PREDICTION_CONFIDENCE]))
+        self.assertTrue(np.array_equal(correct_preds[my_vars.PREDICTED_LABEL], preds_df[my_vars.PREDICTED_LABEL]))
