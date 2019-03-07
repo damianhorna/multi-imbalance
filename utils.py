@@ -1072,6 +1072,39 @@ def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_
     return conf_matrix
 
 
+def f1(conf_matrix):
+    """
+    Computes the F1 score: F1 = 2 * (precision * recall) / (precision + recall)
+
+    Parameters
+    ----------
+    conf_matrix: dict - confusion matrix holding a set of example IDs for my_vars.TP/TN/FP/FN
+
+    Returns
+    -------
+    float.
+    F1-score
+
+    """
+    f1 = 0.0
+    if conf_matrix is not None:
+        tp = len(conf_matrix[my_vars.TP])
+        fp = len(conf_matrix[my_vars.FP])
+        fn = len(conf_matrix[my_vars.FN])
+        # tn = len(my_vars.conf_matrix[my_vars.TN])
+        precision = 0
+        recall = 0
+        prec_denom = tp + fp
+        rec_denom = tp + fn
+        if prec_denom > 0:
+            precision = tp / prec_denom
+        if rec_denom > 0:
+            recall = tp / rec_denom
+        # print("recall: {} precision: {}".format(recall, precision))
+        f1_denom = precision + recall
+        if f1_denom > 0:
+            f1 = 2*precision*recall / f1_denom
+    return f1
 
 
 def is_duplicate(new_rule, existing_rule_ids):
