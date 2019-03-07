@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.utils import cv
+from scripts.utils import cv_binary
 import scripts.vars as my_vars
 
 
@@ -44,8 +44,8 @@ class TestCv(TestCase):
         k = 3
         folds = 2
         seed = 135
-        micro_f1, macro_f1 = cv(dataset, k, class_col_name, lookup, min_max, classes, minority_label, folds=folds,
-                                seed=seed)
+        micro_f1, macro_f1 = cv_binary(dataset, k, class_col_name, lookup, min_max, classes, minority_label, folds=folds,
+                                       seed=seed)
         correct_micro = 0.5
         correct_macro = 0.5
         self.assertTrue(correct_macro == macro_f1)
