@@ -40,7 +40,7 @@ class TestPredict(TestCase):
                                5: Predictions(label='apple', confidence=1.0)}
 
         # Last 2 parameters aren't be used in this test
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, None, None)
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, None, None, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL:["banana", "banana", "apple", "banana", "banana", "apple"],
@@ -111,7 +111,8 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max)
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
+                                   for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL: ["apple", "apple", "apple", "banana", "banana", "apple"],
@@ -187,7 +188,8 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max)#
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
+                                   for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL: ["apple", "banana", "apple", "banana", "banana", "apple"],
@@ -203,4 +205,3 @@ class TestPredict(TestCase):
         self.assertTrue(correct_predictions == preds)
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
-
