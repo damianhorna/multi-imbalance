@@ -2099,163 +2099,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     return final_rules
 
 
-def bracid_multiclass(df, k, class_col_name, counts, min_max, classes, minority_label):
-    """
-    Implements the actual BRACID algorithm according to Algorithm 1 in the paper, but extends it to deal with multiclass
-    problems using the one-vs-all scheme, i.e. if there are m classes in the dataset, m classifiers are trained
-    distinguishing a class from the rest. The final label is assigned to an instance based on the highest support.
-    For example, if there are 3 classes A, B, C, and we have an instance e for which to predict the label,
-    we choose the label according to:
-    max_{i in |{A, B, C}|} sup(K_i, e)
-    , where sup() is defined in the paper.
-
-    Parameters
-    ----------
-    df: pd.DataFrame - dataset
-    k: int - number of neighbors with opposite label of <rule> to consider
-    class_col_name: str - name of class label
-    counts: dict - lookup table for SVDM
-    min_max: pd:DataFrame - contains min/max values per numeric feature
-    classes: list of str - class labels in the dataset. It's assumed to be binary.
-    minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
-    so that there's a binary classification task.
-
-    Returns
-    -------
-    dictionary of pd.Series.
-    Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
-    values the corresponding rules
-
-    """
-    #
-    supports = {}
-    my_vars.minority_class = minority_label
-    init_statistics(df)
-    print("minority class label:", my_vars.minority_class)
-    df, rules = add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
-    print("initial rules")
-    print(rules)
-    # {rule_id: rule}
-    final_rules = {}
-    iteration = 0
-    keep_running = True
-    for rule in rules:
-        rule_hash = compute_hashable_key(rule)
-        print("rule/ hash:", rule_hash)
-        my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
-    f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
-    while keep_running:
-        improved = False
-        while len(rules) > 0:
-            print("\nthere are {} rules left for evaluation:".format(len(rules)))
-            print("hashes:", my_vars.unique_rules)
-            rule = rules.popleft()
-            rule_id = rule.name
-            print("rule {} is currently being processed:\n{}".format(rule_id, rule))
-            # Add current rule at the end
-            rules.append(rule)
-            # print("it was now added to the end of all rules:\n{}".format(rules))
-            print(my_vars.seed_rule_example)
-            seed_id = my_vars.seed_rule_example[rule_id]
-            # print("seed id", seed_id)
-            # print(df)
-            seed = df.loc[seed_id]
-            # print("seed\n{}".format(seed))
-            seed_label = seed[class_col_name]
-            seed_tag = seed[my_vars.TAG]
-            # print("seed label:", seed_label)
-            print("closest rule per example", my_vars.closest_rule_per_example)
-            print("closest examples per rule", my_vars.closest_examples_per_rule)
-            print("covered examples", my_vars.examples_covered_by_rule)
-            # Minority class label
-            if seed_label == minority_label:
-                neighbors, dists, _ = find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
-                                                            label_type=my_vars.SAME_LABEL_AS_RULE,
-                                                            only_uncovered_neighbors=True)
-                # Neighbors exist
-                # if neighbors is not None:
-                if seed_tag == my_vars.SAFE:
-                    improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1,
-                                                                        class_col_name, counts, min_max, classes)
-                else:
-                    if rule.name == 3:
-                        print("final rules so far")
-                        print(final_rules)
-                    improved, generalized_rules, f1 = add_all_good_rules(df, neighbors, rule, rules, f1,
-                                                                         class_col_name, counts, min_max, classes)
-                if not improved:
-                    # Don't extend for outlier
-                    if iteration != 0:
-                        extended_rule = extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
-                        final_rules[extended_rule.name] = extended_rule
-                        # Delete rule
-                        removed = rules.pop()
-                        print("removed rule after extension:\n{}".format(removed))
-                        delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
-                                               classes)
-                else:
-                    # Use updated rules
-                    rules = generalized_rules
-                # else:
-                #     # Delete rule
-                #     removed = rules.pop()
-                #     print("removed rule no neighbors minority:\n{}".format(removed))
-                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
-            # Majority label
-            else:
-                n = k
-                if seed_tag == my_vars.SAFE:
-                    n = 1
-                neighbors, dists, _ = find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes,
-                                                            label_type=my_vars.SAME_LABEL_AS_RULE,
-                                                            only_uncovered_neighbors=True)
-                # Neighbors exist
-                # if neighbors is not None:
-                improved, generalized_rules, f1 = add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
-                                                                    counts, min_max, classes)
-                if not improved:
-                    # Treat as noise
-                    if iteration == 0:
-                        example_id = my_vars.seed_rule_example[rule_id]
-                        df, rules = treat_majority_example_as_noise(df, example_id, rules, rule_id)
-                    else:
-                        final_rules[rule.name] = rule
-                        # Delete rule
-                        removed = rules.pop()
-                        print("removed rule after adding majority final rule:\n{}".format(removed))
-                        delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
-                                               classes)
-                else:
-                    # Use updated rules
-                    rules = generalized_rules
-                # else:
-                #     # Delete rule
-                #     removed = rules.pop()
-                #     print(final_rules)
-                #     print("removed rule no neighbors majority:\n{}".format(removed))
-                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
-            iteration += 1
-            # print(len(my_vars.all_rules))
-            # print(my_vars.all_rules)
-            #
-            # print(len(my_vars.unique_rules))
-            # print(my_vars.unique_rules)
-            #
-            # print(len(final_rules))
-            # print(final_rules)
-            #
-            # print("---")
-            # print(len(rules))
-            # print(rules)
-            # assert ((len(rules) + len(final_rules)) >= len(my_vars.unique_rules))
-            print("end of iteration {} in bracid()".format(iteration))
-            print("#####################\n")
-        if not improved:
-            keep_running = False
-
-    return final_rules
-
-
 def treat_majority_example_as_noise(df, example_id, rules, rule_id):
     """
     Deletes a noisy majority example and the rule for which it's a seed and updates corresponding statistics.
@@ -2633,9 +2476,49 @@ def extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_
     return rules, preds_dict, preds_df
 
 
-def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
+def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max, classes, minority_label,
+                                                   class_col_name, k):
     """
-    Performs cross-validation on a given dataset
+    Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
+    labels for a multiclass classification task.
+
+    Parameters
+    ----------
+    train_set: pd.DataFrame - training set where each row represents a training example
+    test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    minority_label: str - label of the minority class
+    class_col_name: str - name of the column with the class label in <training_examples>
+    k: int - number of neighbors with opposite label of the current example to consider
+
+    Returns
+    -------
+    dict of pd.Series, dict of Predictions, pd.dataFrame.
+    Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
+    values the corresponding rules.
+    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
+    are the predicted label and the respective confidence in a named tuple called Predictions.
+    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
+    Final label per example is calculated according to the maximum confidence.
+    For example, if there are 3 classes A, B, C, and we have an instance e for which to predict the label,
+    we choose the label according to:
+    max_{i in |{A, B, C}|} sup(K_i, e)
+    , where sup() is defined in the paper.
+    DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
+    containing the predicted label and BRACID's confidence for assigning it.
+
+    """
+    rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+    model = train_binary(rules, train_set, minority_label, class_col_name)
+    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
+    return rules, preds_dict, preds_df
+
+
+def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
+    """
+    Performs cross-validation on a given binary dataset.
 
     Parameters
     ----------
