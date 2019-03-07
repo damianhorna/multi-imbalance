@@ -1957,7 +1957,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     Parameters
     ----------
     df: pd.DataFrame - dataset
-    k: int - number of neighbors with opposite label of <rule> to consider
+    k: int - number of neighbors with opposite label of the current example to consider
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
@@ -1969,7 +1969,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
     -------
     dictionary of pd.Series.
     Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
-    values the corresponding rules
+    values the corresponding rules.
 
     """
     my_vars.minority_class = minority_label
@@ -2598,6 +2598,41 @@ def init_statistics(df):
     my_vars.latest_rule_id = max_example_id
 
 
+def extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_max, classes, minority_label,
+                                               class_col_name, k):
+    """
+    Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
+    labels for a binary classification task.
+
+    Parameters
+    ----------
+    train_set: pd.DataFrame - training set where each row represents a training example
+    test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
+    counts: dict - lookup table for SVDM
+    min_max: pd:DataFrame - contains min/max values per numeric feature
+    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    minority_label: str - label of the minority class
+    class_col_name: str - name of the column with the class label in <training_examples>
+    k: int - number of neighbors with opposite label of the current example to consider
+
+    Returns
+    -------
+    dict of pd.Series, dict of Predictions, pd.dataFrame.
+    Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
+    values the corresponding rules.
+    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
+    are the predicted label and the respective confidence in a named tuple called Predictions.
+    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
+    DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
+    containing the predicted label and BRACID's confidence for assigning it.
+
+    """
+    rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+    model = train_binary(rules, train_set, minority_label, class_col_name)
+    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
+    return rules, preds_dict, preds_df
+
+
 def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
     """
     Performs cross-validation on a given dataset
@@ -2609,7 +2644,7 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
-    classes: list of str - class labels in the dataset. It's assumed to be binary.
+    classes: list of str - class labels in the dataset. It's assumed to be binary
     minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
     so that there's a binary classification task.
     folds: int - number of folds in cross-validation
@@ -2640,10 +2675,12 @@ def cv(dataset, k, class_col_name, counts, min_max, classes, minority_label, fol
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
         # print("training set: {}".format(train_set.shape))
         # print(train_set)
-        rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
-        print(my_vars.closest_rule_per_example)
-        model = train_binary(rules, train_set, minority_label, class_col_name)
-        predictions, _ = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
+        _, predictions, _ = extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_max,
+                                                                       classes, minority_label, class_col_name, k)
+        # rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+        # print(my_vars.closest_rule_per_example)
+        # model = train_binary(rules, train_set, minority_label, class_col_name)
+        # predictions, _ = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
         f1_score, conf_matrix = compute_f1_for_predictions(test_set, predictions, class_col_name, minority_label)
         macro_f1.append(f1_score)
         for conf_val in micro_f1:
@@ -2720,12 +2757,16 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, minority
     print("macro-averaged F1-score:", macro_f1_score)
     print("micro-averaged F1-score:", micro_f1_score)
     return micro_f1_score, macro_f1_score
+
+
 def multiclass():
     """
     Implements the actual BRACID algorithm according to Algorithm 1 in the paper,
 
     :return:
     """
+
+
 if __name__ == "__main__":
     # Get the absolute path to the parent directory of /scripts/
     base_dir = os.path.abspath(os.path.join(os.path.dirname(
@@ -2744,4 +2785,3 @@ if __name__ == "__main__":
     print(dataset)
     print(dataset.columns)
     print(lookup)
-
