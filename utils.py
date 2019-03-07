@@ -2195,7 +2195,7 @@ def train_binary(rules, training_examples, minority_label, class_col_name):
     return model
 
 
-def predict_binary(model, test_examples, rules, classes, class_col_name, counts, min_max):
+def predict_binary(model, test_examples, rules, classes, class_col_name, counts, min_max, for_multiclass=False):
     """
     Predicts the binary class labels of unknown examples. Sums up the support of (potentially multiple) rules that are
     closest to an example.
@@ -2211,13 +2211,19 @@ def predict_binary(model, test_examples, rules, classes, class_col_name, counts,
     class_col_name: str - name of the column with the class label in <training_examples>
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
+    for_multiclass: bool - True if the binary classification will be used for predicting multiclass labels. In this case
+    the label for the minority class will always be returned (because we need to choose the minority label across all
+    classes with the highest support, so we don't care about the "rest" label (=majority) at all)
 
     Returns
     -------
     dict.
     Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
     are the predicted label and the respective confidence in a named tuple called Predictions.
-    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
+    If <for_multiclass> == False:
+        Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
+    Else:
+        Confidence = support for minority / (support for minority + support for majority)
 
     """
     # {example_id: Predictions(...)}
@@ -2235,8 +2241,9 @@ def predict_binary(model, test_examples, rules, classes, class_col_name, counts,
         if supports[example_id].minority <= supports[example_id].majority:
             predicted_label = majority_label
             has_minority = False
-        if has_minority:
+        if has_minority or for_multiclass:
             confidence = supports[example_id].minority / (supports[example_id].minority + supports[example_id].majority)
+            predicted_label = minority_label
         else:
             confidence = supports[example_id].majority / (supports[example_id].minority + supports[example_id].majority)
         preds[example_id] = Predictions(label=predicted_label, confidence=confidence)
@@ -2472,15 +2479,15 @@ def extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_
     """
     rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
     model = train_binary(rules, train_set, minority_label, class_col_name)
-    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
+    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max,
+                                          for_multiclass=False)
     return rules, preds_dict, preds_df
 
 
-def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max, classes, minority_label,
-                                                   class_col_name, k):
+def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max, class_col_name, k):
     """
     Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
-    labels for a multiclass classification task.
+    labels for a multiclass classification task. Converts a multiclass problem into a one-vs-all scheme.
 
     Parameters
     ----------
@@ -2488,8 +2495,6 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
     test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
-    classes: list of str - class labels in the dataset. It's assumed to be binary.
-    minority_label: str - label of the minority class
     class_col_name: str - name of the column with the class label in <training_examples>
     k: int - number of neighbors with opposite label of the current example to consider
 
@@ -2510,10 +2515,65 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
     containing the predicted label and BRACID's confidence for assigning it.
 
     """
-    rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
-    model = train_binary(rules, train_set, minority_label, class_col_name)
-    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
-    return rules, preds_dict, preds_df
+    minority_labels = train_set[class_col_name].unique()
+    rest_label = "rest"
+    res = test_set.copy()
+    res[my_vars.PREDICTION_CONFIDENCE] = 0
+    res[my_vars.PREDICTED_LABEL] = ""
+    confs = {}
+    for minority_label in minority_labels:
+        classes = [minority_label, rest_label]
+        print("classes", classes)
+        # Convert to a binary problem
+        train = train_set.copy()
+        test = test_set.copy()
+        train = to_binary_classification_task(train, class_col_name, minority_label, merged_label=rest_label)
+        print("####training set#####")
+        print(train)
+        print("####test set######")
+        print(test)
+        rules = bracid(train, k, class_col_name, counts, min_max, classes, minority_label)
+        model = train_binary(rules, train, minority_label, class_col_name)
+        preds_dict, preds_df = predict_binary(model, test, rules, classes, class_col_name, counts, min_max,
+                                              for_multiclass=True)
+        confs[minority_label] = preds_dict
+        # Update predicted label and confidence if confidence is higher than the currently best confidence
+        res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
+                (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
+                my_vars.PREDICTED_LABEL] = preds_df[my_vars.PREDICTED_LABEL]
+        res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
+                (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
+                my_vars.PREDICTION_CONFIDENCE] = preds_df[my_vars.PREDICTION_CONFIDENCE]
+        print(preds_dict)
+    print("confidences")
+    print(confs)
+    print(res)
+    return rules, preds_dict, res
+
+
+def to_binary_classification_task(df, class_col_name, minority_label, merged_label="rest"):
+    """
+    Converts a classification task into a binary classification task merging all classes other than the minority one.
+
+    Parameters
+    ----------
+    df: pd.DataFrame - dataset
+    minority_label: str - name of the minority class. All other labels are merged into another label
+    class_col_name: str - name of the column that holds the class labels
+    merged_label: str - name of the class label into which the remaining classes will be merged
+
+    Returns
+    -------
+    pd.DataFrame.
+    Classification task with binary labels - the minority label and "rest".
+
+    """
+    unique_class_labels = set(df[class_col_name].tolist())
+    print("unique", unique_class_labels)
+    unique_class_labels.remove(minority_label)
+    labels_to_merge = dict((label, merged_label) for label in unique_class_labels)
+    df[class_col_name] = df[class_col_name].replace(labels_to_merge)
+    return df
 
 
 def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
@@ -2577,7 +2637,7 @@ def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_lab
     return micro_f1_score, macro_f1_score
 
 
-def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
+def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10, seed=13):
     """
     Performs cross-validation on a given dataset, but handles multiclass
     problems using the one-vs-all scheme, i.e. if there are m classes in the dataset, m classifiers are trained
@@ -2594,9 +2654,7 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, minority
     class_col_name: str - name of class label
     counts: dict - lookup table for SVDM
     min_max: pd:DataFrame - contains min/max values per numeric feature
-    classes: list of str - class labels in the dataset. It's assumed to be binary.
-    minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
-    so that there's a binary classification task.
+    classes: list of str - class labels in the dataset.
     folds: int - number of folds in cross-validation
     seed: int - seed for PRNG for reproduction of the results
 
@@ -2640,14 +2698,6 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, minority
     print("macro-averaged F1-score:", macro_f1_score)
     print("micro-averaged F1-score:", micro_f1_score)
     return micro_f1_score, macro_f1_score
-
-
-def multiclass():
-    """
-    Implements the actual BRACID algorithm according to Algorithm 1 in the paper,
-
-    :return:
-    """
 
 
 if __name__ == "__main__":
