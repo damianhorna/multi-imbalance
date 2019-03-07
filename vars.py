@@ -23,6 +23,8 @@ ALL_LABELS = "all"
 SAME_LABEL_AS_RULE = "same"
 MINORITY_LABEL = "minority"
 MAJORITY_LABEL = "majority"
+PREDICTED_LABEL = "predicted_label"
+PREDICTION_CONFIDENCE = "confidence_for_prediction"
 # Indicates that a rule has a unique hash
 UNIQUE_RULE = -1
 # {example ei: set(rule ri for which ei is the seed)}
