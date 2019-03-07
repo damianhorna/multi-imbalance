@@ -2,8 +2,9 @@ from unittest import TestCase
 from collections import Counter
 
 import pandas as pd
+import numpy as np
 
-from scripts.utils import predict, Bounds, Support, Predictions
+from scripts.utils import predict_binary, Bounds, Support, Predictions
 import scripts.vars as my_vars
 
 
@@ -39,8 +40,15 @@ class TestPredict(TestCase):
                                5: Predictions(label='apple', confidence=1.0)}
 
         # Last 2 parameters aren't be used in this test
-        preds = predict(model, test_set, rules, classes, class_col_name, None, None)
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, None, None)
+        correct = pd.DataFrame(
+            {
+                my_vars.PREDICTED_LABEL:["banana", "banana", "apple", "banana", "banana", "apple"],
+                my_vars.PREDICTION_CONFIDENCE: [0.9, 0.9, 0.875, 0.683333, 0.9, 1]
+            })
         self.assertTrue(correct_predictions == preds)
+        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
+        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
 
     def test_predict_uncovered(self):
         """Predict the class labels of uncovered examples with handling ties (2 rules are equally distant) for
@@ -103,7 +111,12 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        preds = predict(model, test_set, rules, classes, class_col_name, lookup, min_max)
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max)
+        correct = pd.DataFrame(
+            {
+                my_vars.PREDICTED_LABEL: ["apple", "apple", "apple", "banana", "banana", "apple"],
+                my_vars.PREDICTION_CONFIDENCE: [0.75, 1, 0.75, 0.9, 0.9, 1]
+            })
 
         # Test that predictions didn't change internal statistics of the model
         self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
@@ -111,6 +124,8 @@ class TestPredict(TestCase):
         self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
 
         self.assertTrue(correct_predictions == preds)
+        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
+        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
 
     def test_predict_mixed(self):
         """Predict the class labels of uncovered and covered examples while handling ties"""
@@ -172,7 +187,12 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        preds = predict(model, test_set, rules, classes, class_col_name, lookup, min_max)
+        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max)#
+        correct = pd.DataFrame(
+            {
+                my_vars.PREDICTED_LABEL: ["apple", "banana", "apple", "banana", "banana", "apple"],
+                my_vars.PREDICTION_CONFIDENCE: [0.75, 0.9, 0.75, 0.9, 0.9, 1]
+            })
 
         # Test that predictions didn't change internal statistics of the model
         self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
@@ -180,3 +200,7 @@ class TestPredict(TestCase):
         self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
 
         self.assertTrue(correct_predictions == preds)
+        self.assertTrue(correct_predictions == preds)
+        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
+        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
+

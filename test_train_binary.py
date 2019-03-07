@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import train, Bounds, Support
+from scripts.utils import train_binary, Bounds, Support
 
 
 class TestTrain(TestCase):
@@ -26,7 +26,7 @@ class TestTrain(TestCase):
             0: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
                           "Class": "apple"}, name=0),
         }
-        model = train(rules, training_set, minority_label, class_col_name)
+        model = train_binary(rules, training_set, minority_label, class_col_name)
         correct_model = {2: Support(minority=1.0, majority=0.0), 6: Support(minority=0.5, majority=0.5),
                          5: Support(minority=1.0, majority=0.0), 0: Support(minority=0.5, majority=0.5)}
         self.assertTrue(model == correct_model)
