@@ -32,21 +32,14 @@ class TestPredict(TestCase):
         }
         model = {2: Support(minority=0.75, majority=0.25), 6: Support(minority=0.2, majority=0.8),
                  5: Support(minority=1.0, majority=0.0), 0: Support(minority=0, majority=1)}
-        correct_predictions = {2: Predictions(label='apple', confidence=0.875),
-                               3: Predictions(label='banana', confidence=0.6833333333333332),
-                               0: Predictions(label='banana', confidence=0.9),
-                               1: Predictions(label='banana', confidence=0.9),
-                               4: Predictions(label='banana', confidence=0.9),
-                               5: Predictions(label='apple', confidence=1.0)}
 
         # Last 2 parameters aren't be used in this test
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, None, None, for_multiclass=False)
+        df = predict_binary(model, test_set, rules, classes, class_col_name, None, None, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL:["banana", "banana", "apple", "banana", "banana", "apple"],
                 my_vars.PREDICTION_CONFIDENCE: [0.9, 0.9, 0.875, 0.683333, 0.9, 1]
             })
-        self.assertTrue(correct_predictions == preds)
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
 
@@ -104,15 +97,7 @@ class TestPredict(TestCase):
         correct_examples_per_rule = {}
         correct_rule_per_example = {}
 
-        correct_predictions = {0: Predictions(label='apple', confidence=0.75),
-                               1: Predictions(label='apple', confidence=1.0),
-                               2: Predictions(label='apple', confidence=0.75),
-                               3: Predictions(label='banana', confidence=0.9),
-                               4: Predictions(label='banana', confidence=0.9),
-                               5: Predictions(label='apple', confidence=1.0)}
-
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
-                                   for_multiclass=False)
+        df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL: ["apple", "apple", "apple", "banana", "banana", "apple"],
@@ -124,7 +109,6 @@ class TestPredict(TestCase):
         self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
         self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
 
-        self.assertTrue(correct_predictions == preds)
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
 
@@ -188,7 +172,7 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        preds, df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
+        df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
                                    for_multiclass=False)
         correct = pd.DataFrame(
             {
@@ -201,7 +185,5 @@ class TestPredict(TestCase):
         self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
         self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
 
-        self.assertTrue(correct_predictions == preds)
-        self.assertTrue(correct_predictions == preds)
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
