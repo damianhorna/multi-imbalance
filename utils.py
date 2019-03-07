@@ -2219,9 +2219,9 @@ def predict_binary(model, test_examples, rules, classes, class_col_name, counts,
 
     Returns
     -------
-    dict.
-    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
-    are the predicted label and the respective confidence in a named tuple called Predictions.
+    pd.DataFrame.
+    <test_examples> with 2 additional columns storing predicted label and BRACID's confidence using the column names
+    PREDICTED_LABEL and PREDICTION_CONFIDENCE respectively.
     If <for_multiclass> == False:
         Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
     Else:
@@ -2256,7 +2256,7 @@ def predict_binary(model, test_examples, rules, classes, class_col_name, counts,
         data = preds[example_id]
         test_examples.loc[example_id, [my_vars.PREDICTED_LABEL, my_vars.PREDICTION_CONFIDENCE]] = data.label, \
                                                                                                   data.confidence
-    return preds, test_examples
+    return test_examples
 
 
 def compute_rule_support_per_example(rules, examples, model, class_col_name, counts, min_max, classes):
@@ -2424,21 +2424,18 @@ def extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_
 
     Returns
     -------
-    dict of pd.Series, dict of Predictions, pd.dataFrame.
+    dict of pd.Series, pd.dataFrame.
     Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the rule IDs and
     values the corresponding rules.
-    Dictionary with the predicted label and confidence for the unlabeled examples. Keys are the example IDs and values
-    are the predicted label and the respective confidence in a named tuple called Predictions.
-    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
     DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
     containing the predicted label and BRACID's confidence for assigning it.
+    Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
 
     """
     rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
     model = train_binary(rules, train_set, minority_label, class_col_name)
-    preds_dict, preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max,
-                                          for_multiclass=False)
-    return rules, preds_dict, preds_df
+    preds_df = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max, for_multiclass=False)
+    return rules, preds_df
 
 
 def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max, class_col_name, k):
@@ -2457,20 +2454,17 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
 
     Returns
     -------
-    dict of dict of pd.Series, dict of dict of Predictions, pd.dataFrame.
+    dict of dict of pd.Series, pd.dataFrame.
     Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the class
     labels and values are dicts with the keys being the rule IDs and values the corresponding rules.
-    Dictionary per class label (as keys) with the predicted label and confidence for the unlabeled examples.
-    Keys are the example IDs and values are the predicted label and the respective confidence in a named tuple called
-    Predictions.
+    DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
+    containing the predicted label and BRACID's confidence for assigning it.
     Confidence = max (support for minority) / (support for minority + support for majority)
     Final label per example is calculated according to the maximum confidence.
     For example, if there are 3 classes A, B, C, and we have an instance e for which to predict the label,
     we choose the label according to:
     max_{i in |{A, B, C}|} sup(K_i, e)
     , where sup() is defined in the paper.
-    DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
-    containing the predicted label and BRACID's confidence for assigning it.
 
     """
     minority_labels = train_set[class_col_name].unique()
@@ -2478,9 +2472,7 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
     res = test_set.copy()
     res[my_vars.PREDICTION_CONFIDENCE] = 0
     res[my_vars.PREDICTED_LABEL] = ""
-    confs = {}
     all_rules = {}
-    all_preds_dict = {}
     for minority_label in minority_labels:
         classes = [minority_label, rest_label]
         print("classes", classes)
@@ -2494,11 +2486,8 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
         print(test)
         rules = bracid(train, k, class_col_name, counts, min_max, classes, minority_label)
         model = train_binary(rules, train, minority_label, class_col_name)
-        preds_dict, preds_df = predict_binary(model, test, rules, classes, class_col_name, counts, min_max,
-                                              for_multiclass=True)
-        confs[minority_label] = preds_dict
+        preds_df = predict_binary(model, test, rules, classes, class_col_name, counts, min_max, for_multiclass=True)
         all_rules[minority_label] = rules
-        all_preds_dict[minority_label] = preds_dict
         # Update predicted label and confidence if confidence is higher than the currently best confidence
         res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
                 (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
@@ -2506,7 +2495,7 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
         res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
                 (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
                 my_vars.PREDICTION_CONFIDENCE] = preds_df[my_vars.PREDICTION_CONFIDENCE]
-    return all_rules, all_preds_dict, res
+    return all_rules, res
 
 
 def to_binary_classification_task(df, class_col_name, minority_label, merged_label="rest"):
@@ -2554,7 +2543,7 @@ def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_lab
     Returns
     -------
     float, np.ndarray of shape (n_classes,).
-    Micro-averaged F1 score, macro-averaged F1 score.
+    Micro-averaged F1 score, class-wise F1 score.
 
     """
     df = dataset.copy()
@@ -2576,8 +2565,8 @@ def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_lab
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
         # print("training set: {}".format(train_set.shape))
         # print(train_set)
-        _, predictions, preds_df = extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_max,
-                                                                       classes, minority_label, class_col_name, k)
+        _, preds_df = extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_max, classes,
+                                                                 minority_label, class_col_name, k)
         predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
         true.extend(preds_df[class_col_name].values)
     micro_f1 = sklearn.metrics.f1_score(true, predicted, classes, average="micro")
@@ -2611,44 +2600,40 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
 
     Returns
     -------
-    float, float.
-    Micro-averaged F1 score, macro-averaged F1 score.
+    float, np.ndarray of shape (n_classes,).
+    Micro-averaged F1 score, class-wise F1 score.
 
     """
     df = dataset.copy()
     # Shuffle dataset
     df = df.sample(frac=1, random_state=seed)
     examples = df.shape[0]
-    examples_per_fold = math.ceil(examples / folds)
+    examples_per_fold = math.ceil(examples/folds)
     print("pick {} examples per fold".format(examples_per_fold))
 
-    macro_f1 = []
-    micro_f1 = {my_vars.TP: set(), my_vars.FP: set(), my_vars.FN: set(), my_vars.TN: set()}
+    predicted = []
+    true = []
     # Create folds for CV
     for i in range(folds):
         # Delete data
-        print("fold", i+1)
+        print("fold", i + 1)
         test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
         # print("test set: {}".format(test_set.shape))
         # print(test_set)
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
+        # TODO: create copies of train and test and repeat for each class
         # print("training set: {}".format(train_set.shape))
         # print(train_set)
-        rules = bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
-        print(my_vars.closest_rule_per_example)
-        model = train_binary(rules, train_set, minority_label, class_col_name)
-        predictions, predicted_test_set = predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
-        f1_score, conf_matrix = compute_f1_for_predictions(test_set, predictions, class_col_name, minority_label)
-        macro_f1.append(f1_score)
-        for conf_val in micro_f1:
-            micro_f1[conf_val] = micro_f1[conf_val].union(conf_matrix[conf_val])
-        print("updated micro f1")
-        print(micro_f1)
-    macro_f1_score = sum(macro_f1) / folds
-    micro_f1_score = f1(micro_f1)
-    print("macro-averaged F1-score:", macro_f1_score)
-    print("micro-averaged F1-score:", micro_f1_score)
-    return micro_f1_score, macro_f1_score
+        _, preds_df = extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max,
+                                                                     class_col_name, k)
+        predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
+        true.extend(preds_df[class_col_name].values)
+    micro_f1 = sklearn.metrics.f1_score(true, predicted, classes, average="micro")
+    classwise_f1 = sklearn.metrics.f1_score(true, predicted, classes, average=None)
+    # print("order of classes", classes)
+    # print("class-wise F1-scores", classwise_f1)
+    # print("micro-averaged F1-score:", micro_f1)
+    return micro_f1, classwise_f1
 
 
 if __name__ == "__main__":
