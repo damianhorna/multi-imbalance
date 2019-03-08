@@ -9,7 +9,7 @@ import math
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
-from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score
 import numpy as np
 
 import scripts.vars as my_vars
@@ -2468,20 +2468,22 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
 
     """
     minority_labels = train_set[class_col_name].unique()
+    print("one-vs-all labels in the order they'll be processed", minority_labels)
     rest_label = "rest"
     res = test_set.copy()
-    res[my_vars.PREDICTION_CONFIDENCE] = 0
+    # Negative confidence because even if confidence for the first label is 0, it should be used instead of no label
+    res[my_vars.PREDICTION_CONFIDENCE] = -1
     res[my_vars.PREDICTED_LABEL] = ""
     all_rules = {}
     for minority_label in minority_labels:
         classes = [minority_label, rest_label]
-        print("classes", classes)
         # Convert to a binary problem
         train = train_set.copy()
         test = test_set.copy()
         train = to_binary_classification_task(train, class_col_name, minority_label, merged_label=rest_label)
         print("####training set#####")
         print(train)
+        print("classes to be used in current run", train[class_col_name].unique())
         print("####test set######")
         print(test)
         rules = bracid(train, k, class_col_name, counts, min_max, classes, minority_label)
@@ -2495,6 +2497,9 @@ def extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, 
         res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
                 (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
                 my_vars.PREDICTION_CONFIDENCE] = preds_df[my_vars.PREDICTION_CONFIDENCE]
+        # print("predicted when using {} as class".format(minority_label))
+        # print(res[res.columns[-3:]])
+        # print("bla")
     return all_rules, res
 
 
@@ -2516,7 +2521,6 @@ def to_binary_classification_task(df, class_col_name, minority_label, merged_lab
 
     """
     unique_class_labels = set(df[class_col_name].tolist())
-    print("unique", unique_class_labels)
     unique_class_labels.remove(minority_label)
     labels_to_merge = dict((label, merged_label) for label in unique_class_labels)
     df[class_col_name] = df[class_col_name].replace(labels_to_merge)
@@ -2557,7 +2561,6 @@ def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_lab
     true = []
     # Create folds for CV
     for i in range(folds):
-        # Delete data
         print("fold", i+1)
         test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
         # print("test set: {}".format(test_set.shape))
@@ -2600,8 +2603,10 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
 
     Returns
     -------
-    float, np.ndarray of shape (n_classes,).
-    Micro-averaged F1 score, class-wise F1 score.
+    float, np.ndarray of shape (n_classes,), np.ndarray of shape (folds, n_classes), np.ndarray of shape (folds,
+    n_classes)
+    Micro-averaged F1 score, class-wise F1 score, true labels of the test set per fold, predicted labels of the test
+    set per fold
 
     """
     df = dataset.copy()
@@ -2611,29 +2616,38 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
     examples_per_fold = math.ceil(examples/folds)
     print("pick {} examples per fold".format(examples_per_fold))
 
-    predicted = []
-    true = []
+    predicted_total = []
+    true_total = []
+    predicted_foldwise = []
+    true_foldwise = []
     # Create folds for CV
     for i in range(folds):
-        # Delete data
         print("fold", i + 1)
+
         test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
         # print("test set: {}".format(test_set.shape))
         # print(test_set)
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
         # TODO: create copies of train and test and repeat for each class
+        # for minority_label
         # print("training set: {}".format(train_set.shape))
         # print(train_set)
         _, preds_df = extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max,
                                                                      class_col_name, k)
-        predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
-        true.extend(preds_df[class_col_name].values)
-    micro_f1 = sklearn.metrics.f1_score(true, predicted, classes, average="micro")
-    classwise_f1 = sklearn.metrics.f1_score(true, predicted, classes, average=None)
+        preds = preds_df[my_vars.PREDICTED_LABEL].values
+        true = preds_df[class_col_name].values
+        # print("true labels:", true)
+        # print("predicted labels:", preds)
+        predicted_total.extend(preds)
+        predicted_foldwise.append(preds)
+        true_total.extend(true)
+        true_foldwise.append(true)
+    micro_f1 = f1_score(true_total, predicted_total, classes, average="micro")
+    classwise_f1 = f1_score(true_total, predicted_total, classes, average=None)
     # print("order of classes", classes)
     # print("class-wise F1-scores", classwise_f1)
     # print("micro-averaged F1-score:", micro_f1)
-    return micro_f1, classwise_f1
+    return micro_f1, classwise_f1, np.array(true_foldwise), np.array(predicted_foldwise)
 
 
 if __name__ == "__main__":
