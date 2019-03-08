@@ -1435,28 +1435,6 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
     if neighbors is None:
         return False, rules, best_f1
     dtypes = neighbors.dtypes
-    # print("neighbors", neighbors.shape)
-    # TODO: remove
-    # if rule.name == 3 and neighbors.shape == (3,5):
-    #     print("add foo stuff")
-    #     print(my_vars.unique_rules)
-    #     print(my_vars.all_rules)
-    #     print(neighbors)
-    #     print(rules)
-    #     print(best_f1)
-    #     print(my_vars.seed_rule_example)
-    #     print(my_vars.seed_example_rule)
-    #     print(my_vars.closest_rule_per_example)
-    #     print(my_vars.closest_examples_per_rule)
-    #     print(my_vars.conf_matrix)
-    #     print(my_vars.latest_rule_id)
-    #     print(my_vars.examples_covered_by_rule)
-    # if rule.name == 4:
-    #     print("add bar stuff")
-    #     print(neighbors)
-    # if rule.name == 5:
-    #     print("add zoo stuff")
-    #     print(neighbors)
     print("initial neighbors")
     print(neighbors)
     while not is_empty(neighbors):
@@ -1634,16 +1612,8 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                             # Hash collisions might occur, so there could be multiple rules with the same hash value
                             existing_rule_ids = my_vars.unique_rules[rule_hash]
                             existing_rule_id = is_duplicate(generalized_rule, existing_rule_ids)
-                            # TODO: this part can be deleted except the Boolean variable
                             # No duplicate exists
-                            if existing_rule_id == my_vars.UNIQUE_RULE:
-                                print("hash collision, but they are different rules")
-                                # my_vars.unique_rules[rule_hash].add(new_rule_id)
-                            else:
-                                print("duplicate exists!, so ignore the new rule")
-                                print(my_vars.all_rules)
-                                print("existing rule:")
-                                print(my_vars.all_rules[existing_rule_id])
+                            if existing_rule_id != my_vars.UNIQUE_RULE:
                                 is_added = False
                         print("after adding unique hash:", my_vars.unique_rules)
                         # Only add if the generalized rule is no duplicate
@@ -1678,26 +1648,6 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                         else:
                             # Rule was a duplicate, so reset the last ID
                             my_vars.latest_rule_id -= 1
-
-                    # # Sort remaining neighbors ascendingly w.r.t. the distance to the generalized rule
-                    # # Note that we use ALL_LABELS in find_nearest_rule() because we just want to re-sort the neighbors
-                    # # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
-                    # dists = []
-                    # for neighbor_id, neighbor in neighbors.iterrows():
-                    #     _, dist, _ = find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
-                    #                                    min_max, classes, my_vars.examples_covered_by_rule,
-                    #                                    label_type=my_vars.ALL_LABELS,
-                    #                                    only_uncovered_neighbors=False)
-                    #     dists.append((neighbor_id, dist))
-                    # print("recomputed distances:")
-                    # print(dists)
-                    # # At least 1 example still exists after dropping the previous one
-                    # if len(dists) > 0:
-                    #     dists.sort(key=itemgetter(1))
-                    #     example_ids, dists = map(list, (zip(*dists)))
-                    #     neighbors = neighbors.loc[example_ids]
-                    # # Stop current loop because neighbors' distance was recomputed based on the generalized rule
-                    # break
                 else:
                     # F1 score wasn't improved, so allow a reuse of this rule ID
                     my_vars.latest_rule_id -= 1
@@ -1720,20 +1670,20 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
                 print(my_vars.all_rules[duplicate_rule_id])
                 # del rules[-idx_original_rule]
                 # Might be None if we're still in iteration 0, but the generalized rule is already a duplicate
-                if replaced_rule is None:
-                    print("iteration 0, replaced rule is None", replaced_rule)
-                    # TODO: don't do anything????
-
-                    duplicates = Duplicates(original=my_vars.all_rules[duplicate_rule_id],
-                                            duplicate=generalized_rule, duplicate_idx=idx_original_rule)
-                    # deleting rule 4 isn't possible here because it could be potentially generalized for other examples
-                    # merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
-                else:
-                    print("iteration !=0, replaced rule is not None", replaced_rule)
-                    # Important: use the original rule here because otherwise the generated hash will result in the one
-                    # that we want to keep because after generalization its hash became the same as the existing rule's
-                    # hash
-                    # merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], replaced_rule)
+                # if replaced_rule is None:
+                #     print("iteration 0, replaced rule is None", replaced_rule)
+                #     # TODO: don't do anything????
+                #
+                #     duplicates = Duplicates(original=my_vars.all_rules[duplicate_rule_id],
+                #                             duplicate=generalized_rule, duplicate_idx=idx_original_rule)
+                #     # deleting rule 4 isn't possible here because it could be potentially generalized for other examples
+                #     # merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], generalized_rule)
+                # else:
+                #     print("iteration !=0, replaced rule is not None", replaced_rule)
+                #     # Important: use the original rule here because otherwise the generated hash will result in the one
+                #     # that we want to keep because after generalization its hash became the same as the existing rule's
+                #     # hash
+                #     # merge_rule_statistics_of_duplicate(my_vars.all_rules[duplicate_rule_id], replaced_rule)
                 # Potential infinite loop here if it's the last neighbor and only a duplicate is found, so we
                 # need to end the loop. If there are more neighbors available, continue with them
                 if not neighbors.empty:
@@ -1746,7 +1696,7 @@ def add_all_good_rules(df, neighbors, rule, rules, f1, class_col_name, counts, m
         iteration += 1
         print("end of iteration {} in add_all()".format(iteration))
         print("#####################\n")
-    # TODO: don't delete here -> improved=False, meaning that bracid() will remove the rule after extending it
+    # IMPORTANT: don't delete here -> improved=False, meaning that bracid() will remove the rule after extending it
     # If generalizations of <rule> improved F1-score, but introduced duplicates, delete <rule>
     # if not improved:
     #     orig_rule, duplicate_rule, duplicate_idx = duplicates
@@ -2041,11 +1991,6 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                 else:
                     # Use updated rules
                     rules = generalized_rules
-                # else:
-                #     # Delete rule
-                #     removed = rules.pop()
-                #     print("removed rule no neighbors minority:\n{}".format(removed))
-                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
             # Majority label
             else:
                 n = k
@@ -2073,26 +2018,7 @@ def bracid(df, k, class_col_name, counts, min_max, classes, minority_label):
                 else:
                     # Use updated rules
                     rules = generalized_rules
-                # else:
-                #     # Delete rule
-                #     removed = rules.pop()
-                #     print(final_rules)
-                #     print("removed rule no neighbors majority:\n{}".format(removed))
-                #     delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max, classes)
             iteration += 1
-            # print(len(my_vars.all_rules))
-            # print(my_vars.all_rules)
-            #
-            # print(len(my_vars.unique_rules))
-            # print(my_vars.unique_rules)
-            #
-            # print(len(final_rules))
-            # print(final_rules)
-            #
-            # print("---")
-            # print(len(rules))
-            # print(rules)
-            # assert ((len(rules) + len(final_rules)) >= len(my_vars.unique_rules))
             print("end of iteration {} in bracid()".format(iteration))
             print("#####################\n")
         if not improved:
@@ -2147,7 +2073,8 @@ def train_binary(rules, training_examples, minority_label, class_col_name):
     """
     Trains the model used for predicting class labels of unknown examples. To this end, the support of the derived rules
     is computed in the model. Note that BRACID was used to derive <rules>.
-    Deals only with binary labels, i.e. anything that isn't <minority_label>, will be assigned the same class label.
+    Deals only with binary labels, i.e. anything that isn't <minority_label>, will be assigned the same class label
+    (that is different from <minority_label>).
 
     Parameters
     ----------
@@ -2370,17 +2297,6 @@ def compute_hashable_key(series):
     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
     cp.name = 1
     return hash(str(cp))
-    # print("string for hashing:", tuple(cp))
-    # hash_val = 0
-    # for rule_id, val in cp.iteritems():
-    #     # Compute hash separately for lower and upper bound
-    #     if isinstance(val, Bounds):
-    #         lower, upper = val
-    #         hash_val += hash(lower) + hash(upper)
-    #     else:
-    #         hash_val += hash(val)
-    # # return hash(str(cp).encode("utf-8"))
-    # return hash_val
 
 
 def init_statistics(df):
@@ -2622,16 +2538,8 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
     true_foldwise = []
     # Create folds for CV
     for i in range(folds):
-        print("fold", i + 1)
-
         test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
-        # print("test set: {}".format(test_set.shape))
-        # print(test_set)
         train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
-        # TODO: create copies of train and test and repeat for each class
-        # for minority_label
-        # print("training set: {}".format(train_set.shape))
-        # print(train_set)
         _, preds_df = extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max,
                                                                      class_col_name, k)
         preds = preds_df[my_vars.PREDICTED_LABEL].values
@@ -2644,9 +2552,6 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
         true_foldwise.append(true)
     micro_f1 = f1_score(true_total, predicted_total, classes, average="micro")
     classwise_f1 = f1_score(true_total, predicted_total, classes, average=None)
-    # print("order of classes", classes)
-    # print("class-wise F1-scores", classwise_f1)
-    # print("micro-averaged F1-score:", micro_f1)
     return micro_f1, classwise_f1, np.array(true_foldwise), np.array(predicted_foldwise)
 
 
