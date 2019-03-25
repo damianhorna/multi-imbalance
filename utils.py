@@ -46,8 +46,9 @@ def read_dataset(src, positive_class, excluded=[], skip_rows=0, na_values=[], no
 
     Returns
     -------
-    pd.DataFrame, pd.DataFrame, dict, pd.DataFrame - dataset, initial rule set, counts matrix which contains for
-    nominal classes how often the value of a feature co-occurs with each class label, min/max values per numeric column
+    pd.DataFrame, dict, pd.DataFrame, pd.DataFrame - dataset, SVDM lookup matrix which contains for nominal
+    classes how often the value of a feature co-occurs with each class label, initial rule set, min/max values per
+    numeric column
 
     """
     my_vars.minority_class = positive_class
@@ -149,7 +150,7 @@ def add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes):
     for rule_id, rule in rules_df.iterrows():
         # TODO: convert tuples into Bounds
         # converted_rule = pd.Series(name=rule_id)
-        # for feat_name, val in rule.iteritems():
+        # for feat_name, val in rule.items():
         #     if isinstance(val, Bounds):
         #         print("convert {} to Bounds".format(val))
         #         lower, upper = val
@@ -194,6 +195,7 @@ def add_tags(df, k, rules, class_col_name, counts, min_max, classes):
     """
     tags = []
     for rule in rules:
+        print(rule)
         rule_id = rule.name
         # Ignore current row
         examples_for_pairwise_distance = df.loc[df.index != rule_id]
@@ -323,7 +325,7 @@ def does_rule_cover_example(example, rule, dtypes):
 
     """
     is_covered = True
-    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
+    for (col_name, example_val), dtype in zip(example.items(), dtypes):
         example_dtype = dtype
         if col_name in rule:
             # Cast object to tuple datatype -> this is only automatically done if it's not a string
@@ -357,7 +359,7 @@ def does_rule_cover_example_without_label(example, rule, dtypes, class_col_name)
 
     """
     is_covered = True
-    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
+    for (col_name, example_val), dtype in zip(example.items(), dtypes):
         example_dtype = dtype
         if col_name in rule and col_name != class_col_name:
             # Cast object to tuple datatype -> this is only automatically done if it's not a string
@@ -635,7 +637,7 @@ def most_specific_generalization(example, rule, class_col_name, dtypes):
     """
     # Without a deep copy, any changes to the returned rule, will also affect <rule>, i.e. the original rule
     rule = copy.deepcopy(rule)
-    for (col_name, example_val), dtype in zip(example.iteritems(), dtypes):
+    for (col_name, example_val), dtype in zip(example.items(), dtypes):
         if col_name == class_col_name:
             continue
         example_dtype = dtype
@@ -722,13 +724,13 @@ def svdm(example_feat, rule_feat, counts, classes):
     # Feature is NaN in rule -> all distances will become 1 automatically by definition
     if pd.isnull(rule_val):
         print("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
-        dists = [(idx, 1.0) for idx, _ in example_feat.iteritems()]
+        dists = [(idx, 1.0) for idx, _ in example_feat.items()]
         zlst = list(zip(*dists))
         out = pd.Series(zlst[1], index=zlst[0], name=col_name)
         return out
     n_rule = counts[col_name][rule_val]
     # For every row/example
-    for idx, example_val in example_feat.iteritems():
+    for idx, example_val in example_feat.items():
         if pd.isnull(example_val):
             print("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
             dist = 1.0
@@ -782,12 +784,12 @@ def di(example_feat, rule_feat, min_max):
     # Feature is NaN in rule -> all distances will become 1 automatically by definition
     if pd.isnull(lower_rule_val) or pd.isnull(upper_rule_val):
         print("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
-        dists = [(idx, 1.0) for idx, _ in example_feat.iteritems()]
+        dists = [(idx, 1.0) for idx, _ in example_feat.items()]
         zlst = list(zip(*dists))
         out = pd.Series(zlst[1], index=zlst[0], name=col_name)
         return out
     # For every row/example
-    for idx, example_val in example_feat.iteritems():
+    for idx, example_val in example_feat.items():
         # print("processing", example_val)
         if pd.isnull(example_val):
             print("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
@@ -1140,7 +1142,7 @@ def _are_duplicates(rule_i, rule_j):
     are_identical = True
     # Same number of features in both rules
     if len(rule_i) == len(rule_j):
-        for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.iteritems(), rule_j.iteritems()):
+        for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
             # Same feature
             if idx_i == idx_j:
                 # Strings
@@ -1753,7 +1755,7 @@ def extend_rule(df, k, rule, class_col_name, counts, min_max, classes):
     # dtypes = rule.apply(type).tolist()
     # print("data types", dtypes)
     if neighbors is not None:
-        for col_name, col_val in rule.iteritems():
+        for col_name, col_val in rule.items():
             # Only numeric features - they're stored in a named tuple
             if isinstance(col_val, Bounds):
                 lower_rule, upper_rule = col_val
@@ -2244,7 +2246,7 @@ def compute_rule_support_per_example(rules, examples, model, class_col_name, cou
         for eid in uncovered_example_ids:
             uncovered_examples[eid] = [Data(rule_id=-1, dist=math.inf)]
             closest_rule_ids_per_example[eid] = set()
-        remaining_examples = examples.loc[uncovered_example_ids]
+        remaining_examples = examples.loc[list(uncovered_example_ids)]
 
         # find_nearest_rule() updates internal statistics of the actual model which we don't desire, so restore them
         # later
@@ -2488,8 +2490,8 @@ def cv_binary(dataset, k, class_col_name, counts, min_max, classes, minority_lab
                                                                  minority_label, class_col_name, k)
         predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
         true.extend(preds_df[class_col_name].values)
-    micro_f1 = sklearn.metrics.f1_score(true, predicted, classes, average="micro")
-    classwise_f1 = sklearn.metrics.f1_score(true, predicted, classes, average=None)
+    micro_f1 = sklearn.metrics.f1_score(true, predicted, labels=classes, average="micro")
+    classwise_f1 = sklearn.metrics.f1_score(true, predicted, labels=classes, average=None)
     # print("order of classes", classes)
     # print("class-wise F1-scores", classwise_f1)
     # print("micro-averaged F1-score:", micro_f1)
@@ -2550,8 +2552,8 @@ def cv_multiclass(dataset, k, class_col_name, counts, min_max, classes, folds=10
         predicted_foldwise.append(preds)
         true_total.extend(true)
         true_foldwise.append(true)
-    micro_f1 = f1_score(true_total, predicted_total, classes, average="micro")
-    classwise_f1 = f1_score(true_total, predicted_total, classes, average=None)
+    micro_f1 = f1_score(true_total, predicted_total, labels=classes, average="micro")
+    classwise_f1 = f1_score(true_total, predicted_total, labels=classes, average=None)
     return micro_f1, classwise_f1, np.array(true_foldwise), np.array(predicted_foldwise)
 
 
@@ -2560,15 +2562,13 @@ if __name__ == "__main__":
     base_dir = os.path.abspath(os.path.join(os.path.dirname(
         os.path.abspath(__file__)), os.pardir))
     # Iris dataset
-    df = sklearn_to_df(sklearn.datasets.load_iris())
-    print(df)
-
+    # df = sklearn_to_df(sklearn.datasets.load_iris())
+    # print(df.head().to_string())
     src = os.path.join(base_dir, "datasets", "iris.csv")
     class_col_name = "Class"
     k = 3
-    classes = ["apple", "banana"]
-    dataset, lookup, rules, min_max = read_dataset(src)
-    df = add_tags(df, k, class_col_name, lookup, min_max, classes)
+    classes = ["Iris-setosa", "Iris-virginica", "Iris-versicolor"]
+    dataset, lookup, rules, min_max = read_dataset(src, positive_class=classes[0])
     print("own function")
     print(dataset)
     print(dataset.columns)
