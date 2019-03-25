@@ -53,8 +53,8 @@ class TestCv(TestCase):
         # Double check: convert (3,) to 1d array to see if results are correct
         true_fold = true_fold.reshape(-1)
         predicted_fold = predicted_fold.reshape(-1)
-        micro_f1_fold = sklearn.metrics.f1_score(true_fold, predicted_fold, classes, average="micro")
-        classwise_f1_fold = sklearn.metrics.f1_score(true_fold, predicted_fold, classes, average=None)
+        micro_f1_fold = sklearn.metrics.f1_score(true_fold, predicted_fold, labels=classes, average="micro")
+        classwise_f1_fold = sklearn.metrics.f1_score(true_fold, predicted_fold, labels=classes, average=None)
         correct_micro = 1/6
         correct_classwise_f1 = np.array([0.4, 0, 0])
         self.assertTrue(np.array_equal(correct_classwise_f1, class_f1))
