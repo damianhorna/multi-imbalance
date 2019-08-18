@@ -1,3 +1,3 @@
-from ._data_loader import fetch_datasets
+from ._data_loader import load_datasets
 
-__all__ = ['fetch_datasets']
+__all__ = ['load_datasets']
