@@ -66,3 +66,4 @@ _configtest.o.d
 
 # Used by mypy
 .mypy_cache/
+*.egg-info
