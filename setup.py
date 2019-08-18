@@ -18,4 +18,22 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    install_requires=[
+        'bleach==3.1.0',
+        'certifi==2019.6.16',
+        'chardet==3.0.4',
+        'docutils==0.15.2',
+        'idna==2.8',
+        'pkginfo==1.5.0.1',
+        'Pygments==2.4.2',
+        'readme-renderer==24.0',
+        'requests==2.22.0',
+        'requests-toolbelt==0.9.1',
+        'six==1.12.0',
+        'tqdm==4.33.0',
+        'twine==1.13.0',
+        'urllib3==1.25.3',
+        'webencodings==0.5.1',
+        'wincertstore==0.2',
+    ]
 )
