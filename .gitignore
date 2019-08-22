@@ -39,7 +39,7 @@ doc/samples
 .coverage
 
 *.nt.bz2
-#*.tar.gz
+*.tar.gz
 *.tgz
 
 examples/cluster/joblib
@@ -66,6 +66,10 @@ _configtest.o.d
 
 # Used by mypy
 .mypy_cache/
+*.egg-info
 
-#datasets
+# Environment
+venv
+
+# Datasets
 data/extracted/
