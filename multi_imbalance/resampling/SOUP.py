@@ -26,24 +26,24 @@ class SOUP(object):
                 neighbours_classes = y[neighbours_indices[0]]
                 neighbours_quantities = Counter(neighbours_classes)
 
-                safe_levels[sample_id] = self._calculate_safe_level(class_name, neighbours_quantities)
+                safe_levels[sample_id] = self._calculate_safe_level(class_name, neighbours_quantities, quantities)
 
             if class_quantity <= mean_quantity:
                 temp_X, temp_y = self._oversample(X, y, mean_quantity, safe_levels)
             else:
                 temp_X, temp_y = self._undersample(X, y, mean_quantity, safe_levels)
+
             result_X.extend(temp_X)
             result_y.extend(temp_y)
 
         X, y = result_X, result_y
         return X, y
 
-    def _calculate_safe_level(self, class_name, neighbours_quantities):
+    def _calculate_safe_level(self, class_name, neighbours_quantities, quantities):
         safe_level = 0
         for neighbour_class_name, neighbour_class_quantity in neighbours_quantities.items():
-            similarity_between_classes = min(
-                neighbours_quantities[class_name], neighbours_quantities[neighbour_class_name]) / max(
-                neighbours_quantities[class_name], neighbours_quantities[neighbour_class_name])
+            similarity_between_classes = min(quantities[class_name], quantities[neighbour_class_name]) / max(
+                quantities[class_name], quantities[neighbour_class_name])
             safe_level += neighbour_class_quantity * similarity_between_classes / self.k
         return safe_level
 
@@ -56,7 +56,7 @@ class SOUP(object):
         undersampled_X, undersampled_y = list(), list()
         for idx, _ in safe_levels_list:
             undersampled_X.append(X[idx])
-            undersampled_X.append(y[idx])
+            undersampled_y.append(y[idx])
         return undersampled_X, undersampled_y
 
     def _oversample(self, X, y, mean_quantity, safe_levels):
