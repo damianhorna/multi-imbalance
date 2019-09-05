@@ -19,4 +19,4 @@ def plot_multi_dimensional_data(X, y, ax=None):
     X_df = pd.DataFrame(data=reduced_X, columns=['x1', 'x2'])
     df = pd.concat([X_df, y], axis=1)
 
-    sns.scatterplot(x="x1", y="x2", hue="y", data=df, alpha=0.3, ax=ax, legend=False)
+    sns.scatterplot(x="x1", y="x2", hue="y", data=df, alpha=1, ax=ax, legend=False)
