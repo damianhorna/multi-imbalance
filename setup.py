@@ -22,5 +22,6 @@ setuptools.setup(
         "numpy>=1.17.0",
         "scikit-learn>=0.21.3",
         "pandas",
+        "seaborn",
     ]
 )
