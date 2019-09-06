@@ -7,20 +7,23 @@ import numpy as np
 
 class SOUP(object):
     # TODO docs and tests
-    def __init__(self, k=5):
+    def __init__(self, k=9):
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.quantities = None
 
-    def fit(self, X, y):
+    def fit_transform(self, X, y):
         result_X, result_y = list(), list()
         self.neigh_clf.fit(X)
         self.quantities = Counter(y)
         mean_quantity = np.mean(list(self.quantities.values()), dtype=int)
-
+        print(self.quantities)
         for class_name, class_quantity in self.quantities.items():
+
             class_safe_levels = self._construct_class_safe_levels(X, y, class_name)
 
+            print(class_name)
+            print(class_safe_levels)
             if class_quantity <= mean_quantity:
                 temp_X, temp_y = self._oversample(X, y, mean_quantity, class_safe_levels)
             else:

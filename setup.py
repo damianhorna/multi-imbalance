@@ -23,5 +23,6 @@ setuptools.setup(
         "scikit-learn>=0.21.3",
         "pandas",
         "seaborn",
+        "pytest",
     ]
 )
