@@ -6,7 +6,6 @@ import numpy as np
 
 
 class SOUP(object):
-    # TODO docs and tests
     def __init__(self, k=9):
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
@@ -17,17 +16,14 @@ class SOUP(object):
         self.neigh_clf.fit(X)
         self.quantities = Counter(y)
         mean_quantity = np.mean(list(self.quantities.values()), dtype=int)
-        print(self.quantities)
         for class_name, class_quantity in self.quantities.items():
 
             class_safe_levels = self._construct_class_safe_levels(X, y, class_name)
 
-            print(class_name)
-            print(class_safe_levels)
             if class_quantity <= mean_quantity:
-                temp_X, temp_y = self._oversample(X, y, mean_quantity, class_safe_levels)
+                temp_X, temp_y = self.oversample(X, y, mean_quantity, class_safe_levels)
             else:
-                temp_X, temp_y = self._undersample(X, y, mean_quantity, class_safe_levels)
+                temp_X, temp_y = self.undersample(X, y, mean_quantity, class_safe_levels)
 
             result_X.extend(temp_X)
             result_y.extend(temp_y)
@@ -44,7 +40,6 @@ class SOUP(object):
             neighbours_classes = y[neighbours_indices[0]]
             neighbours_quantities = Counter(neighbours_classes)
             class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
-
         return class_safe_levels
 
     def _calculate_sample_safe_level(self, class_name, neighbours_quantities):
@@ -58,7 +53,11 @@ class SOUP(object):
         return safe_level
 
     @staticmethod
-    def _undersample(X, y, goal_quantity, class_safe_levels):
+    def undersample(X, y, goal_quantity, class_safe_levels):
+        if len(class_safe_levels) < goal_quantity:
+            raise AttributeError(
+                "Quantity of classes safe_levels should be higher than goal quantity for undersampling")
+
         class_quantity = len(class_safe_levels)
         safe_levels_list = sorted(class_safe_levels.items(), key=lambda item: item[1])
         samples_to_remove_quantity = int(class_quantity - goal_quantity)
@@ -71,12 +70,15 @@ class SOUP(object):
         return undersampled_X, undersampled_y
 
     @staticmethod
-    def _oversample(X, y, mean_quantity, class_safe_levels):
+    def oversample(X, y, goal_quantity, class_safe_levels):
+        if len(class_safe_levels) > goal_quantity:
+            raise AttributeError("Quantity of classes safe_levels should be lower than goal quantity for oversampling")
+
         class_quantity = len(class_safe_levels)
         safe_levels_list = sorted(class_safe_levels.items(), key=lambda item: item[1], reverse=True)
 
         oversampled_X, oversampled_y = list(), list()
-        for i in range(mean_quantity):
+        for i in range(goal_quantity):
             sample_level_ranking_to_duplicate = i % class_quantity
             sample_id, sample_safe_level = safe_levels_list[sample_level_ranking_to_duplicate]
             oversampled_X.append(X[sample_id])

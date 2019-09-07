@@ -11,12 +11,14 @@ def plot_multi_dimensional_data(X, y, ax=None):
     :param ax: optional parameter for subplots
     :return: None
     """
-    pca = PCA(n_components=2)
-    reduced_X = pca.fit_transform(X)
+
+    if X.shape[1] > 2:
+        pca = PCA(n_components=2)
+        X = pca.fit_transform(X)
 
     y = pd.DataFrame({'y': y})
 
-    X_df = pd.DataFrame(data=reduced_X, columns=['x1', 'x2'])
+    X_df = pd.DataFrame(data=X, columns=['x1', 'x2'])
     df = pd.concat([X_df, y], axis=1)
 
     sns.scatterplot(x="x1", y="x2", hue="y", data=df, alpha=1, ax=ax, legend=False)
