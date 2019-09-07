@@ -73,12 +73,12 @@ complete_test_data = [
 ]
 
 safe_levels_test_data = [
-    (X, y_balanced, y_balanced_0_class_safe_levels),
-    (X, y_balanced, y_balanced_1_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_0_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_1_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_0_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_1_class_safe_levels),
+    (X, y_balanced, y_balanced_0_class_safe_levels, y_balanced_quantities),
+    (X, y_balanced, y_balanced_1_class_safe_levels, y_balanced_quantities),
+    (X, y_imb_easy, y_imb_easy_0_class_safe_levels, y_imb_easy_quantities),
+    (X, y_imb_easy, y_imb_easy_1_class_safe_levels, y_imb_easy_quantities),
+    (X, y_imb_hard, y_imb_hard_quantities_0_class_safe_levels, y_imb_hard_quantities),
+    (X, y_imb_hard, y_imb_hard_quantities_1_class_safe_levels, y_imb_hard_quantities),
 ]
 
 
@@ -88,6 +88,7 @@ def soup_mock():
         clf = SOUP(k=5)
         clf.neigh_clf.fit(X)
         clf.quantities = quantities
+        clf.goal_quantity = 10
         return clf
 
     return _get_parametrized_soup
@@ -115,23 +116,25 @@ def test_calculating_safe_levels_for_class(X, y, quantities, zero_safe_levels, o
     assert one_levels == one_safe_levels
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_oversample(X, y, safe_levels):
+@pytest.mark.parametrize("X, y, safe_levels, quantities", safe_levels_test_data)
+def test_oversample(X, y, safe_levels, quantities, soup_mock):
+    clf = soup_mock(X, quantities)
     if len(safe_levels) <= 10:
-        oversampled_X, oversampled_y = SOUP.oversample(X, y, 10, safe_levels)
+        oversampled_X, oversampled_y = clf._oversample(X, y, safe_levels)
         assert len(oversampled_X) == 10
         assert len(oversampled_y) == 10
     else:
         with pytest.raises(AttributeError):
-            _, _ = SOUP.oversample(X, y, 10, safe_levels)
+            _, _ = clf._oversample(X, y, safe_levels)
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_undersample(X, y, safe_levels):
+@pytest.mark.parametrize("X, y, safe_levels, quantities", safe_levels_test_data)
+def test_undersample(X, y, safe_levels, quantities, soup_mock):
+    clf = soup_mock(X, quantities)
     if len(safe_levels) >= 10:
-        undersampled_X, undersampled_y = SOUP.undersample(X, y, 10, safe_levels)
+        undersampled_X, undersampled_y = clf._undersample(X, y, safe_levels)
         assert len(undersampled_X) == 10
         assert len(undersampled_y) == 10
     else:
         with pytest.raises(AttributeError):
-            _, _ = SOUP.undersample(X, y, 10, safe_levels)
+            _, _ = clf._undersample(X, y, safe_levels)
