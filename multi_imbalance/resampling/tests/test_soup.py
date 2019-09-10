@@ -138,3 +138,21 @@ def test_undersample(X, y, safe_levels, quantities, soup_mock):
     else:
         with pytest.raises(AttributeError):
             _, _ = clf._undersample(X, y, safe_levels)
+
+
+def test_invalid_input_when_not_enough_labels():
+    clf = SOUP(k=5)
+    X = np.array([[1, 1], [1, 0]])
+    y = np.array([1])
+
+    with pytest.raises(AssertionError):
+        _, _ = clf.fit_transform(X, y)
+
+
+def test_invalid_input_when_one_dimension_X():
+    clf = SOUP(k=5)
+    X = np.array([1, 1, 0])
+    y = np.array([1])
+
+    with pytest.raises(AssertionError):
+        _, _ = clf.fit_transform(X, y)

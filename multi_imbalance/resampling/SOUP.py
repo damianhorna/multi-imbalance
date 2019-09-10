@@ -9,7 +9,7 @@ class SOUP(object):
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
     in each class. It also takes care of the similarity between classes, which means that it removes samples from
-    majority class, that are close to samples from the other class and duplicate samples from th minority classes,
+    majority class, that are close to samples from the other class and duplicate samples from the minority classes,
     which are in the safest area in space
     """
 
@@ -30,6 +30,9 @@ class SOUP(object):
         -------
         Resampled X (mean class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
+        assert len(X.shape) == 2, 'X should have 2 dimension'
+        assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
+
         result_X, result_y = list(), list()
         self.neigh_clf.fit(X)
         self.quantities = Counter(y)
@@ -55,11 +58,16 @@ class SOUP(object):
 
         class_safe_levels = defaultdict(float)
         for sample_id in indices_in_class:
-            neighbours_indices = self.neigh_clf.kneighbors([list(X[sample_id])], return_distance=False)
-            neighbours_classes = y[neighbours_indices[0]]
-            neighbours_quantities = Counter(neighbours_classes)
+            neighbours_quantities = self._calculate_neighbour_quantities_for_sample(X, y, sample_id)
             class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
         return class_safe_levels
+
+    def _calculate_neighbour_quantities_for_sample(self, X, y, sample_id):
+        sample_row = [list(X[sample_id])]
+        neighbours_indices = self.neigh_clf.kneighbors(sample_row, return_distance=False)[0]
+        neighbours_classes = y[neighbours_indices]
+        neighbours_quantities = Counter(neighbours_classes)
+        return neighbours_quantities
 
     def _calculate_sample_safe_level(self, class_name, neighbours_quantities):
         safe_level = 0
@@ -81,10 +89,9 @@ class SOUP(object):
         samples_to_remove_quantity = int(class_quantity - self.goal_quantity)
         safe_levels_list = safe_levels_list[samples_to_remove_quantity:]
 
-        undersampled_X, undersampled_y = list(), list()
-        for idx, _ in safe_levels_list:
-            undersampled_X.append(X[idx])
-            undersampled_y.append(y[idx])
+        undersampled_X = [X[idx] for idx, _ in safe_levels_list]
+        undersampled_y = [y[idx] for idx, _ in safe_levels_list]
+
         return undersampled_X, undersampled_y
 
     def _oversample(self, X, y, safe_levels_of_samples_in_class):
