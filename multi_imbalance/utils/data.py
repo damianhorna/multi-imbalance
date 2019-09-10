@@ -25,6 +25,5 @@ def construct_flat_2pc_df(X: Array[float], y: Array) -> pd.DataFrame:
     X_df = pd.DataFrame(data=X, columns=['x1', 'x2'])
 
     df = pd.concat([X_df, y], axis=1)
-    df = df.sort_values(['y'])
 
     return df
