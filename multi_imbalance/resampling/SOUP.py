@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from sklearn.neighbors import NearestNeighbors
 from sklearn.utils import shuffle
+from nptyping import Array
 
 import numpy as np
 
@@ -13,12 +14,12 @@ class SOUP(object):
     which are in the safest area in space
     """
 
-    def __init__(self, k=9):
+    def __init__(self, k: int = 9) -> None:
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.quantities, self.goal_quantity = [None] * 2
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X: Array[float], y: Array) -> (Array[float], Array):
         """
 
         Parameters
@@ -40,7 +41,7 @@ class SOUP(object):
 
         for class_name, class_quantity in self.quantities.items():
 
-            class_safe_levels = self._construct_class_safe_levels(X, y, class_name)
+            class_safe_levels: defaultdict = self._construct_class_safe_levels(X, y, class_name)
 
             if class_quantity <= self.goal_quantity:
                 temp_X, temp_y = self._oversample(X, y, class_safe_levels)
@@ -53,7 +54,7 @@ class SOUP(object):
         result_X, result_y = shuffle(result_X, result_y)
         return np.array(result_X), np.array(result_y)
 
-    def _construct_class_safe_levels(self, X, y, class_name):
+    def _construct_class_safe_levels(self, X: Array[float], y: Array, class_name) -> defaultdict:
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
         class_safe_levels = defaultdict(float)
@@ -62,16 +63,16 @@ class SOUP(object):
             class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
         return class_safe_levels
 
-    def _calculate_neighbour_quantities_for_sample(self, X, y, sample_id):
+    def _calculate_neighbour_quantities_for_sample(self, X: Array[float], y: Array, sample_id):
         sample_row = [list(X[sample_id])]
         neighbours_indices = self.neigh_clf.kneighbors(sample_row, return_distance=False)[0]
         neighbours_classes = y[neighbours_indices]
         neighbours_quantities = Counter(neighbours_classes)
         return neighbours_quantities
 
-    def _calculate_sample_safe_level(self, class_name, neighbours_quantities):
+    def _calculate_sample_safe_level(self, class_name, neighbours_quantities: Counter):
         safe_level = 0
-        q = self.quantities
+        q: Counter = self.quantities
 
         for neighbour_class_name, neighbour_class_quantity in neighbours_quantities.items():
             similarity_between_classes = min(q[class_name], q[neighbour_class_name]) / max(q[class_name],
@@ -79,7 +80,8 @@ class SOUP(object):
             safe_level += neighbour_class_quantity * similarity_between_classes / self.k
         return safe_level
 
-    def _undersample(self, X, y, safe_levels_of_samples_in_class):
+    def _undersample(self, X: Array[float], y: Array, safe_levels_of_samples_in_class: defaultdict) -> (
+    Array[float], Array):
         if len(safe_levels_of_samples_in_class) < self.goal_quantity:
             raise AttributeError(
                 "Quantity of classes safe_levels should be higher than goal quantity for undersampling")
@@ -94,7 +96,8 @@ class SOUP(object):
 
         return undersampled_X, undersampled_y
 
-    def _oversample(self, X, y, safe_levels_of_samples_in_class):
+    def _oversample(self, X: Array[float], y: Array, safe_levels_of_samples_in_class: defaultdict) -> (
+    Array[float], Array):
         if len(safe_levels_of_samples_in_class) > self.goal_quantity:
             raise AttributeError("Quantity of classes safe_levels should be lower than goal quantity for oversampling")
 
@@ -103,7 +106,7 @@ class SOUP(object):
 
         oversampled_X, oversampled_y = list(), list()
         for i in range(self.goal_quantity):
-            sample_level_ranking_to_duplicate = i % class_quantity
+            sample_level_ranking_to_duplicate: int = i % class_quantity
             sample_id, sample_safe_level = safe_levels_list[sample_level_ranking_to_duplicate]
             oversampled_X.append(X[sample_id])
             oversampled_y.append(y[sample_id])

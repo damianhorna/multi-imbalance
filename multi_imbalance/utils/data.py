@@ -1,8 +1,9 @@
+from nptyping import Array
 from sklearn.decomposition import PCA
 import pandas as pd
 
 
-def construct_flat_2pc_df(X, y):
+def construct_flat_2pc_df(X: Array[float], y: Array) -> pd.DataFrame:
     """
     This function uses PCA to reduce X dimensions and creates dataframe with 2 principal component and labels
     for this data. In case of X with 2 dimension it skips the PCA part
