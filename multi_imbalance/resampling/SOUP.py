@@ -1,10 +1,8 @@
 from collections import Counter, defaultdict
 
+import numpy as np
 import sklearn
 from sklearn.neighbors import NearestNeighbors
-from nptyping import Array
-
-import numpy as np
 
 
 class SOUP(object):
@@ -17,10 +15,10 @@ class SOUP(object):
 
     def __init__(self, k: int = 9) -> None:
         self.k = k
-        self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
+        self.neigh_clf = NearestNeighbors(n_neighbors=self.k + 1)
         self.quantities, self.goal_quantity = [None] * 2
 
-    def fit_transform(self, X: Array[float], y: Array, shuffle: bool = True) -> (Array[float], Array):
+    def fit_transform(self, X, y, shuffle: bool = True):
         """
 
         Parameters
@@ -57,7 +55,7 @@ class SOUP(object):
 
         return np.array(result_X), np.array(result_y)
 
-    def _construct_class_safe_levels(self, X: Array[float], y: Array, class_name) -> defaultdict:
+    def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
         class_safe_levels = defaultdict(float)
@@ -66,10 +64,10 @@ class SOUP(object):
             class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
         return class_safe_levels
 
-    def _calculate_neighbour_quantities_for_sample(self, X: Array[float], y: Array, sample_id):
+    def _calculate_neighbour_quantities_for_sample(self, X, y, sample_id):
         sample_row = [list(X[sample_id])]
         neighbours_indices = self.neigh_clf.kneighbors(sample_row, return_distance=False)[0]
-        neighbours_classes = y[neighbours_indices]
+        neighbours_classes = y[neighbours_indices[1:]]
         neighbours_quantities = Counter(neighbours_classes)
         return neighbours_quantities
 
@@ -83,8 +81,7 @@ class SOUP(object):
             safe_level += neighbour_class_quantity * similarity_between_classes / self.k
         return safe_level
 
-    def _undersample(self, X: Array[float], y: Array, safe_levels_of_samples_in_class: defaultdict) -> (
-            Array[float], Array):
+    def _undersample(self, X, y, safe_levels_of_samples_in_class: defaultdict):
         if len(safe_levels_of_samples_in_class) < self.goal_quantity:
             raise AttributeError(
                 "Quantity of classes safe_levels should be higher than goal quantity for undersampling")
@@ -99,8 +96,7 @@ class SOUP(object):
 
         return undersampled_X, undersampled_y
 
-    def _oversample(self, X: Array[float], y: Array, safe_levels_of_samples_in_class: defaultdict) -> (
-            Array[float], Array):
+    def _oversample(self, X, y, safe_levels_of_samples_in_class: defaultdict):
         if len(safe_levels_of_samples_in_class) > self.goal_quantity:
             raise AttributeError("Quantity of classes safe_levels should be lower than goal quantity for oversampling")
 

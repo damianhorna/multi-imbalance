@@ -1,9 +1,8 @@
-from nptyping import Array
 from sklearn.decomposition import PCA
 import pandas as pd
 
 
-def construct_flat_2pc_df(X: Array[float], y: Array) -> pd.DataFrame:
+def construct_flat_2pc_df(X, y) -> pd.DataFrame:
     """
     This function takes two dimensional X and one dimensional y arrays, concatenates and returns them as data frame
 

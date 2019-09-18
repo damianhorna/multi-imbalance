@@ -24,6 +24,5 @@ setuptools.setup(
         "pandas>=0.25.1",
         "seaborn>=0.9.0",
         "pytest>=5.1.2",
-        "nptyping>=0.2.0",
     ]
 )
