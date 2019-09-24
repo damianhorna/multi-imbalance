@@ -17,39 +17,45 @@ class ECOC(BaseEstimator):
 
         self._code_matrix = None
         self._binary_classifiers = []
+        self._labels = None
 
     def fit(self, X, y):
-        self._code_matrix = self._gen_code_matrix(X, y)
+        self._labels = np.unique(y)
+        self._gen_code_matrix()
         self._binary_classifiers = [DecisionTreeClassifier() for _ in range(self._code_matrix.shape[1])]
         self._learn_binary_classifiers(X, y)
         return self
 
     def predict(self, X):
+        output_codes = np.zeros(X.shape[0], self._code_matrix.shape[1])
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
-            code = np.array([])
+            output_codes[:, classifier_idx] = classifier.predict(X)
+
+        predicted = np.zeros(X.shape[0])
+        for row_idx, encoded_row in enumerate(output_codes):
+            predicted[row_idx] = self._get_closest_class(encoded_row)
 
     def _learn_binary_classifiers(self, X, y):
-        # TODO what if 0 ?
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
-            binary_labels = [self._code_matrix[clazz][classifier_idx] for clazz in y]
-            classifier.fit(X, binary_labels)
+            excluded_classes_indices = [idx for idx in range(len(y)) if y[idx] == 0]
+            X_filtered = np.delete(X, excluded_classes_indices, 0)
+            y_filtered = np.delete(y, excluded_classes_indices)
+            binary_labels = [self._code_matrix[self._labels.index(clazz)][classifier_idx] for clazz in y_filtered]
+            classifier.fit(X_filtered, binary_labels)
 
-    def _decode(self):
-        pass
-
-    def _gen_code_matrix(self, X, y):
+    def _gen_code_matrix(self):
         allowed_encodings = ('dense', 'sparse', 'complete', 'OVA', 'OVO')
 
         if self.encoding == 'dense':
-            return self._encode_dense(y)
+            self._code_matrix = self._encode_dense(self._labels)
         elif self.encoding == 'sparse':
-            return self._encode_sparse(y)
+            self._code_matrix = self._encode_sparse(self._labels)
         elif self.encoding == 'complete':
-            return self._encode_complete(y)
+            self._code_matrix = self._encode_complete(self._labels)
         elif self.encoding == 'OVO':
-            pass
+            self._code_matrix = self._encode_ovo(self._labels)
         elif self.encoding == 'OVA':
-            pass
+            self._code_matrix = self._encode_ova(self._labels)
         else:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_encodings))
@@ -151,3 +157,7 @@ class ECOC(BaseEstimator):
 
     def _has_matrix_all_zeros_column(self, matrix):
         return (~matrix.any(axis=0)).any()
+
+    def _get_closest_class(self, row):
+        return self._labels[
+            np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
