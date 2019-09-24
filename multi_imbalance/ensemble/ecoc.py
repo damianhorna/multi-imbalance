@@ -27,7 +27,7 @@ class ECOC(BaseEstimator):
         return self
 
     def predict(self, X):
-        output_codes = np.zeros(X.shape[0], self._code_matrix.shape[1])
+        output_codes = np.zeros((X.shape[0], self._code_matrix.shape[1]))
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             output_codes[:, classifier_idx] = classifier.predict(X)
 
@@ -35,27 +35,30 @@ class ECOC(BaseEstimator):
         for row_idx, encoded_row in enumerate(output_codes):
             predicted[row_idx] = self._get_closest_class(encoded_row)
 
+        return predicted
+
     def _learn_binary_classifiers(self, X, y):
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             excluded_classes_indices = [idx for idx in range(len(y)) if y[idx] == 0]
             X_filtered = np.delete(X, excluded_classes_indices, 0)
             y_filtered = np.delete(y, excluded_classes_indices)
-            binary_labels = [self._code_matrix[self._labels.index(clazz)][classifier_idx] for clazz in y_filtered]
+            binary_labels = [self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
+                             y_filtered]
             classifier.fit(X_filtered, binary_labels)
 
     def _gen_code_matrix(self):
         allowed_encodings = ('dense', 'sparse', 'complete', 'OVA', 'OVO')
 
         if self.encoding == 'dense':
-            self._code_matrix = self._encode_dense(self._labels)
+            self._code_matrix = self._encode_dense(self._labels.shape[0])
         elif self.encoding == 'sparse':
-            self._code_matrix = self._encode_sparse(self._labels)
+            self._code_matrix = self._encode_sparse(self._labels.shape[0])
         elif self.encoding == 'complete':
-            self._code_matrix = self._encode_complete(self._labels)
+            self._code_matrix = self._encode_complete(self._labels.shape[0])
         elif self.encoding == 'OVO':
-            self._code_matrix = self._encode_ovo(self._labels)
+            self._code_matrix = self._encode_ovo(self._labels.shape[0])
         elif self.encoding == 'OVA':
-            self._code_matrix = self._encode_ova(self._labels)
+            self._code_matrix = self._encode_ova(self._labels.shape[0])
         else:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_encodings))
