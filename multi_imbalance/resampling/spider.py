@@ -22,7 +22,10 @@ class SPIDER3:
             DS_clazz = self.DS[self.DS[:, -1] == clazz]
             for x in DS_clazz:
                 if clazz not in self._min_cost_classes(x, self.DS):
-                    np.append(self.RS, x)
+                    if self.RS.size == 0:
+                        self.RS = np.array([x])
+                    else:
+                        self.RS = np.append(self.RS, x.reshape(1, x.size), axis=0)
 
         self.DS = self._setdiff(self.DS, self.RS)
 
@@ -31,7 +34,10 @@ class SPIDER3:
             for x in DS_clazz:
                 self.relabel_nn(x)
 
-            AS_clazz = self.AS[self.AS[:-1] == clazz]
+            if self.AS.size != 0:
+                AS_clazz = self.AS[self.AS[:, -1] == clazz]
+            else:
+                AS_clazz = np.array([])
             for x in self._union(DS_clazz, AS_clazz):
                 self.clean_nn(x)
 
@@ -52,12 +58,12 @@ class SPIDER3:
             vals.append(s)
         C = np.array(C)
         return C[vals == vals[
-            np.argmin(vals)]]  # any arg that minimizes or all of them where for egzample there are two with same value?
+            np.argmin(vals)]]  # any arg that minimizes or all of them where for example there are two with same value?
 
     def _setdiff(self, S1, S2):
-        for element in S2:
-            if element.tolist() in S1.tolist():
-                np.delete(S1, element, 0)
+        for element in S2.tolist():
+            if element in S1.tolist():
+                S1 = np.delete(S1, S1.tolist().index(element), 0)
         return S1
 
     def _union(self, arr1, arr2):
@@ -66,10 +72,22 @@ class SPIDER3:
         elif arr2.size == 0:
             return arr1
         else:
-            return np.unique(np.append(arr1, arr2, axis=0), axis=0)
+            result = []
+
+            for element in arr1.tolist():
+                if element not in result:
+                    result.append(element)
+
+            for element in arr2.tolist():
+                if element not in result:
+                    result.append(element)
+
+            return np.array(result)
 
     def _intersect(self, arr1, arr2):
-        return arr1[arr1 in arr2]
+        if arr1.size == 0 or arr2.size == 0:
+            return np.array([])
+        return np.array([x for x in arr1.tolist() if x in arr2.tolist()])
 
     def relabel_nn(self, x):
         relabel_candidates = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)))
@@ -81,7 +99,7 @@ class SPIDER3:
             TS = self._setdiff(TS, y)
             self.RS = self._setdiff(self.RS, y)
             y[-1] = x[-1]
-            self.AS = self._union(self.AS, y)
+            self.AS = self._union(self.AS, np.array([y]))
 
     def nearest(self, x, TS):
         self.neigh_clf.fit(TS[:, :-1])
@@ -101,12 +119,19 @@ class SPIDER3:
     def _knn(self, x, DS, c=None):
         self.neigh_clf.fit(DS[:, :-1])
         indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)[0]
-        return DS[indices][DS[indices][:, -1] == c]
+        if c is not None:
+            result = []
+            for idx in indices:
+                if DS[idx][-1] in c:
+                    result.append(DS[idx])
+            return np.array(result)
+        else:
+            return DS[indices]
 
     def amplify(self, x):
         while x[-1] not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
             y = x.copy()
-            self.AS = self._union(self.AS, y)
+            self.AS = self._union(self.AS, np.asarray([y]))
 
 
 def plot_multi_dimensional_data(X, y, ax=None):
@@ -145,7 +170,8 @@ if __name__ == "__main__":
     X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
     print(X[:5])
     print(y[:5])
-    cost = np.ones((8, 8))
+    cost = np.random.rand(64).reshape((8, 8))  # np.ones((8, 8))
     clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
                   intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
-    transformed = clf.fit_transform(X, y)
+    transformed = clf.fit_transform(X.astype(np.float64), y)
+    print("Done")
