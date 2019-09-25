@@ -51,19 +51,22 @@ class SPIDER3:
                 s += (self._knn(x, DS, ci).shape[0] / self.k) * self.cost[C.index(ci), C.index(cj)]
             vals.append(s)
         C = np.array(C)
-        return C[vals == vals[np.argmin(vals)]] # any arg that minimizes or all of them where for egzample there are two with same value?
+        return C[vals == vals[
+            np.argmin(vals)]]  # any arg that minimizes or all of them where for egzample there are two with same value?
 
     def _setdiff(self, S1, S2):
-        S1 = S1.tolist()
-        S2 = S2.tolist()
-        return np.array([x for x in S1 if x not in S2])
+        for element in S2:
+            if element.tolist() in S1.tolist():
+                np.delete(S1, element, 0)
+        return S1
 
     def _union(self, arr1, arr2):
-        arr1 = np.append(arr1, arr2, axis=0)
-        if arr1.shape[0] < 2:
+        if arr1.size == 0:
+            return arr2
+        elif arr2.size == 0:
             return arr1
         else:
-            return np.unique(arr1)
+            return np.unique(np.append(arr1, arr2, axis=0), axis=0)
 
     def _intersect(self, arr1, arr2):
         return arr1[arr1 in arr2]
@@ -143,8 +146,6 @@ if __name__ == "__main__":
     print(X[:5])
     print(y[:5])
     cost = np.ones((8, 8))
-    clf = SPIDER3(3, cost, ['cp', 'im'], ['pp', 'imU', 'om'], ['imS', 'imL', 'omL'])
-    clf.fit_transform(X, y)
-
-
-
+    clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
+                  intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
+    transformed = clf.fit_transform(X, y)
