@@ -5,10 +5,11 @@ from multi_imbalance.datasets import load_datasets
 
 DATASET_SHAPE = {
     'balance_scale': (625, 4),
+    'cleveland': (297, 13),
     'cmc': (1473, 9),
     'dermatology': (358, 34),
     'ecoli': (336, 7),
-    'glass': (214, 10),
+    'glass': (214, 9),
     'hayes_roth': (132, 5),
     'new_thyroid': (215, 5),
     'winequailty_red': (1599, 11)
