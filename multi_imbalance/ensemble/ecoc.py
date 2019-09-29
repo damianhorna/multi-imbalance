@@ -8,7 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 class ECOC(BaseEstimator):
-    def __init__(self, classifier='CART', distance='hamming', penalty=1.0, oversample=False, encoding='dense'):
+    def __init__(self, classifier='CART', distance='hamming', penalty=1.0, oversample=None, encoding='dense'):
         self.classifier = classifier
         self.distance = distance
         self.penalty = penalty
@@ -20,6 +20,7 @@ class ECOC(BaseEstimator):
         self._labels = None
 
     def fit(self, X, y):
+        X, y = self._oversample(X, y)
         self._labels = np.unique(y)
         self._gen_code_matrix()
         self._binary_classifiers = [DecisionTreeClassifier() for _ in range(self._code_matrix.shape[1])]
@@ -152,9 +153,6 @@ class ECOC(BaseEstimator):
     def _encode_complete(self, X, y):
         pass
 
-    def _oversample(self, X, y):
-        pass
-
     def _hamming_distance(self, v1, v2):
         return np.count_nonzero(v1 != v2)
 
@@ -164,3 +162,35 @@ class ECOC(BaseEstimator):
     def _get_closest_class(self, row):
         return self._labels[
             np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
+
+    def _oversample(self, X, y):
+        allowed_oversampling = [None, 'random', 'SMOTE']
+        if self.oversample not in allowed_oversampling:
+            raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
+                             % (self.encoding, allowed_oversampling))
+        elif self.oversample is None:
+            return X, y
+        elif self.oversample == 'random':
+            return self._random_oversample(X, y)
+        elif self.oversample == 'SMOTE':
+            return self._smote_oversample(X, y)
+
+    def _random_oversample(self, X, y, random_state=0):
+        random_state = check_random_state(random_state)
+
+        values, counts = np.unique(y, return_counts=True)
+        max_cardinality = np.max(counts)
+        instances_to_be_added = max_cardinality - counts
+
+        for clazz, missing_examples in zip(values, instances_to_be_added):
+            y_clazz_indices = np.where(y == clazz)
+            X_clazz = X[y_clazz_indices]
+            for _ in range(missing_examples):
+                rand_idx = random_state.randint(0, X_clazz.shape[0])
+                y = np.append(y, clazz)
+                X = np.vstack([X, X_clazz[rand_idx]])
+
+        return X, y
+
+    def _smote_oversample(self, X, y):
+        pass
