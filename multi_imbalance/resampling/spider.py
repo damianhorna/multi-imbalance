@@ -57,6 +57,7 @@ class SPIDER3:
                 s += (self._knn(x, DS, ci).shape[0] / self.k) * self.cost[C.index(ci), C.index(cj)]
             vals.append(s)
         C = np.array(C)
+        vals = np.array(vals)
         return C[vals == vals[
             np.argmin(vals)]]  # any arg that minimizes or all of them where for example there are two with same value?
 
@@ -72,22 +73,18 @@ class SPIDER3:
         elif arr2.size == 0:
             return arr1
         else:
-            result = []
-
-            for element in arr1.tolist():
-                if element not in result:
-                    result.append(element)
-
-            for element in arr2.tolist():
-                if element not in result:
-                    result.append(element)
-
-            return np.array(result)
+            return np.append(arr1, arr2, axis=0)  # unique
 
     def _intersect(self, arr1, arr2):
         if arr1.size == 0 or arr2.size == 0:
             return np.array([])
-        return np.array([x for x in arr1.tolist() if x in arr2.tolist()])
+
+        result = np.array([])
+        for x1 in arr1:
+            for x2 in arr2:
+                if all(x1 == x2):
+                    result = self._union(result, np.array([x1]))
+        return result
 
     def relabel_nn(self, x):
         relabel_candidates = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)))
@@ -102,9 +99,9 @@ class SPIDER3:
             self.AS = self._union(self.AS, np.array([y]))
 
     def nearest(self, x, TS):
-        self.neigh_clf.fit(TS[:, :-1])
-        indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)
-        return TS[:, : -1][indices[0]]
+        clf = NearestNeighbors(n_neighbors=1).fit(TS[:, :-1])
+        indices = clf.kneighbors([x[:-1]], return_distance=False)
+        return TS[indices[0]][0]
 
     def clean_nn(self, x):
         TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), self.majority_classes)
@@ -112,9 +109,9 @@ class SPIDER3:
                 any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
                     for majority_class in self.majority_classes):
             y = self.nearest(x, TS)
-            TS = self._setdiff(TS, y)
-            self.DS = self._setdiff(self.DS, y)
-            self.RS = self._setdiff(self.RS, y)
+            TS = self._setdiff(TS, np.array([y]))
+            self.DS = self._setdiff(self.DS, np.array([y]))
+            self.RS = self._setdiff(self.RS, np.array([y]))
 
     def _knn(self, x, DS, c=None):
         self.neigh_clf.fit(DS[:, :-1])
@@ -122,16 +119,20 @@ class SPIDER3:
         if c is not None:
             result = []
             for idx in indices:
-                if DS[idx][-1] in c:
+                if class_of(DS[idx]) in c:
                     result.append(DS[idx])
             return np.array(result)
         else:
             return DS[indices]
 
     def amplify(self, x):
-        while x[-1] not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
+        while class_of(x) not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
             y = x.copy()
             self.AS = self._union(self.AS, np.asarray([y]))
+
+
+def class_of(example):
+    return example[-1]
 
 
 def plot_multi_dimensional_data(X, y, ax=None):
@@ -171,6 +172,9 @@ if __name__ == "__main__":
     print(X[:5])
     print(y[:5])
     cost = np.random.rand(64).reshape((8, 8))  # np.ones((8, 8))
+    for i in range(8):
+        cost[i][i] = 0
+
     clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
                   intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
     transformed = clf.fit_transform(X.astype(np.float64), y)
