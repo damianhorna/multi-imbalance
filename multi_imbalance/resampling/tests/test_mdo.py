@@ -29,79 +29,52 @@ X = np.array([
 ])
 
 y_balanced = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-y_balanced_quantities = Counter({0: 10, 1: 10})
-y_balanced_first_sample_safe_level = 1
-y_balanced_0_class_safe_levels = defaultdict(float,
-                                             {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0,
-                                              9: 1.0})
-y_balanced_1_class_safe_levels = defaultdict(float,
-                                             {10: 1.0, 11: 1.0, 12: 1.0, 13: 1.0, 14: 1.0, 15: 1.0, 16: 1.0, 17: 1.0,
-                                              18: 1.0, 19: 1.0})
+y_balanced_SC_minor = [[0.69208769, 0.63759459],
+                       [0.70797377, 0.16348051],
+                       [0.76410615, 0.70451542],
+                       [0.81680686, 0.50793884],
+                       [0.8490789, 0.53826627],
+                       [0.8847505, 0.96856011],
+                       [0.9287003, 0.97580299],
+                       [0.9584236, 0.10536541],
+                       [0.96983103, 0.87666093],
+                       [0.97352367, 0.78807909]]
+
+y_balanced_weights = [0.0877193, 0.07017544, 0.0877193, 0.0877193, 0.0877193, 0.10526316, 0.12280702, 0.10526316,
+                      0.12280702, 0.12280702]
 
 y_imb_easy = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
-y_imb_easy_quantities = Counter({0: 14, 1: 6})
-y_imb_easy_first_sample_safe_level = 0.7714285714285714
-y_imb_easy_0_class_safe_levels = defaultdict(float, {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0,
-                                                     8: 0.8857142857142858, 9: 1.0, 10: 0.7714285714285714,
-                                                     11: 0.7714285714285714, 12: 0.6571428571428571,
-                                                     17: 0.7714285714285714})
-y_imb_easy_1_class_safe_levels = defaultdict(float,
-                                             {13: 0.6571428571428571, 14: 0.6571428571428571, 15: 0.7714285714285714,
-                                              16: 0.7714285714285714, 18: 0.8857142857142858, 19: 0.8857142857142858})
+y_imb_easy_SC_minor = [[0.8847505, 0.96856011], [0.9287003, 0.97580299], [0.96983103, 0.87666093],
+                       [0.97352367, 0.78807909]]
+y_imb_easy_weights = [0.21052632, 0.26315789, 0.26315789, 0.26315789]
 
 y_imb_hard = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0])
-y_imb_hard_quantities = Counter({0: 14, 1: 6})
-y_imb_hard_first_sample_safe_level = 0.7714285714285714
-y_imb_hard_quantities_0_class_safe_levels = defaultdict(float, {0: 0.8857142857142858, 1: 0.7714285714285714,
-                                                                2: 0.8857142857142858, 3: 0.8857142857142858,
-                                                                4: 0.8857142857142858, 5: 0.7714285714285714,
-                                                                7: 0.7714285714285714, 10: 0.6571428571428571,
-                                                                11: 0.6571428571428571, 12: 0.7714285714285714,
-                                                                13: 0.7714285714285714, 15: 0.7714285714285714,
-                                                                17: 0.7714285714285714, 19: 0.6571428571428571})
-y_imb_hard_quantities_1_class_safe_levels = defaultdict(float, {6: 0.5428571428571429, 8: 0.5428571428571429,
-                                                                9: 0.5428571428571429, 14: 0.5428571428571429,
-                                                                16: 0.5428571428571429, 18: 0.6571428571428571})
+y_imb_hard_SC_minor = y_imb_hard_weights = []
 
 complete_test_data = [
-    (X, y_balanced, y_balanced_quantities, y_balanced_0_class_safe_levels, y_balanced_1_class_safe_levels,
-     y_balanced_first_sample_safe_level),
-    (X, y_imb_easy, y_imb_easy_quantities, y_imb_easy_0_class_safe_levels, y_imb_easy_1_class_safe_levels,
-     y_imb_easy_first_sample_safe_level),
-    (X, y_imb_hard, y_imb_hard_quantities, y_imb_hard_quantities_0_class_safe_levels,
-     y_imb_hard_quantities_1_class_safe_levels, y_imb_hard_first_sample_safe_level),
-]
-
-safe_levels_test_data = [
-    (X, y_balanced, y_balanced_0_class_safe_levels, y_balanced_quantities),
-    (X, y_balanced, y_balanced_1_class_safe_levels, y_balanced_quantities),
-    (X, y_imb_easy, y_imb_easy_0_class_safe_levels, y_imb_easy_quantities),
-    (X, y_imb_easy, y_imb_easy_1_class_safe_levels, y_imb_easy_quantities),
-    (X, y_imb_hard, y_imb_hard_quantities_0_class_safe_levels, y_imb_hard_quantities),
-    (X, y_imb_hard, y_imb_hard_quantities_1_class_safe_levels, y_imb_hard_quantities),
+    (X, y_balanced, y_balanced_SC_minor, y_balanced_weights),
+    (X, y_imb_easy, y_imb_easy_SC_minor, y_imb_easy_weights),
+    (X, y_imb_hard, y_imb_hard_SC_minor, y_imb_hard_weights),
 ]
 
 
 @pytest.fixture()
 def mdo_mock():
-    def _get_parametrized_soup(X, quantities):
+    def _get_parametrized_soup(X, y):
         clf = MDO()
-        # TODO
-        clf.neigh_clf.fit(X)
-        clf.quantities = quantities
-        clf.goal_quantity = 10
+        clf.nn.fit(X)
         return clf
 
     return _get_parametrized_soup
 
 
-@pytest.mark.parametrize("X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
-def test_choose_samples(X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe,
-                                            soup_mock):
-    clf = soup_mock(X, quantities)
-    neighbour_quantities = Counter({0: 3, 1: 2})
+# @pytest.mark.parametrize("X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
+# def test_choose_samples(X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe, mdo_mock):
+#     pass
 
-    safe_level = clf._calculate_sample_safe_level(0, neighbour_quantities)
-    assert safe_level == first_sample_safe
-
-
+@pytest.mark.parametrize("X, y, sc_minor_expected, weights_expected", complete_test_data)
+def test_oversampling(X, y, sc_minor_expected, weights_expected, mdo_mock):
+    clf = mdo_mock(X, y)
+    SC_minor, weights = clf._choose_samples(X, y, 1)
+    assert SC_minor.all() == np.array(sc_minor_expected).all()
+    assert weights.all() == np.array(weights_expected).all()
