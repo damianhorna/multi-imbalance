@@ -1,6 +1,8 @@
 from random import sample
 from collections import Counter
 
+from sklearn.decomposition import PCA
+
 from multi_imbalance.utils.data import construct_flat_2pc_df
 from sklearn.neighbors import NearestNeighbors
 import numpy as np
@@ -20,8 +22,7 @@ class MDO(object):
 
         labels = list(set(y))
         for class_label in labels:
-            S_minor_class_indices = [i for i, value in enumerate(y) if value == class_label]
-            SC_minor, weights = self._choose_samples(X, y, S_minor_class_indices)
+            SC_minor, weights = self._choose_samples(X, y, class_label)
             if (len(SC_minor)) == 0:
                 # TODO?
                 continue
@@ -43,7 +44,9 @@ class MDO(object):
 
         return oversampled_X, oversampled_y
 
-    def _choose_samples(self, X, y, S_minor_class_indices):
+    def _choose_samples(self, X, y, class_label):
+        S_minor_class_indices = [i for i, value in enumerate(y) if value == class_label]
+
         S_minor = X[S_minor_class_indices]
         class_label = y[S_minor_class_indices[0]]
 
@@ -90,48 +93,3 @@ class MDO(object):
             S_temp.append(features_vector)
 
         return np.array(S_temp)
-
-
-import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-from sklearn.decomposition import PCA
-
-# # TODO replace it by correct file in repository
-# ecoli_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data'
-# df = pd.read_csv(ecoli_url, delim_whitespace=True, header=None,
-#                  names=['name', '1', '2', '3', '4', '5', '6', '7', 'class'])
-#
-# X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
-# print(X[:5])
-# print(y[:5])
-#
-# clf = MDO(k1_frac=0)
-# resampled_X, resampled_y = clf.fit_transform(X, y)
-# print(resampled_X)
-#
-# pca = PCA(n_components=2)
-# pca.fit(X)
-#
-# fig, axs = plt.subplots(ncols=2, nrows=2)
-# fig.set_size_inches(16, 10)
-# axs = axs.flatten()
-#
-# sns.countplot(y, ax=axs[0])
-# X = pca.transform(X)
-# df = construct_flat_2pc_df(X, y)
-# sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[1], legend=False)
-#
-# sns.countplot(resampled_y, ax=axs[2])
-# resampled_X = pca.transform(resampled_X)
-# df = construct_flat_2pc_df(resampled_X, resampled_y)
-# sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[3], legend=False)
-# plt.show()
-mean = [0, 0]
-cov = [[1, 0], [0, 1]]  # diag
-
-import matplotlib.pyplot as plt
-x, y = np.random.multivariate_normal(mean, cov, 10).T
-plt.plot(x, y, 'x')
-plt.axis('equal')
-plt.show()
