@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import pytest
+from numpy.testing import assert_array_equal, assert_allclose, assert_array_almost_equal
 
 from multi_imbalance.resampling.MDO import MDO
 
@@ -49,7 +50,8 @@ y_imb_easy_SC_minor = [[0.8847505, 0.96856011], [0.9287003, 0.97580299], [0.9698
 y_imb_easy_weights = [0.21052632, 0.26315789, 0.26315789, 0.26315789]
 
 y_imb_hard = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0])
-y_imb_hard_SC_minor = y_imb_hard_weights = []
+y_imb_hard_SC_minor = np.empty(shape=(0, 2))
+y_imb_hard_weights = ()
 
 complete_test_data = [
     (X, y_balanced, y_balanced_SC_minor, y_balanced_weights),
@@ -68,13 +70,32 @@ def mdo_mock():
     return _get_parametrized_soup
 
 
-# @pytest.mark.parametrize("X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
-# def test_choose_samples(X, y, quantities, zero_safe_levels, one_safe_levels, first_sample_safe, mdo_mock):
-#     pass
-
 @pytest.mark.parametrize("X, y, sc_minor_expected, weights_expected", complete_test_data)
-def test_oversampling(X, y, sc_minor_expected, weights_expected, mdo_mock):
+def test_choose_samples(X, y, sc_minor_expected, weights_expected, mdo_mock):
     clf = mdo_mock(X, y)
     SC_minor, weights = clf._choose_samples(X, y, 1)
-    assert SC_minor.all() == np.array(sc_minor_expected).all()
-    assert weights.all() == np.array(weights_expected).all()
+    assert_array_almost_equal(SC_minor, np.array(sc_minor_expected))
+    assert_array_almost_equal(weights, weights_expected)
+
+
+def test_choose_samples_when_correct(mdo_mock):
+    T = np.array([[-2.74e-01, -2.43e-17], [2.74e-01, 2.43e-17]])
+    V = np.array([7.53e-02, 5.91e-34])
+    oversampling_rate = 2
+    weights = [0.3, 0.7]
+    expected_result = np.array([[1.66857e-01, 3.30909e-17], [3.48023e-02, 3.42935e-17]])
+    np.random.seed(0)
+
+    S_temp = MDO._MDO_oversampling(T, V, oversampling_rate, weights)
+    assert_array_almost_equal(S_temp, expected_result)
+
+
+def test_choose_samples_when_zero_samples_expected(mdo_mock):
+    T = np.array([[-2.74e-01, -2.43e-17], [2.74e-01, 2.43e-17]])
+    V = np.array([7.53e-02, 5.91e-34])
+    oversampling_rate = -1
+    weights = [0.3, 0.7]
+    np.random.seed(0)
+
+    S_temp = MDO._MDO_oversampling(T, V, oversampling_rate, weights)
+    assert len(S_temp) == 0
