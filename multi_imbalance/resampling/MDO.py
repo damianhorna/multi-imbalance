@@ -10,8 +10,9 @@ import numpy as np
 class MDO(object):
     """
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
-    Samples for oversampling are choosen based on their k neighbours and new samples are created in random place
-     but with the same mahalanbois distance from cenrter of class to accroding choosen sample.
+    Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
+    with the same Mahalanbois distance from the centre of class to chosen sample.
+
     """
 
     def __init__(self, k=9, k1_frac=.5):
@@ -77,7 +78,7 @@ class MDO(object):
         SC_minor = S_minor[num >= self.k1]
 
         weights = num[num >= self.k1] / self.k2
-        weights[weights == 0] = 1  # TODO?
+        weights[weights == 0] = 1
         weights = weights / np.sum(weights)
 
         return SC_minor, weights

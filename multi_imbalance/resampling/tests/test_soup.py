@@ -5,9 +5,6 @@ import pytest
 
 from multi_imbalance.resampling.SOUP import SOUP
 
-# TODO remove quantities from dataset and calculate it in soup_mock
-# TODO Remove copy paste
-
 X = np.array([
     [0.05837771, 0.57543339],
     [0.06153624, 0.99871925],
