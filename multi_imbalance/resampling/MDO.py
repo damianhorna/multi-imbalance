@@ -1,25 +1,37 @@
 from random import sample
 from collections import Counter
 
-import pandas as pd
 from sklearn.decomposition import PCA
-
-from multi_imbalance.utils.data import construct_flat_2pc_df
 from sklearn.neighbors import NearestNeighbors
-import numpy as np
 
-import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 
 
 class MDO(object):
+    """
+    Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
+    Samples for oversampling are choosen based on their k neighbours and new samples are created in random place
+     but with the same mahalanbois distance from cenrter of class to accroding choosen sample.
+    """
+
     def __init__(self, k=9, k1_frac=.5):
-        self.nn = NearestNeighbors(n_neighbors=k)
+        self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
 
     def fit_transform(self, X, y):
-        self.nn.fit(X)
+        """
+
+        Parameters
+        ----------
+        X two dimensional numpy array (number of samples x number of features) with float numbers
+        y one dimensional numpy array with labels for rows in X
+
+        Returns
+        -------
+        Resampled X and y
+        """
+        self.knn.fit(X)
         oversampled_X, oversampled_y = X.copy(), y.copy()
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
@@ -28,7 +40,6 @@ class MDO(object):
         for class_label in labels:
             SC_minor, weights = self._choose_samples(X, y, class_label)
             if (len(SC_minor)) == 0:
-                # TODO?
                 continue
 
             u = np.mean(SC_minor, axis=0)
@@ -54,7 +65,7 @@ class MDO(object):
         S_minor = X[S_minor_class_indices]
         class_label = y[S_minor_class_indices[0]]
 
-        minority_class_neighbours_indices = self.nn.kneighbors(S_minor, return_distance=False)
+        minority_class_neighbours_indices = self.knn.kneighbors(S_minor, return_distance=False)
 
         quantity_with_same_label_in_neighbourhood = list()
         for i in range(len(S_minor)):
@@ -88,7 +99,6 @@ class MDO(object):
                 s += r ** 2 / sqrt_avj
                 features_vector.append(r)
 
-            # TODO >1?
             last = (1 - s) * alpha_V[-1]
             last_feature = np.sqrt(last) if last > 0 else 0
             random_last_feature = sample([-last_feature, last_feature], 1)[0]
@@ -97,35 +107,3 @@ class MDO(object):
             S_temp.append(features_vector)
 
         return np.array(S_temp)
-
-#
-# # TODO replace it by correct file in repository
-# ecoli_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data'
-# df = pd.read_csv(ecoli_url, delim_whitespace=True, header=None,
-#                  names=['name', '1', '2', '3', '4', '5', '6', '7', 'class'])
-#
-# X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
-# # print(X[:5])
-# # print(y[:5])
-#
-# clf = MDO(k1_frac=0)
-# resampled_X, resampled_y = clf.fit_transform(X, y)
-# # print(resampled_X)
-#
-# pca = PCA(n_components=2)
-# pca.fit(X)
-#
-# fig, axs = plt.subplots(ncols=2, nrows=2)
-# fig.set_size_inches(16, 10)
-# axs = axs.flatten()
-#
-# sns.countplot(y, ax=axs[0])
-# X = pca.transform(X)
-# df = construct_flat_2pc_df(X, y)
-# sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[1], legend=False)
-#
-# sns.countplot(resampled_y, ax=axs[2])
-# resampled_X = pca.transform(resampled_X)
-# df = construct_flat_2pc_df(resampled_X, resampled_y)
-# sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[3], legend=False)
-# plt.show()
