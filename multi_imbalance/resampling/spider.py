@@ -72,16 +72,7 @@ class SPIDER3:
         elif arr2.size == 0:
             return arr1
         else:
-            result = arr1.copy()
-            for x2 in arr2:
-                elem_uniq = True
-                for x1 in arr1:
-                    if all(x1 == x2):
-                        elem_uniq = False
-                        break
-                if elem_uniq:
-                    result = np.append(arr1, np.array([x2]), axis=0)
-            return result
+            return np.append(arr1, arr2, axis=0)
 
     def _intersect(self, arr1, arr2):
         if arr1.size == 0 or arr2.size == 0:
@@ -115,8 +106,7 @@ class SPIDER3:
         for majority_class in self.majority_classes:
             TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), majority_class)
             while TS.shape[0] > 0 and \
-                    any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
-                        for majority_class in self.majority_classes):
+                    majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
                 y = self.nearest(x, TS)
                 TS = self._setdiff(TS, np.array([y]))
                 self.DS = self._setdiff(self.DS, np.array([y]))
@@ -128,7 +118,7 @@ class SPIDER3:
         if c is not None:
             result = []
             for idx in indices:
-                if class_of(DS[idx]) in c:
+                if class_of(DS[idx]) == c:
                     result.append(DS[idx])
             return np.array(result)
         else:
@@ -187,4 +177,5 @@ if __name__ == "__main__":
     clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
                   intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
     transformed = clf.fit_transform(X.astype(np.float64), y)
+
     print("Done")
