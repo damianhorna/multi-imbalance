@@ -10,10 +10,11 @@ class SPIDER3:
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.cost = cost
-        self.majority_classes = majority_classes  # how to automatically decide whether a class is minority/intermediate or majority
+        self.majority_classes = majority_classes
         self.intermediate_classes = intermediate_classes
         self.minority_classes = minority_classes
-        self.AS, self.RS = np.array([]), np.array([])
+        self.AS, self.RS = np.array([]), np.array([])  # RS - examples from majority class that can be relabeled
+
 
     def fit_transform(self, X, y):
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
@@ -22,10 +23,7 @@ class SPIDER3:
             DS_clazz = self.DS[self.DS[:, -1] == clazz]
             for x in DS_clazz:
                 if clazz not in self._min_cost_classes(x, self.DS):
-                    if self.RS.size == 0:
-                        self.RS = np.array([x])
-                    else:
-                        self.RS = np.append(self.RS, x.reshape(1, x.size), axis=0)
+                    self._union(self.RS, np.array([x]))
 
         self.DS = self._setdiff(self.DS, self.RS)
 
@@ -38,6 +36,7 @@ class SPIDER3:
                 AS_clazz = self.AS[self.AS[:, -1] == clazz]
             else:
                 AS_clazz = np.array([])
+
             for x in self._union(DS_clazz, AS_clazz):
                 self.clean_nn(x)
 
@@ -73,7 +72,16 @@ class SPIDER3:
         elif arr2.size == 0:
             return arr1
         else:
-            return np.append(arr1, arr2, axis=0)  # unique
+            result = arr1.copy()
+            for x2 in arr2:
+                elem_uniq = True
+                for x1 in arr1:
+                    if all(x1 == x2):
+                        elem_uniq = False
+                        break
+                if elem_uniq:
+                    result = np.append(arr1, np.array([x2]), axis=0)
+            return result
 
     def _intersect(self, arr1, arr2):
         if arr1.size == 0 or arr2.size == 0:
@@ -87,14 +95,14 @@ class SPIDER3:
         return result
 
     def relabel_nn(self, x):
-        relabel_candidates = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)))
-        TS = self._intersect(self.RS, relabel_candidates)
+        neighbourhood_candidates = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS))) # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
+        TS = self._intersect(self.RS, neighbourhood_candidates)  # TS - neighbours from majority class that can be relabeled
         while TS.shape[0] > 0 and \
                 any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
                     for majority_class in self.majority_classes):
             y = self.nearest(x, TS)
-            TS = self._setdiff(TS, y)
-            self.RS = self._setdiff(self.RS, y)
+            TS = self._setdiff(TS, np.array([y]))
+            self.RS = self._setdiff(self.RS, np.array([y]))
             y[-1] = x[-1]
             self.AS = self._union(self.AS, np.array([y]))
 
@@ -104,14 +112,15 @@ class SPIDER3:
         return TS[indices[0]][0]
 
     def clean_nn(self, x):
-        TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), self.majority_classes)
-        while TS.shape[0] > 0 and \
-                any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
-                    for majority_class in self.majority_classes):
-            y = self.nearest(x, TS)
-            TS = self._setdiff(TS, np.array([y]))
-            self.DS = self._setdiff(self.DS, np.array([y]))
-            self.RS = self._setdiff(self.RS, np.array([y]))
+        for majority_class in self.majority_classes:
+            TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), majority_class)
+            while TS.shape[0] > 0 and \
+                    any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
+                        for majority_class in self.majority_classes):
+                y = self.nearest(x, TS)
+                TS = self._setdiff(TS, np.array([y]))
+                self.DS = self._setdiff(self.DS, np.array([y]))
+                self.RS = self._setdiff(self.RS, np.array([y]))
 
     def _knn(self, x, DS, c=None):
         self.neigh_clf.fit(DS[:, :-1])
