@@ -26,8 +26,6 @@ class MDO(object):
 
         labels = list(set(y))
         for class_label in labels:
-            class_label = 'imS'
-            print(labels)
             SC_minor, weights = self._choose_samples(X, y, class_label)
             if (len(SC_minor)) == 0:
                 # TODO?
@@ -42,13 +40,7 @@ class MDO(object):
             oversampling_rate = goal_quantity - quantities[class_label]
 
             if oversampling_rate > 0:
-                print(T)
-                print(V)
-                print(oversampling_rate)
-                print(weights)
-                return
                 S_temp = self._MDO_oversampling(T, V, oversampling_rate, weights)
-                print(S_temp)
                 S_temp = pca.inverse_transform(S_temp) + u
 
                 oversampled_X = np.vstack((oversampled_X, S_temp))
