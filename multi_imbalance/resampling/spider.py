@@ -23,7 +23,7 @@ class SPIDER3:
             DS_clazz = self.DS[self.DS[:, -1] == clazz]
             for x in DS_clazz:
                 if clazz not in self._min_cost_classes(x, self.DS):
-                    self._union(self.RS, np.array([x]))
+                    self.RS = self._union(self.RS, np.array([x]))
 
         self.DS = self._setdiff(self.DS, self.RS)
 
