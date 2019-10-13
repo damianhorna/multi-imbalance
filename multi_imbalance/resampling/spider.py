@@ -6,7 +6,34 @@ from sklearn.neighbors import NearestNeighbors
 
 
 class SPIDER3:
+    """
+    SPIDER3 algorithm implementation for selective preprocessing of multi-class imbalanced data sets.
+    More details can be found here:
+    https://www.researchgate.net/publication/316799501_An_Algorithm_for_Selective_Preprocessing_of_Multi-class_Imbalanced_Data
+
+    Methods
+    ----------
+    fit_transform(X, y)
+        Performs resampling of X.
+    """
+
     def __init__(self, k, cost, majority_classes, intermediate_classes, minority_classes):
+        """
+        Parameters
+        ----------
+        :param k:
+            Number of nearest neighbors considered while resampling.
+        :param cost:
+            The cost matrix. An element c[i, j] of this matrix represents the cost
+            associated with misclassifying an example from class i as class one from class j.
+        :param majority_classes:
+            List of majority classes.
+        :param intermediate_classes:
+            List of intermediate classes.
+        :param minority_classes:
+            List of minority classes.
+        """
+
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.cost = cost
@@ -15,8 +42,17 @@ class SPIDER3:
         self.minority_classes = minority_classes
         self.AS, self.RS = np.array([]), np.array([])  # RS - examples from majority class that can be relabeled
 
-
     def fit_transform(self, X, y):
+        """
+
+        :param X:
+            Numpy array of examples that is the subject of resampling.
+        :param y:
+            Numpy array of labels corresponding to examples from X.
+        :return:
+            Resampled X along with accordingly modified labels.
+        """
+
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
 
         for clazz in self.majority_classes:
@@ -30,7 +66,7 @@ class SPIDER3:
         for clazz in self.intermediate_classes + self.minority_classes:
             DS_clazz = self.DS[self.DS[:, -1] == clazz]
             for x in DS_clazz:
-                self.relabel_nn(x)
+                self._relabel_nn(x)
 
             if self.AS.size != 0:
                 AS_clazz = self.AS[self.AS[:, -1] == clazz]
@@ -38,16 +74,28 @@ class SPIDER3:
                 AS_clazz = np.array([])
 
             for x in self._union(DS_clazz, AS_clazz):
-                self.clean_nn(x)
+                self._clean_nn(x)
 
             for x in DS_clazz:
-                self.amplify(x)
+                self._amplify(x)
 
         self.DS = self._union(self.DS, self.AS)
 
         return self.DS[:, :-1], self.DS[:, -1]
 
     def _min_cost_classes(self, x, DS):
+        """
+        Utility function that aims to identify minimum-cost classes, i.e. classes leading
+        to the minimum cost after being (mis)classified as classes appearing in the neighborhood of x.
+
+        :param x:
+            Single observation
+        :param DS:
+            DS
+        :return:
+            List of classes associated with minimal cost of misclassification.
+        """
+
         C = self.majority_classes + self.intermediate_classes + self.minority_classes
         vals = []
         for cj in C:
@@ -58,15 +106,40 @@ class SPIDER3:
         C = np.array(C)
         vals = np.array(vals)
         return C[vals == vals[
-            np.argmin(vals)]]  # any arg that minimizes or all of them where for example there are two with same value?
+            np.argmin(vals)]]
 
-    def _setdiff(self, S1, S2):
-        for element in S2.tolist():
-            if element in S1.tolist():
-                S1 = np.delete(S1, S1.tolist().index(element), 0)
-        return S1
+    @staticmethod
+    def _setdiff(arr1, arr2):
+        """
+        Performs the difference over two numpy arrays.
 
-    def _union(self, arr1, arr2):
+        :param arr1:
+            Numpy array number 1.
+        :param arr2:
+            Numpy array number 2.
+        :return:
+            Result of the difference of arr1 and arr2.
+        """
+
+        for element in arr2.tolist():
+            if element in arr1.tolist():
+                arr1 = np.delete(arr1, arr1.tolist().index(element), 0)
+        return arr1
+
+    @staticmethod
+    def _union(arr1, arr2):
+        """
+        Performs the union over two numpy arrays
+        (not removing duplicates, as it's how the algorithm SPIDER3 actually works).
+
+        :param arr1:
+            Numpy array number 1.
+        :param arr2:
+            Numpy array number 2.
+        :return:
+            The union of arr1 and arr2.
+        """
+
         if arr1.size == 0:
             return arr2
         elif arr2.size == 0:
@@ -75,6 +148,17 @@ class SPIDER3:
             return np.append(arr1, arr2, axis=0)
 
     def _intersect(self, arr1, arr2):
+        """
+        Performs the intersection operation over two numpy arrays (not removing duplicates).
+
+        :param arr1:
+            Numpy array number 1.
+        :param arr2:
+            Numpy array number 2.
+        :return:
+            The intersection of arr1 and arr2.
+        """
+
         if arr1.size == 0 or arr2.size == 0:
             return np.array([])
 
@@ -85,29 +169,57 @@ class SPIDER3:
                     result = self._union(result, np.array([x1]))
         return result
 
-    def relabel_nn(self, x):
-        neighbourhood_candidates = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS))) # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
-        TS = self._intersect(self.RS, neighbourhood_candidates)  # TS - neighbours from majority class that can be relabeled
+    def _relabel_nn(self, x):
+        """
+        Performs relabeling in the nearest neighborhood of x.
+
+        :param x:
+            An observation.
+        :return:
+        """
+        neighborhood_candidates = self._knn(x, self._union(self.DS, self._union(self.AS,
+                                                                                 self.RS)))  # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
+        TS = self._intersect(self.RS,
+                             neighborhood_candidates)  # TS - neighbors from majority class that can be relabeled
         while TS.shape[0] > 0 and \
                 any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
                     for majority_class in self.majority_classes):
-            y = self.nearest(x, TS)
+            y = self._nearest(x, TS)
             TS = self._setdiff(TS, np.array([y]))
             self.RS = self._setdiff(self.RS, np.array([y]))
             y[-1] = x[-1]
             self.AS = self._union(self.AS, np.array([y]))
 
-    def nearest(self, x, TS):
+    @staticmethod
+    def _nearest(x, TS):
+        """
+        Returns nearest neighbor of x in TS.
+
+        :param x:
+            Single observation.
+        :param TS:
+            Temporal set.
+        :return:
+            Nearest neighbor of x in TS.
+        """
         clf = NearestNeighbors(n_neighbors=1).fit(TS[:, :-1])
         indices = clf.kneighbors([x[:-1]], return_distance=False)
         return TS[indices[0]][0]
 
-    def clean_nn(self, x):
+    def _clean_nn(self, x):
+        """
+        Performs cleaning in the nearest neighborhood of x.
+
+        :param x:
+            Single observation.
+        :return:
+        """
+
         for majority_class in self.majority_classes:
             TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), majority_class)
             while TS.shape[0] > 0 and \
                     majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
-                y = self.nearest(x, TS)
+                y = self._nearest(x, TS)
                 TS = self._setdiff(TS, np.array([y]))
                 self.DS = self._setdiff(self.DS, np.array([y]))
                 self.RS = self._setdiff(self.RS, np.array([y]))
@@ -118,44 +230,20 @@ class SPIDER3:
         if c is not None:
             result = []
             for idx in indices:
-                if class_of(DS[idx]) == c:
+                if self._class_of(DS[idx]) == c:
                     result.append(DS[idx])
             return np.array(result)
         else:
             return DS[indices]
 
-    def amplify(self, x):
-        while class_of(x) not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
+    def _amplify(self, x):
+        while self._class_of(x) not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
             y = x.copy()
             self.AS = self._union(self.AS, np.asarray([y]))
 
-
-def class_of(example):
-    return example[-1]
-
-
-def plot_multi_dimensional_data(X, y, ax=None):
-    """
-    This function reduce quantity of dimensions to 2 principal components and prepare pretty scatter plot for your data
-    Parameters
-    ----------
-    X multi dimensional numpy array (at least 2 dimensions)
-    y one dimensional numpy array with labels
-    ax optional parameter for subplots
-    Returns None
-    -------
-    """
-
-    if X.shape[1] > 2:
-        pca = PCA(n_components=2)
-        X = pca.fit_transform(X)
-
-    y = pd.DataFrame({'y': y})
-
-    X_df = pd.DataFrame(data=X, columns=['x1', 'x2'])
-    df = pd.concat([X_df, y], axis=1)
-
-    sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=ax, legend=False)
+    @staticmethod
+    def _class_of(example):
+        return example[-1]
 
 
 if __name__ == "__main__":
