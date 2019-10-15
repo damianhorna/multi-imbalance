@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
@@ -8,7 +7,37 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 class ECOC(BaseEstimator):
+    """
+    ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
+    Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
+    of dichotomy). Then in the learning phase each dichotomy is learned. In the decoding phase the class which is
+    closest to test instance is chosen.
+    """
+
     def __init__(self, classifier='CART', distance='hamming', penalty=1.0, oversample=None, encoding='dense'):
+        """
+        Parameters
+        ----------
+        classifier: binary classifier used by dichotomies. Possible classifiers:
+        * 'CART': Decision Tree Classifier,
+        * 'NB': Naive Bayes Classifier,
+
+        distance: binary classifier. Possible classifiers:
+        * 'hamming': Hamming's distance
+
+        oversample: method for oversampling imbalanced data. Possible methods:
+        * None : no oversampling applied,
+        * 'random' : random oversampling - random chosen instances of minority classes are duplicated
+        * 'SMOTE' : Synthetic Minority Oversampling Technique
+
+        encoding : algorithm for encoding classes. Possible encodings:
+        * 'dense'
+        * 'sparse'
+        * 'OVO'
+        * 'OVA'
+        * 'complete'
+
+        """
         self.classifier = classifier
         self.distance = distance
         self.penalty = penalty
@@ -20,6 +49,15 @@ class ECOC(BaseEstimator):
         self._labels = None
 
     def fit(self, X, y):
+        """
+        Parameters
+        ----------
+        X: two dimensional numpy array (number of samples x number of features) with float numbers
+        y: one dimensional numpy array with labels for rows in X
+        Returns
+        -------
+        self: object
+        """
         X, y = self._oversample(X, y)
         self._labels = np.unique(y)
         self._gen_code_matrix()
@@ -28,6 +66,15 @@ class ECOC(BaseEstimator):
         return self
 
     def predict(self, X):
+        """
+        Parameters
+        ----------
+        X: two dimensional numpy array (number of samples x number of features) with float numbers
+        Returns
+        -------
+        y : numpy array, shape = [number of samples]
+            Predicted target values for X.
+        """
         output_codes = np.zeros((X.shape[0], self._code_matrix.shape[1]))
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             output_codes[:, classifier_idx] = classifier.predict(X)
