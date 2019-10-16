@@ -64,7 +64,7 @@ complete_test_data = [
 def mdo_mock():
     def _get_parametrized_soup(X, y):
         clf = MDO()
-        clf.nn.fit(X)
+        clf.knn.fit(X)
         return clf
 
     return _get_parametrized_soup
