@@ -65,6 +65,7 @@ def mdo_mock():
     def _get_parametrized_soup(X, y):
         clf = MDO()
         clf.knn.fit(X)
+        clf.X, clf.y = X, y
         return clf
 
     return _get_parametrized_soup
@@ -73,29 +74,29 @@ def mdo_mock():
 @pytest.mark.parametrize("X, y, sc_minor_expected, weights_expected", complete_test_data)
 def test_choose_samples(X, y, sc_minor_expected, weights_expected, mdo_mock):
     clf = mdo_mock(X, y)
-    SC_minor, weights = clf._choose_samples(X, y, 1)
+    SC_minor, weights = clf._choose_samples(1)
     assert_array_almost_equal(SC_minor, np.array(sc_minor_expected))
     assert_array_almost_equal(weights, weights_expected)
 
 
 def test_choose_samples_when_correct(mdo_mock):
+    clf = mdo_mock(X, list())
     T = np.array([[-2.74e-01, -2.43e-17], [2.74e-01, 2.43e-17]])
     V = np.array([7.53e-02, 5.91e-34])
     oversampling_rate = 2
     weights = [0.3, 0.7]
-    expected_result = np.array([[1.66857e-01, 3.30909e-17], [3.48023e-02, 3.42935e-17]])
-    np.random.seed(0)
+    expected_result = np.array([[1.66857e-01, 3.3090e-17], [2.69258e-01, 3.4293e-17]])
 
-    S_temp = MDO._MDO_oversampling(T, V, oversampling_rate, weights)
+    S_temp = clf._MDO_oversampling(T, V, oversampling_rate, weights)
     assert_array_almost_equal(S_temp, expected_result)
 
 
 def test_choose_samples_when_zero_samples_expected(mdo_mock):
+    clf = mdo_mock(X, list())
     T = np.array([[-2.74e-01, -2.43e-17], [2.74e-01, 2.43e-17]])
     V = np.array([7.53e-02, 5.91e-34])
     oversampling_rate = -1
     weights = [0.3, 0.7]
-    np.random.seed(0)
 
-    S_temp = MDO._MDO_oversampling(T, V, oversampling_rate, weights)
+    S_temp = clf._MDO_oversampling(T, V, oversampling_rate, weights)
     assert len(S_temp) == 0

@@ -1,10 +1,10 @@
-from random import sample
 from collections import Counter
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
+from sklearn.utils import check_random_state
 
 
 class MDO(object):
@@ -15,10 +15,12 @@ class MDO(object):
 
     """
 
-    def __init__(self, k=9, k1_frac=.5):
+    def __init__(self, k=9, k1_frac=.5, seed=0):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
+        self.random_state = check_random_state(seed)
+        self.X, self.y = None, None
 
     def fit_transform(self, X, y):
         """
@@ -33,61 +35,54 @@ class MDO(object):
         Resampled X and y
         """
         self.knn.fit(X)
+        self.X, self.y = X, y
+
         oversampled_X, oversampled_y = X.copy(), y.copy()
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
 
         labels = list(set(y))
         for class_label in labels:
-            SC_minor, weights = self._choose_samples(X, y, class_label)
-            if (len(SC_minor)) == 0:
+            chosen_minor_class_samples_to_oversample, weights = self._choose_samples(class_label)
+            if len(chosen_minor_class_samples_to_oversample) == 0:
                 continue
 
-            u = np.mean(SC_minor, axis=0)
-            Z = SC_minor - u
-            n_components = min(Z.shape)
-            pca = PCA(n_components=n_components).fit(Z)
-            T = pca.transform(Z)
-            V = np.var(T, axis=0)
+            chosen_samples_mean = np.mean(chosen_minor_class_samples_to_oversample, axis=0)
+            zero_mean_samples = chosen_minor_class_samples_to_oversample - chosen_samples_mean
+
+            n_components = min(zero_mean_samples.shape)
+            pca = PCA(n_components=n_components).fit(zero_mean_samples)
+
+            uncorrelated_samples = pca.transform(zero_mean_samples)
+            variables_variance = np.diag(np.cov(uncorrelated_samples, rowvar=False))
             oversampling_rate = goal_quantity - quantities[class_label]
 
             if oversampling_rate > 0:
-                S_temp = self._MDO_oversampling(T, V, oversampling_rate, weights)
-                S_temp = pca.inverse_transform(S_temp) + u
+                oversampled_set = self._MDO_oversampling(uncorrelated_samples, variables_variance, oversampling_rate,
+                                                         weights)
+                oversampled_set = pca.inverse_transform(oversampled_set) + chosen_samples_mean
 
-                oversampled_X = np.vstack((oversampled_X, S_temp))
+                oversampled_X = np.vstack((oversampled_X, oversampled_set))
                 oversampled_y = np.hstack((oversampled_y, np.array([class_label] * oversampling_rate)))
 
         return oversampled_X, oversampled_y
 
-    def _choose_samples(self, X, y, class_label):
-        S_minor_class_indices = [i for i, value in enumerate(y) if value == class_label]
+    def _choose_samples(self, class_label):
+        minor_class_indices = [i for i, value in enumerate(self.y) if value == class_label]
+        minor_set = self.X[minor_class_indices]
 
-        S_minor = X[S_minor_class_indices]
-        class_label = y[S_minor_class_indices[0]]
+        quantity_same_class_neighbours = self.calculate_same_class_neighbour_quantities(minor_set, class_label)
+        chosen_minor_class_samples_to_oversample = minor_set[quantity_same_class_neighbours >= self.k1]
 
-        minority_class_neighbours_indices = self.knn.kneighbors(S_minor, return_distance=False)
+        weights = quantity_same_class_neighbours[quantity_same_class_neighbours >= self.k1] / self.k2
+        weights /= np.sum(weights)
 
-        quantity_with_same_label_in_neighbourhood = list()
-        for i in range(len(S_minor)):
-            sample_neighbours_indices = minority_class_neighbours_indices[i][1:]
-            quantity_sample_neighbours_indices_with_same_label = sum(y[sample_neighbours_indices] == class_label)
-            quantity_with_same_label_in_neighbourhood.append(quantity_sample_neighbours_indices_with_same_label)
-        num = np.array(quantity_with_same_label_in_neighbourhood)
+        return chosen_minor_class_samples_to_oversample, weights
 
-        SC_minor = S_minor[num >= self.k1]
-
-        weights = num[num >= self.k1] / self.k2
-        weights[weights == 0] = 1
-        weights = weights / np.sum(weights)
-
-        return SC_minor, weights
-
-    @staticmethod
-    def _MDO_oversampling(T, V, oversampling_rate, weights):
-        S_temp = list()
+    def _MDO_oversampling(self, T, V, oversampling_rate, weights):
+        oversampled_set = list()
         for _ in range(oversampling_rate):
-            idx = np.random.choice(np.arange(len(T)), p=weights)
+            idx = self.random_state.choice(np.arange(len(T)), p=weights)
             X = np.square(T[idx])
             a = np.sum(X / V)
             alpha_V = a * V
@@ -96,15 +91,24 @@ class MDO(object):
             features_vector = list()
             for alpha_V_j in alpha_V[:-1]:
                 sqrt_avj = np.sqrt(alpha_V_j)
-                r = np.random.uniform(low=-sqrt_avj, high=sqrt_avj)
+                r = self.random_state.uniform(low=-sqrt_avj, high=sqrt_avj)
                 s += r ** 2 / sqrt_avj
                 features_vector.append(r)
 
             last = (1 - s) * alpha_V[-1]
             last_feature = np.sqrt(last) if last > 0 else 0
-            random_last_feature = sample([-last_feature, last_feature], 1)[0]
+            random_last_feature = self.random_state.choice([-last_feature, last_feature], 1)[0]
 
             features_vector.append(random_last_feature)
-            S_temp.append(features_vector)
+            oversampled_set.append(features_vector)
 
-        return np.array(S_temp)
+        return np.array(oversampled_set)
+
+    def calculate_same_class_neighbour_quantities(self, S_minor, S_minor_label):
+        minority_class_neighbours_indices = self.knn.kneighbors(S_minor, return_distance=False)
+        quantity_with_same_label_in_neighbourhood = list()
+        for i in range(len(S_minor)):
+            sample_neighbours_indices = minority_class_neighbours_indices[i][1:]
+            quantity_sample_neighbours_indices_with_same_label = sum(self.y[sample_neighbours_indices] == S_minor_label)
+            quantity_with_same_label_in_neighbourhood.append(quantity_sample_neighbours_indices_with_same_label)
+        return np.array(quantity_with_same_label_in_neighbourhood)
