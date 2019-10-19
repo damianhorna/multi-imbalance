@@ -2,7 +2,10 @@ import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import confusion_matrix
-
+import warnings
+#warnings.filterwarnings("ignore")
+import pandas as pd
+import seaborn as sns
 
 class SPIDER3:
     """
@@ -312,35 +315,51 @@ class SPIDER3:
 #
 #     print("Done")
 
-if __name__ == "__main__":
-    imbalance_ratio = "70-30-0-0"
-    overlap = "0"
-
+def read_train_and_test_data(overlap, imbalance_ratio):
     for i in range(1, 11):
         with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
             content = f.readlines()
         content = [x.strip().split(",") for x in content][5:]
         data = np.array(content)
         if i == 1:
-            X_train, y_train = data[:, :-1].astype(float), data[:, -1]
+            X_train, y_train = data[:, :-1].astype(float), data[:, -1].astype(object)
         else:
             X_train = np.append(X_train, data[:, :-1].astype(float), axis=0)
-            y_train = np.append(y_train, data[:, -1], axis=0)
-
+            y_train = np.append(y_train, data[:, -1].astype(object), axis=0)
     for i in range(1, 11):
         with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
             content = f.readlines()
         content = [x.strip().split(",") for x in content][5:]
         data = np.array(content)
         if i == 1:
-            X_test, y_test = data[:, :-1].astype(float), data[:, -1]
+            X_test, y_test = data[:, :-1].astype(float), data[:, -1].astype(object)
         else:
             X_test = np.append(X_test, data[:, :-1].astype(float), axis=0)
-            y_test = np.append(y_test, data[:, -1], axis=0)
+            y_test = np.append(y_test, data[:, -1].astype(object), axis=0)
+    return X_train, y_train, X_test, y_test
 
+
+def train_and_test():
     neigh = KNeighborsClassifier(n_neighbors=1)
     neigh.fit(X_train, y_train)
     y_pred = neigh.predict(X_test)
-    labels =['MIN', 'INT', 'MAJ']
+    labels = ['MIN', 'INT', 'MAJ']
     for i, label in enumerate(labels):
-        print(f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:,i].sum()}")
+        print(
+            f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
+
+
+if __name__ == "__main__":
+    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:
+        print(f"Imbalance ratio: {imbalance_ratio}")
+        for overlap in range(0, 3):
+            print(f"Overlap: {overlap}")
+            X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio)
+            cost = np.ones((3, 3))
+            for i in range(3):
+                cost[i][i] = 0
+
+            clf = SPIDER3(k=3, cost=cost, majority_classes=['MAJ'],
+                          intermediate_classes=['INT'], minority_classes=['MIN'])
+            X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
+            train_and_test()
