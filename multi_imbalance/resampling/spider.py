@@ -8,8 +8,11 @@ from sklearn.neighbors import NearestNeighbors
 class SPIDER3:
     """
     SPIDER3 algorithm implementation for selective preprocessing of multi-class imbalanced data sets.
-    More details can be found here:
-    https://www.researchgate.net/publication/316799501_An_Algorithm_for_Selective_Preprocessing_of_Multi-class_Imbalanced_Data
+
+    Reference:
+    Wojciechowski, S., Wilk, S., Stefanowski, J.: An Algorithm for Selective Preprocessing
+    of Multi-class Imbalanced Data. Proceedings of the 10th International Conference
+    on Computer Recognition Systems CORES 2017
 
     Methods
     ----------
@@ -54,13 +57,7 @@ class SPIDER3:
         """
 
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
-
-        for clazz in self.majority_classes:
-            DS_clazz = self.DS[self.DS[:, -1] == clazz]
-            for x in DS_clazz:
-                if clazz not in self._min_cost_classes(x, self.DS):
-                    self.RS = self._union(self.RS, np.array([x]))
-
+        self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
 
         for clazz in self.intermediate_classes + self.minority_classes:
@@ -82,6 +79,18 @@ class SPIDER3:
         self.DS = self._union(self.DS, self.AS)
 
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def calculate_weak_majority_examples(self):
+        """
+        Calculates weak majority examples and appends them to the RS set.
+        :return:
+        """
+
+        for majority_class in self.majority_classes:
+            majority_examples = self.DS[self.DS[:, -1] == majority_class]
+            for x in majority_examples:
+                if majority_class not in self._min_cost_classes(x, self.DS):
+                    self.RS = self._union(self.RS, np.array([x]))
 
     def _min_cost_classes(self, x, DS):
         """
@@ -225,6 +234,19 @@ class SPIDER3:
                 self.RS = self._setdiff(self.RS, np.array([y]))
 
     def _knn(self, x, DS, c=None):
+        """
+        Returns k nearest neighbors of x in DS that belong to c class if specified.
+
+        :param x:
+            Single observation
+        :param DS:
+            DS
+        :param c:
+            Class of neighbors that should be returned.
+        :return:
+            These neighbors from k nearest that belong to class c if specified. Otherwise all of them.
+        """
+
         self.neigh_clf.fit(DS[:, :-1])
         indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)[0]
         if c is not None:
@@ -237,11 +259,20 @@ class SPIDER3:
             return DS[indices]
 
     def _amplify(self, x):
+        """
+        Artificially amplifies example x by adding a copy of it to the AS.
+
+        :param x:
+            Single observation.
+        :return:
+        """
+
         while self._class_of(x) not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
             y = x.copy()
             self.AS = self._union(self.AS, np.asarray([y]))
 
     @staticmethod
+    
     def _class_of(example):
         return example[-1]
 
