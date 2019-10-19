@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as pd
-import seaborn as sns
-from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import confusion_matrix
 
 
 class SPIDER3:
@@ -198,7 +197,8 @@ class SPIDER3:
             An observation.
         :return:
         """
-        nearest_neighbors = self._knn(x, self.ds_as_rs_union())  # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
+        nearest_neighbors = self._knn(x,
+                                      self.ds_as_rs_union())  # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
         TS = self._intersect(self.RS,
                              nearest_neighbors)  # TS - neighbors from majority class that can be relabeled
         while TS.shape[0] > 0 and \
@@ -290,24 +290,57 @@ class SPIDER3:
         return self._union(self.DS, self._union(self.AS, self.RS))
 
 
+# if __name__ == "__main__":
+#     rc = {'text.color': 'white', 'axes.labelcolor': 'white', 'xtick.color': 'white', 'ytick.color': 'white'}
+#     sns.set_style('darkgrid', rc=rc)
+#
+#     # TODO replace it by correct file in repository
+#     ecoli_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data'
+#     df = pd.read_csv(ecoli_url, delim_whitespace=True, header=None,
+#                      names=['name', '1', '2', '3', '4', '5', '6', '7', 'class'])
+#
+#     X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
+#     print(X[:5])
+#     print(y[:5])
+#     cost = np.random.rand(64).reshape((8, 8))  # np.ones((8, 8))
+#     for i in range(8):
+#         cost[i][i] = 0
+#
+#     clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
+#                   intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
+#     transformed = clf.fit_transform(X.astype(np.float64), y)
+#
+#     print("Done")
+
 if __name__ == "__main__":
-    rc = {'text.color': 'white', 'axes.labelcolor': 'white', 'xtick.color': 'white', 'ytick.color': 'white'}
-    sns.set_style('darkgrid', rc=rc)
+    imbalance_ratio = "70-30-0-0"
+    overlap = "0"
 
-    # TODO replace it by correct file in repository
-    ecoli_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data'
-    df = pd.read_csv(ecoli_url, delim_whitespace=True, header=None,
-                     names=['name', '1', '2', '3', '4', '5', '6', '7', 'class'])
+    for i in range(1, 11):
+        with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
+            content = f.readlines()
+        content = [x.strip().split(",") for x in content][5:]
+        data = np.array(content)
+        if i == 1:
+            X_train, y_train = data[:, :-1].astype(float), data[:, -1]
+        else:
+            X_train = np.append(X_train, data[:, :-1].astype(float), axis=0)
+            y_train = np.append(y_train, data[:, -1], axis=0)
 
-    X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
-    print(X[:5])
-    print(y[:5])
-    cost = np.random.rand(64).reshape((8, 8))  # np.ones((8, 8))
-    for i in range(8):
-        cost[i][i] = 0
+    for i in range(1, 11):
+        with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
+            content = f.readlines()
+        content = [x.strip().split(",") for x in content][5:]
+        data = np.array(content)
+        if i == 1:
+            X_test, y_test = data[:, :-1].astype(float), data[:, -1]
+        else:
+            X_test = np.append(X_test, data[:, :-1].astype(float), axis=0)
+            y_test = np.append(y_test, data[:, -1], axis=0)
 
-    clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
-                  intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
-    transformed = clf.fit_transform(X.astype(np.float64), y)
-
-    print("Done")
+    neigh = KNeighborsClassifier(n_neighbors=1)
+    neigh.fit(X_train, y_train)
+    y_pred = neigh.predict(X_test)
+    labels =['MIN', 'INT', 'MAJ']
+    for i, label in enumerate(labels):
+        print(f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:,i].sum()}")
