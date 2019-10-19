@@ -43,7 +43,7 @@ class SPIDER3:
         self.majority_classes = majority_classes
         self.intermediate_classes = intermediate_classes
         self.minority_classes = minority_classes
-        self.AS, self.RS = np.array([]), np.array([])  # RS - examples from majority class that can be relabeled
+        self.AS, self.RS = np.array([]), np.array([])  # RS - examples from majority class that can be safely relabeled
 
     def fit_transform(self, X, y):
         """
@@ -59,26 +59,38 @@ class SPIDER3:
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
+        self.RS = np.array([])  # according to java SPIDER3 implementation (l. 121)
 
-        for clazz in self.intermediate_classes + self.minority_classes:
-            DS_clazz = self.DS[self.DS[:, -1] == clazz]
-            for x in DS_clazz:
+        for int_min_class in self.intermediate_classes + self.minority_classes:
+            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
+            for x in int_min_ds:
                 self._relabel_nn(x)
 
-            if self.AS.size != 0:
-                AS_clazz = self.AS[self.AS[:, -1] == clazz]
-            else:
-                AS_clazz = np.array([])
-
-            for x in self._union(DS_clazz, AS_clazz):
+            int_min_as = self.calc_int_min_as(int_min_class)
+            for x in self._union(int_min_ds, int_min_as):
                 self._clean_nn(x)
 
-            for x in DS_clazz:
+            for x in int_min_ds:
                 self._amplify(x)
 
         self.DS = self._union(self.DS, self.AS)
 
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def calc_int_min_as(self, int_min_class):
+        """
+        Helper method to calculate examples form AS that belong to int_min_class parameter class.
+        :param int_min_class:
+            The class name (intermediate or minority).
+        :return:
+            Examples from AS that are belong to int_min_class.
+        """
+
+        if self.AS.size != 0:
+            int_min_as = self.AS[self.AS[:, -1] == int_min_class]
+        else:
+            int_min_as = np.array([])
+        return int_min_as
 
     def calculate_weak_majority_examples(self):
         """
@@ -109,7 +121,7 @@ class SPIDER3:
         vals = []
         for cj in C:
             s = 0
-            for ci in C:  # if ci != cj?
+            for ci in C:
                 s += (self._knn(x, DS, ci).shape[0] / self.k) * self.cost[C.index(ci), C.index(cj)]
             vals.append(s)
         C = np.array(C)
@@ -178,7 +190,7 @@ class SPIDER3:
                     result = self._union(result, np.array([x1]))
         return result
 
-    def _relabel_nn(self, x):
+    def _relabel_nn(self, x):  # possibly differs from java implementation (l. 185)
         """
         Performs relabeling in the nearest neighborhood of x.
 
@@ -186,12 +198,11 @@ class SPIDER3:
             An observation.
         :return:
         """
-        neighborhood_candidates = self._knn(x, self._union(self.DS, self._union(self.AS,
-                                                                                 self.RS)))  # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
+        nearest_neighbors = self._knn(x, self.ds_as_rs_union())  # do we actually need the union with DS and AS? We're taking intersect with RS in the next step anyway
         TS = self._intersect(self.RS,
-                             neighborhood_candidates)  # TS - neighbors from majority class that can be relabeled
+                             nearest_neighbors)  # TS - neighbors from majority class that can be relabeled
         while TS.shape[0] > 0 and \
-                any(majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS)))
+                any(majority_class in self._min_cost_classes(x, self.ds_as_rs_union())
                     for majority_class in self.majority_classes):
             y = self._nearest(x, TS)
             TS = self._setdiff(TS, np.array([y]))
@@ -225,9 +236,9 @@ class SPIDER3:
         """
 
         for majority_class in self.majority_classes:
-            TS = self._knn(x, self._union(self.DS, self._union(self.AS, self.RS)), majority_class)
+            TS = self._knn(x, self.ds_as_rs_union(), majority_class)
             while TS.shape[0] > 0 and \
-                    majority_class in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
+                    majority_class in self._min_cost_classes(x, self.ds_as_rs_union()):
                 y = self._nearest(x, TS)
                 TS = self._setdiff(TS, np.array([y]))
                 self.DS = self._setdiff(self.DS, np.array([y]))
@@ -267,14 +278,16 @@ class SPIDER3:
         :return:
         """
 
-        while self._class_of(x) not in self._min_cost_classes(x, self._union(self.DS, self._union(self.AS, self.RS))):
+        while self._class_of(x) not in self._min_cost_classes(x, self.ds_as_rs_union()):
             y = x.copy()
             self.AS = self._union(self.AS, np.asarray([y]))
 
     @staticmethod
-    
     def _class_of(example):
         return example[-1]
+
+    def ds_as_rs_union(self):
+        return self._union(self.DS, self._union(self.AS, self.RS))
 
 
 if __name__ == "__main__":
