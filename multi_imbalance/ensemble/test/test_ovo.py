@@ -30,8 +30,6 @@ def test_binary_classifiers():
     clf.fit(X[:-1], y[:-1])
     classifiers = clf._binary_classifiers
 
-    print(clf._indices_map)
-    print(clf._labels)
     assert len(classifiers) == 3
     assert classifiers[0].predict(X[-1].reshape(1, -1)) in (1, 2)
     assert classifiers[1].predict(X[-1].reshape(1, -1)) in (1, 3)
