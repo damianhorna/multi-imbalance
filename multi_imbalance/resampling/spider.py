@@ -61,7 +61,6 @@ class SPIDER3:
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
-        self.RS = np.array([])  # according to java SPIDER3 implementation (l. 121)
 
         for int_min_class in self.intermediate_classes + self.minority_classes:
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
@@ -261,6 +260,7 @@ class SPIDER3:
             These neighbors from k nearest that belong to class c if specified. Otherwise all of them.
         """
 
+        DS = self._setdiff(DS, np.array([x]))
         self.neigh_clf.fit(DS[:, :-1])
         indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)[0]
         if c is not None:
@@ -315,27 +315,19 @@ class SPIDER3:
 #
 #     print("Done")
 
-def read_train_and_test_data(overlap, imbalance_ratio):
-    for i in range(1, 11):
-        with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
-            content = f.readlines()
-        content = [x.strip().split(",") for x in content][5:]
-        data = np.array(content)
-        if i == 1:
-            X_train, y_train = data[:, :-1].astype(float), data[:, -1].astype(object)
-        else:
-            X_train = np.append(X_train, data[:, :-1].astype(float), axis=0)
-            y_train = np.append(y_train, data[:, -1].astype(object), axis=0)
-    for i in range(1, 11):
-        with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
-            content = f.readlines()
-        content = [x.strip().split(",") for x in content][5:]
-        data = np.array(content)
-        if i == 1:
-            X_test, y_test = data[:, :-1].astype(float), data[:, -1].astype(object)
-        else:
-            X_test = np.append(X_test, data[:, :-1].astype(float), axis=0)
-            y_test = np.append(y_test, data[:, -1].astype(object), axis=0)
+def read_train_and_test_data(overlap, imbalance_ratio, i):
+    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
+        content = f.readlines()
+    content = [x.strip().split(",") for x in content][5:]
+    data = np.array(content)
+    X_train, y_train = data[:, :-1].astype(float), data[:, -1].astype(object)
+
+    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
+        content = f.readlines()
+    content = [x.strip().split(",") for x in content][5:]
+    data = np.array(content)
+    X_test, y_test = data[:, :-1].astype(float), data[:, -1].astype(object)
+
     return X_train, y_train, X_test, y_test
 
 
@@ -344,9 +336,10 @@ def train_and_test():
     neigh.fit(X_train, y_train)
     y_pred = neigh.predict(X_test)
     labels = ['MIN', 'INT', 'MAJ']
-    for i, label in enumerate(labels):
-        print(
-            f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
+    #for i, label in enumerate(labels):
+    #    print(
+    #        f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
+    return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum() for i,label in enumerate(labels)]
 
 
 if __name__ == "__main__":
@@ -354,12 +347,23 @@ if __name__ == "__main__":
         print(f"Imbalance ratio: {imbalance_ratio}")
         for overlap in range(0, 3):
             print(f"Overlap: {overlap}")
-            X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio)
-            cost = np.ones((3, 3))
-            for i in range(3):
-                cost[i][i] = 0
+            min_tpr = []
+            int_tpr = []
+            maj_tpr = []
+            for i in range(1,11):
+                X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
+                cost = np.ones((3, 3))
+                for i in range(3):
+                    cost[i][i] = 0
 
-            clf = SPIDER3(k=3, cost=cost, majority_classes=['MAJ'],
-                          intermediate_classes=['INT'], minority_classes=['MIN'])
-            X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
-            train_and_test()
+                clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
+                              intermediate_classes=['INT'], minority_classes=['MIN'])
+                X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
+                min_t, int_t, maj_t = train_and_test()
+                min_tpr.append(min_t)
+                int_tpr.append(int_t)
+                maj_tpr.append(maj_t)
+            print(f"MIN TPR:{np.array(min_tpr).mean()}")
+            print(f"INT TPR:{np.array(int_tpr).mean()}")
+            print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
+
