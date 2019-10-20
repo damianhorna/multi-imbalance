@@ -122,6 +122,5 @@ def _perform_max_voting(self, binary_outputs_matrix):
     scores = np.zeros(len(self._labels))
     for clf_1 in range(len(binary_outputs_matrix)):
         for clf_2 in range(clf_1 + 1, len(binary_outputs_matrix)):
-            if clf_1 != clf_2:
-                scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
+            scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
     return self._labels[np.argmax(scores)]
