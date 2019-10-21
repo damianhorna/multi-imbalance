@@ -46,7 +46,7 @@ def test_no_oversampling():
     assert y.shape == y_oversampled.shape
 
 
-@pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse', 'OVO', 'OVA'])
+@pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse', 'OVO', 'OVA', 'complete'])
 @pytest.mark.parametrize("oversampling", [None, 'random'])
 def test_encoding(encoding_strategy, oversampling):
     ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, oversample=oversampling)

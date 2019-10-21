@@ -197,8 +197,16 @@ class ECOC(BaseEstimator):
                 idx += 1
         return indices_map
 
-    def _encode_complete(self, X, y):
-        pass
+    def _encode_complete(self, number_of_classes):
+        code_length = 2 ** (number_of_classes - 1) - 1
+        matrix = np.ones((number_of_classes, code_length))
+        for row_idx in range(1, number_of_classes):
+            digit = -1
+            partial_code_len = 2 ** (number_of_classes - row_idx - 1)
+            for idx in range(0, code_length, partial_code_len):
+                matrix[row_idx][idx:idx + partial_code_len] = digit
+                digit *= -1
+        return matrix
 
     def _hamming_distance(self, v1, v2):
         return np.count_nonzero(v1 != v2)
