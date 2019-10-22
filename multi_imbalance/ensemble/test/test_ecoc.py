@@ -30,7 +30,7 @@ y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0])
 
 
 def test_random_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample='random')
+    ecoc_clf = ecoc.ECOC(oversample_all='random')
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert len(X_oversampled) == len(y_oversampled)
@@ -39,7 +39,7 @@ def test_random_oversampling():
 
 
 def test_no_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample=None)
+    ecoc_clf = ecoc.ECOC(oversample_all=None)
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert X.shape == X_oversampled.shape
@@ -49,7 +49,7 @@ def test_no_oversampling():
 @pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse', 'OVO', 'OVA', 'complete'])
 @pytest.mark.parametrize("oversampling", [None, 'random'])
 def test_encoding(encoding_strategy, oversampling):
-    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, oversample=oversampling)
+    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, oversample_all=oversampling)
     ecoc_clf.fit(X, y)
     matrix = ecoc_clf._code_matrix
 

@@ -2,6 +2,7 @@ import numpy as np
 
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
+from sklearn.naive_bayes import GaussianNB
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -14,11 +15,12 @@ class ECOC(BaseEstimator):
     closest to test instance is chosen.
     """
 
-    def __init__(self, classifier='CART', distance='hamming', penalty=1.0, oversample=None, encoding='dense'):
+    def __init__(self, binary_classifier='CART', distance='hamming', penalty=1.0, oversample_all=None,
+                 oversample_binary=None, encoding='dense'):
         """
         Parameters
         ----------
-        classifier: binary classifier used by dichotomies. Possible classifiers:
+        binary_classifier: binary classifier used by dichotomies. Possible classifiers:
         * 'CART': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
 
@@ -38,11 +40,12 @@ class ECOC(BaseEstimator):
         * 'complete'
 
         """
-        self.classifier = classifier
+        self.binary_classifier = binary_classifier
         self.distance = distance
         self.penalty = penalty
-        self.oversample = oversample
+        self.oversample_all = oversample_all
         self.encoding = encoding
+        self.oversample_binary = oversample_binary
 
         self._code_matrix = None
         self._binary_classifiers = []
@@ -58,10 +61,10 @@ class ECOC(BaseEstimator):
         -------
         self: object
         """
-        X, y = self._oversample(X, y)
+        X, y = self._oversample(X, y, self.oversample_all)
         self._labels = np.unique(y)
         self._gen_code_matrix()
-        self._binary_classifiers = [DecisionTreeClassifier() for _ in range(self._code_matrix.shape[1])]
+        self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
         self._learn_binary_classifiers(X, y)
         return self
 
@@ -92,6 +95,7 @@ class ECOC(BaseEstimator):
             y_filtered = np.delete(y, excluded_classes_indices)
             binary_labels = [self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
                              y_filtered]
+            X_filtered, binary_labels = self._oversample(X_filtered, binary_labels, self.oversample_binary)
             classifier.fit(X_filtered, binary_labels)
 
     def _gen_code_matrix(self):
@@ -111,7 +115,7 @@ class ECOC(BaseEstimator):
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_encodings))
 
-    def _encode_dense(self, number_of_classes, random_state=0, number_of_code_generations=1000):
+    def _encode_dense(self, number_of_classes, random_state=0, number_of_code_generations=10000):
         number_of_columns = int(np.ceil(10 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
         random_state = check_random_state(random_state)
@@ -218,16 +222,16 @@ class ECOC(BaseEstimator):
         return self._labels[
             np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
-    def _oversample(self, X, y):
+    def _oversample(self, X, y, strategy):
         allowed_oversampling = [None, 'random', 'SMOTE']
-        if self.oversample not in allowed_oversampling:
+        if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_oversampling))
-        elif self.oversample is None:
+        elif strategy is None:
             return X, y
-        elif self.oversample == 'random':
+        elif strategy == 'random':
             return self._random_oversample(X, y)
-        elif self.oversample == 'SMOTE':
+        elif strategy == 'SMOTE':
             return self._smote_oversample(X, y)
 
     def _random_oversample(self, X, y, random_state=0):
@@ -249,3 +253,15 @@ class ECOC(BaseEstimator):
 
     def _smote_oversample(self, X, y):
         pass
+
+    def _get_classifier(self):
+        allowed_classifiers = ('CART', 'NB')
+        if self.binary_classifier not in allowed_classifiers:
+            raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
+                             % (self.binary_classifier, allowed_classifiers))
+        elif self.binary_classifier == 'CART':
+            decision_tree_classifier = DecisionTreeClassifier()  # by default pruning is disabled
+            return decision_tree_classifier
+        elif self.binary_classifier == 'NB':
+            gnb = GaussianNB()
+            return gnb
