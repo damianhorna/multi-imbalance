@@ -31,7 +31,7 @@ y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0])
 
 def test_random_oversampling():
     ecoc_clf = ecoc.ECOC(oversample_all='random')
-    X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
+    X_oversampled, y_oversampled = ecoc_clf._oversample(X, y, strategy='random')
 
     assert len(X_oversampled) == len(y_oversampled)
     assert len(set(np.unique(y_oversampled, return_counts=True)[1])) == 1

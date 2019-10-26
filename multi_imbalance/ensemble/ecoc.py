@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -16,13 +17,14 @@ class ECOC(BaseEstimator):
     """
 
     def __init__(self, binary_classifier='CART', distance='hamming', penalty=1.0, oversample_all=None,
-                 oversample_binary=None, encoding='dense'):
+                 oversample_binary=None, encoding='dense', n_neighbors=5):
         """
         Parameters
         ----------
         binary_classifier: binary classifier used by dichotomies. Possible classifiers:
         * 'CART': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
+        * 'KNN' : K-Nearest Neighbors
 
         distance: binary classifier. Possible classifiers:
         * 'hamming': Hamming's distance
@@ -46,6 +48,7 @@ class ECOC(BaseEstimator):
         self.oversample_all = oversample_all
         self.encoding = encoding
         self.oversample_binary = oversample_binary
+        self.n_neighbors = n_neighbors
 
         self._code_matrix = None
         self._binary_classifiers = []
@@ -222,7 +225,7 @@ class ECOC(BaseEstimator):
         return self._labels[
             np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
-    def _oversample(self, X, y, strategy):
+    def _oversample(self, X, y, strategy=None):
         allowed_oversampling = [None, 'random', 'SMOTE']
         if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
@@ -255,7 +258,7 @@ class ECOC(BaseEstimator):
         pass
 
     def _get_classifier(self):
-        allowed_classifiers = ('CART', 'NB')
+        allowed_classifiers = ('CART', 'NB', 'KNN')
         if self.binary_classifier not in allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, allowed_classifiers))
@@ -265,3 +268,6 @@ class ECOC(BaseEstimator):
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
             return gnb
+        elif self.binary_classifier == 'KNN':
+            knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
+            return knn
