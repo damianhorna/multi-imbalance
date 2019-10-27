@@ -31,20 +31,18 @@ def test_binary_classifiers():
     classifiers = clf._binary_classifiers
 
     assert len(classifiers) == 3
-    assert classifiers[0].predict(X[-1].reshape(1, -1)) in (1, 2)
-    assert classifiers[1].predict(X[-1].reshape(1, -1)) in (1, 3)
-    assert classifiers[2].predict(X[-1].reshape(1, -1)) in (2, 3)
+    assert classifiers[1][0].predict(X[-1].reshape(1, -1)) in (1, 2)
+    assert classifiers[2][0].predict(X[-1].reshape(1, -1)) in (1, 3)
+    assert classifiers[2][1].predict(X[-1].reshape(1, -1)) in (2, 3)
 
 
 def test_max_voting():
     labels = np.array([4, 3, 6, 5, 7])
-    binary_outputs = np.array([
-        [0, 3, 4, 4, 7],
-        [0, 0, 3, 5, 7],
-        [0, 0, 0, 6, 7],
-        [0, 0, 0, 0, 5],
-        [0, 0, 0, 0, 0]
-    ])
+    binary_outputs = np.array([[0, 0, 0, 0, 0],
+                               [3, 0, 0, 0, 0],
+                               [4, 3, 0, 0, 0],
+                               [4, 5, 6, 0, 0],
+                               [7, 7, 7, 5, 0]])
 
     clf = ovo.OVO()
     clf._labels = labels

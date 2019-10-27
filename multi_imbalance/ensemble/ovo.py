@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 
 class OVO(BaseEstimator):
@@ -16,7 +17,7 @@ class OVO(BaseEstimator):
 
     """
 
-    def __init__(self, voting_strategy='max', binary_classifier='CART'):
+    def __init__(self, voting_strategy='max', binary_classifier='CART', n_neighbors=5):
         """
         Parameters
         ----------
@@ -26,12 +27,14 @@ class OVO(BaseEstimator):
 
         binary_classifier: binary classifier. Possible classifiers:
 
-        *'CART': Decision Tree Classifier,
+        * 'CART': Decision Tree Classifier,
+        * 'KNN': K-Nearest Neighbors
+        * 'NB' : Naive Bayes
         """
         self.voting_strategy = voting_strategy
         self.binary_classifier = binary_classifier
+        self.n_neighbors = n_neighbors
         self._binary_classifiers = []
-        self._indices_map = None
         self._labels = np.array([])
 
     def fit(self, X, y):
@@ -47,9 +50,9 @@ class OVO(BaseEstimator):
         """
         self._labels = np.unique(y)
         num_of_classes = len(self._labels)
-        num_of_binary_classifiers = int(num_of_classes * (num_of_classes - 1) / 2)
-        self._binary_classifiers = [self._get_classifier() for _ in range(num_of_binary_classifiers)]
-        self._indices_map = self._map_indices_to_class_pairs(num_of_classes)
+        self._binary_classifiers = [[self._get_classifier() for _ in range(n)] for n in
+                                    range(0, num_of_classes)]
+
         self._learn_binary_classifiers(X, y)
         return self
 
@@ -67,33 +70,29 @@ class OVO(BaseEstimator):
         num_of_classes = len(self._labels)
         predicted = list()
         for instance in X:
-            binary_outputs_matrix = np.zeros((num_of_classes, num_of_classes))
-            for classifier_idx, classifier in enumerate(self._binary_classifiers):
-                binary_outputs_matrix[self._indices_map[classifier_idx][0]][
-                    self._indices_map[classifier_idx][1]] = classifier.predict([instance])
+            binary_outputs_matrix = self._construct_binary_outputs_matrix(instance, num_of_classes)
             predicted.append(self._perform_voting(binary_outputs_matrix))
 
         return np.array(predicted)
 
-    def _learn_binary_classifiers(self, X, y):
-        for classifier_idx, classifier in enumerate(self._binary_classifiers):
-            first_class, second_class = self._labels[self._indices_map[classifier_idx][0]], \
-                                        self._labels[self._indices_map[classifier_idx][1]]
-            filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
-            X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
-            classifier.fit(X_filtered, y_filtered)
+    def _construct_binary_outputs_matrix(self, instance, num_of_classes):
+        binary_outputs_matrix = np.zeros((num_of_classes, num_of_classes))
+        for class_idx1 in range(len(self._labels)):
+            for class_idx2 in range(class_idx1):
+                binary_outputs_matrix[class_idx1][class_idx2] = self._binary_classifiers[class_idx1][
+                    class_idx2].predict([instance])
+        return binary_outputs_matrix
 
-    def _map_indices_to_class_pairs(self, number_of_classes):
-        indices_map = dict()
-        idx = 0
-        for i in range(number_of_classes):
-            for j in range(i + 1, number_of_classes):
-                indices_map[idx] = (i, j)
-                idx += 1
-        return indices_map
+    def _learn_binary_classifiers(self, X, y):
+        for row in range(len(self._labels)):
+            for col in range(row):
+                first_class, second_class = self._labels[row], self._labels[col]
+                filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
+                X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
+                self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
     def _get_classifier(self):
-        allowed_classifiers = ('CART', 'NB')
+        allowed_classifiers = ('CART', 'NB', 'KNN')
         if self.binary_classifier not in allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, allowed_classifiers))
@@ -103,6 +102,9 @@ class OVO(BaseEstimator):
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
             return gnb
+        elif self.binary_classifier == 'KNN':
+            knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
+            return knn
 
     def _perform_voting(self, binary_outputs_matrix):
         allowed_voting_strategies = ('max',)
@@ -115,6 +117,6 @@ class OVO(BaseEstimator):
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
         for clf_1 in range(len(binary_outputs_matrix)):
-            for clf_2 in range(clf_1 + 1, len(binary_outputs_matrix)):
+            for clf_2 in range(clf_1):
                 scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
         return self._labels[np.argmax(scores)]
