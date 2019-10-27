@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from multi_imbalance.resampling.GlobalCS import GlobalCS
-from multi_imbalance.resampling.SOUP import SOUP
 
 X = np.array([
     [0.05837771, 0.57543339],
@@ -54,12 +53,38 @@ def get_goal_quantity(y):
     return max(quantities.values()) * len(quantities.keys())
 
 
+def calc_duplicates_quantities(X, y, X_oversampled):
+    quantities = dict()
+    for label in Counter(y).keys():
+        quantities[label] = list()
+
+    for i, row in enumerate(X):
+        equal_row_indices = np.where((X_oversampled == row).all(axis=1))[0]
+        label = y[i]
+        quantities[label].append(len(equal_row_indices))
+
+    return quantities
+
+
 @pytest.mark.parametrize("X, y", complete_test_data)
 def test_output_length_validate(X, y, global_cs_mock):
     clf = global_cs_mock(X, y)
     oversampled_X, oversampled_y = clf.fit_transform(X, y)
     assert len(oversampled_X) == get_goal_quantity(y)
     assert len(oversampled_y) == get_goal_quantity(y)
+
+
+@pytest.mark.parametrize("X, y", complete_test_data)
+def test_output_equal_replication(X, y, global_cs_mock):
+    clf = global_cs_mock(X, y)
+    oversampled_X, oversampled_y = clf.fit_transform(X, y)
+    oversampled_class_quantities = calc_duplicates_quantities(X, y, oversampled_X)
+
+    for label, duplicates_quantities in oversampled_class_quantities.items():
+        min_quantity = min(duplicates_quantities)
+        max_quantity = max(duplicates_quantities)
+
+        assert max_quantity - min_quantity <= 1
 
 
 def test_invalid_input_when_not_enough_labels():
