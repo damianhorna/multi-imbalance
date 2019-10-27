@@ -32,11 +32,10 @@ class GlobalCS(object):
         result_X, result_y = list(), list()
 
         self.quantities = Counter(y)
-        max_quantity = int(np.max(list(self.quantities.values())))
+        self.max_quantity = int(np.max(list(self.quantities.values())))
 
         for class_name, class_quantity in self.quantities.items():
-            desired_quantity = max_quantity - class_quantity
-            temp_X, temp_y = self._equal_oversample(X, y, class_name, desired_quantity)
+            temp_X, temp_y = self._equal_oversample(X, y, class_name)
 
             result_X.extend(temp_X)
             result_y.extend(temp_y)
@@ -46,8 +45,10 @@ class GlobalCS(object):
 
         return np.array(result_X), np.array(result_y)
 
-    def _equal_oversample(self, X, y, class_name, desired_quantity):
+    def _equal_oversample(self, X, y, class_name):
         indices_in_class = [i for i, class_label in enumerate(y) if class_label == class_name]
+        desired_quantity = self.max_quantity - len(indices_in_class)
+
         oversampled_X, oversampled_y = list(X[indices_in_class]), list(y[indices_in_class])
 
         for i in range(desired_quantity):
@@ -57,13 +58,3 @@ class GlobalCS(object):
             oversampled_y.append(y[sample_id])
 
         return oversampled_X, oversampled_y
-
-
-from multi_imbalance.datasets import load_datasets
-from multi_imbalance.resampling.GlobalCS import GlobalCS
-
-df = load_datasets()['ecoli']
-X, y = df['data'], df['target']
-
-clf = GlobalCS()
-resampled_X, resampled_y = clf.fit_transform(X, y, shuffle=False)
