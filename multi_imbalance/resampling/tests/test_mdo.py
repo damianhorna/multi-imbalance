@@ -63,7 +63,7 @@ complete_test_data = [
 @pytest.fixture()
 def mdo_mock():
     def _get_parametrized_soup(X, y):
-        clf = MDO()
+        clf = MDO(k1_frac=.5)
         clf.knn.fit(X)
         clf.X, clf.y = X, y
         return clf
