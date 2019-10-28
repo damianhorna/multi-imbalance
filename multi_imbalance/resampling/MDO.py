@@ -1,13 +1,10 @@
 from collections import Counter
 
-from numpy.core.defchararray import isdigit
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
 from sklearn.utils import check_random_state
-
-from multi_imbalance.datasets import load_datasets
 
 
 class MDO(object):
