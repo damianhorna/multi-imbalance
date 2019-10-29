@@ -106,6 +106,11 @@ class SPIDER3:
                                           columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
         plt.savefig(path)
 
+        spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
+        plt.figure(figsize=(12, 12))
+        sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS',data=spider_result, alpha=0.7, legend=False)
+        plt.savefig(f"{path[:-4]}_spider.png")
+
     def calc_int_min_as(self, int_min_class):
         """
         Helper method to calculate examples form AS that belong to int_min_class parameter class.
