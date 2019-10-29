@@ -59,57 +59,26 @@ class SPIDER3:
         :return:
             Resampled X along with accordingly modified labels.
         """
-        figure_number = 0
 
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
-
-        self.plot(f"GENERATED-{figure_number}_before_processing.png")
-        figure_number += 1
-
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
-
-        self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
-        figure_number += 1
 
         for int_min_class in self.intermediate_classes + self.minority_classes:
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._relabel_nn(x)
 
-            self.plot(f"GENERATED-{figure_number}_after_relabelling_to_{int_min_class}.png")
-            figure_number += 1
-
             int_min_as = self.calc_int_min_as(int_min_class)
             for x in self._union(int_min_ds, int_min_as):
                 self._clean_nn(x)
 
-            self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
-            figure_number += 1
-
             for x in int_min_ds:
                 self._amplify(x)
 
-            self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
-            figure_number += 1
-
         self.DS = self._union(self.DS, self.AS)
 
-        self.plot(f"GENERATED-{figure_number}_final.png")
-
         return self.DS[:, :-1], self.DS[:, -1]
-
-    def plot(self, path):
-        plt.figure(figsize=(12, 12))
-        sns.scatterplot(x='x1', y='x2', hue='y', style='y',
-                        data=pd.DataFrame(data=pd.DataFrame(data=self.DS, columns=["x1", "x2", "y"]),
-                                          columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
-        plt.savefig(path)
-
-        spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
-        plt.figure(figsize=(12, 12))
-        sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS',data=spider_result, alpha=0.7, legend=False)
-        plt.savefig(f"{path[:-4]}_spider.png")
 
     def calc_int_min_as(self, int_min_class):
         """
@@ -326,28 +295,6 @@ class SPIDER3:
         return self._union(self.DS, self._union(self.AS, self.RS))
 
 
-# if __name__ == "__main__":
-#     rc = {'text.color': 'white', 'axes.labelcolor': 'white', 'xtick.color': 'white', 'ytick.color': 'white'}
-#     sns.set_style('darkgrid', rc=rc)
-#
-#     # TODO replace it by correct file in repository
-#     ecoli_url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/ecoli/ecoli.data'
-#     df = pd.read_csv(ecoli_url, delim_whitespace=True, header=None,
-#                      names=['name', '1', '2', '3', '4', '5', '6', '7', 'class'])
-#
-#     X, y = df.iloc[:, 1:8].to_numpy(), df['class'].to_numpy()
-#     print(X[:5])
-#     print(y[:5])
-#     cost = np.random.rand(64).reshape((8, 8))  # np.ones((8, 8))
-#     for i in range(8):
-#         cost[i][i] = 0
-#
-#     clf = SPIDER3(k=3, cost=cost, majority_classes=['cp', 'im'],
-#                   intermediate_classes=['pp', 'imU', 'om'], minority_classes=['imS', 'imL', 'omL'])
-#     transformed = clf.fit_transform(X.astype(np.float64), y)
-#
-#     print("Done")
-
 def read_train_and_test_data(overlap, imbalance_ratio, i):
     with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
         content = f.readlines()
@@ -379,14 +326,14 @@ def train_and_test():
 
 
 if __name__ == "__main__":
-    for imbalance_ratio in ["70-30-0-0"]:  # , "40-50-10-0", "30-40-15-15"
+    for imbalance_ratio in ["70-30-0-0" , "40-50-10-0", "30-40-15-15"]:
         print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in range(0, 1):  # 3
+        for overlap in range(0, 3):
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1,2):  # 11
+            for i in range(1,11):
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
