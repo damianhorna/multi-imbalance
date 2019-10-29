@@ -204,8 +204,7 @@ class SPIDER3:
             y[-1] = x[-1]
             self.AS = self._union(self.AS, np.array([y]))
 
-    @staticmethod
-    def _nearest(x, TS):
+    def _nearest(self, x, TS):
         """
         Returns nearest neighbor of x in TS.
 
@@ -216,6 +215,7 @@ class SPIDER3:
         :return:
             Nearest neighbor of x in TS.
         """
+        TS = self._setdiff(TS, np.array([x]))
         clf = NearestNeighbors(n_neighbors=1).fit(TS[:, :-1])
         indices = clf.kneighbors([x[:-1]], return_distance=False)
         return TS[indices[0]][0]
@@ -253,6 +253,11 @@ class SPIDER3:
         """
 
         DS = self._setdiff(DS, np.array([x]))
+        if DS.shape[0] < self.k:
+            self.neigh_clf = NearestNeighbors(n_neighbors=DS.shape[0])
+        else:
+            self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
+
         self.neigh_clf.fit(DS[:, :-1])
         indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)[0]
         if c is not None:
