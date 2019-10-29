@@ -366,13 +366,16 @@ def read_train_and_test_data(overlap, imbalance_ratio, i):
 
 def train_and_test():
     neigh = KNeighborsClassifier(n_neighbors=1)
+    # for i in range(0, 2):
+    #     X_train[:, i] = (X_train[:, i] - np.mean(X_train[:, i])) / np.std(X_train[:, i])
+    #     X_test[:, i] = (X_test[:, i] - np.mean(X_test[:, i])) / np.std(X_test[:, i])
     neigh.fit(X_train, y_train)
     y_pred = neigh.predict(X_test)
     labels = ['MIN', 'INT', 'MAJ']
-    #for i, label in enumerate(labels):
-    #    print(
-    #        f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
-    return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum() for i,label in enumerate(labels)]
+    # for i, label in enumerate(labels):
+    #     print(
+    #         f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
+    return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[i,:].sum() for i,label in enumerate(labels)]
 
 
 if __name__ == "__main__":
