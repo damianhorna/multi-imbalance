@@ -1,4 +1,3 @@
-from sklearn.decomposition import PCA
 import pandas as pd
 
 
@@ -11,9 +10,8 @@ def construct_flat_2pc_df(X, y) -> pd.DataFrame:
     X two dimensional numpy array
     y one dimensional numpy array with labels
 
-    Returns data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X
     -------
-
+    Data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X
     """
 
     y = pd.DataFrame({'y': y})
