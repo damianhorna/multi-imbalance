@@ -6,6 +6,8 @@ import warnings
 #warnings.filterwarnings("ignore")
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+
 
 class SPIDER3:
     """
@@ -57,26 +59,52 @@ class SPIDER3:
         :return:
             Resampled X along with accordingly modified labels.
         """
+        figure_number = 0
 
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
+
+        self.plot(f"GENERATED-{figure_number}_before_processing.png")
+        figure_number += 1
+
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
+
+        self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
+        figure_number += 1
 
         for int_min_class in self.intermediate_classes + self.minority_classes:
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._relabel_nn(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_relabelling_to_{int_min_class}.png")
+            figure_number += 1
+
             int_min_as = self.calc_int_min_as(int_min_class)
             for x in self._union(int_min_ds, int_min_as):
                 self._clean_nn(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
+            figure_number += 1
+
             for x in int_min_ds:
                 self._amplify(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
+            figure_number += 1
+
         self.DS = self._union(self.DS, self.AS)
 
+        self.plot(f"GENERATED-{figure_number}_final.png")
+
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def plot(self, path):
+        plt.figure(figsize=(12, 12))
+        sns.scatterplot(x='x1', y='x2', hue='y', style='y',
+                        data=pd.DataFrame(data=pd.DataFrame(data=self.DS, columns=["x1", "x2", "y"]),
+                                          columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
+        plt.savefig(path)
 
     def calc_int_min_as(self, int_min_class):
         """
@@ -343,14 +371,14 @@ def train_and_test():
 
 
 if __name__ == "__main__":
-    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:
+    for imbalance_ratio in ["70-30-0-0"]:  # , "40-50-10-0", "30-40-15-15"
         print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in range(0, 3):
+        for overlap in range(0, 1):  # 3
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1,11):
+            for i in range(1,2):  # 11
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
