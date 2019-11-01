@@ -6,6 +6,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_random_state
 
+from imblearn.over_sampling import SMOTE
+
 
 class OVO(BaseEstimator):
     """
@@ -33,6 +35,7 @@ class OVO(BaseEstimator):
         * 'NB' : Naive Bayes
 
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
+
         """
         self.voting_strategy = voting_strategy
         self.binary_classifier = binary_classifier
@@ -129,13 +132,13 @@ class OVO(BaseEstimator):
         allowed_oversampling = [None, 'random', 'SMOTE']
         if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (self.encoding, allowed_oversampling))
+                             % (strategy, allowed_oversampling))
         elif strategy is None:
             return X, y
         elif strategy == 'random':
             return self._random_oversample(X, y)
         elif strategy == 'SMOTE':
-            return self._smote_oversample(X, y)
+            return self._smote_oversample_if_possible_random_otherwise(X, y)
 
     def _random_oversample(self, X, y, random_state=0):
         random_state = check_random_state(random_state)
@@ -154,5 +157,11 @@ class OVO(BaseEstimator):
 
         return X, y
 
-    def _smote_oversample(self, X, y):
-        pass
+    def _smote_oversample_if_possible_random_otherwise(self, X, y):
+        if min(np.unique(y, return_counts=True)[1]) < 2:
+            return self._random_oversample(X, y)
+
+        n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
+        smote = SMOTE(k_neighbors=n_neighbors)
+        smote.fit(X, y)
+        return smote.fit_resample(X, y)
