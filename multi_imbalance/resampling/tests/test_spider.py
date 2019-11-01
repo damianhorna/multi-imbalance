@@ -3,8 +3,7 @@ from multi_imbalance.resampling.spider import SPIDER3
 import numpy as np
 
 cost = np.ones((3,3))
-for i in range(0,3):
-    cost[i,i] = 0
+np.fill_diagonal(cost, 0)
 spider = SPIDER3(1, cost, majority_classes=["MAJ"], intermediate_classes=["INT"], minority_classes=["MIN"])
 
 
