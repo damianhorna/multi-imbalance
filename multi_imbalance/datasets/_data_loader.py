@@ -86,3 +86,7 @@ def load_datasets(data_home=DATA_HOME_BASIC):
         datasets[it] = Bunch(data=X, target=y, DESCR=it)
 
     return datasets
+
+
+if __name__ == "__main__":
+    data = load_datasets(data_home="../../data/")
