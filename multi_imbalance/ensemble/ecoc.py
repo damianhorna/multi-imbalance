@@ -4,6 +4,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
+from imblearn.over_sampling import SMOTE
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -26,7 +27,7 @@ class ECOC(BaseEstimator):
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
 
-        distance: binary classifier. Possible classifiers:
+        distance: distance according to which the closest class is chosen. Possible distances:
         * 'hamming': Hamming's distance
 
         oversample: method for oversampling imbalanced data. Possible methods:
@@ -93,7 +94,8 @@ class ECOC(BaseEstimator):
 
     def _learn_binary_classifiers(self, X, y):
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
-            excluded_classes_indices = [idx for idx in range(len(y)) if y[idx] == 0]
+            excluded_classes_indices = [idx for idx in range(len(y)) if
+                                        self._code_matrix[self._labels.tolist().index(y[idx])][classifier_idx] == 0]
             X_filtered = np.delete(X, excluded_classes_indices, 0)
             y_filtered = np.delete(y, excluded_classes_indices)
             binary_labels = [self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
@@ -169,8 +171,8 @@ class ECOC(BaseEstimator):
                     if dist < min_dist:
                         min_dist = dist
 
-                if self._has_matrix_all_zeros_column(tmp_code_matrix):
-                    continue
+            if self._has_matrix_all_zeros_column(tmp_code_matrix):
+                continue
 
             if min_dist > max_min_dist:
                 max_min_dist = min_dist
@@ -230,12 +232,14 @@ class ECOC(BaseEstimator):
         if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_oversampling))
+        elif np.unique(y).size == 1:
+            return X, y
         elif strategy is None:
             return X, y
         elif strategy == 'random':
             return self._random_oversample(X, y)
         elif strategy == 'SMOTE':
-            return self._smote_oversample(X, y)
+            return self._smote_oversample_if_possible_random_otherwise(X, y)
 
     def _random_oversample(self, X, y, random_state=0):
         random_state = check_random_state(random_state)
@@ -271,3 +275,12 @@ class ECOC(BaseEstimator):
         elif self.binary_classifier == 'KNN':
             knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
             return knn
+
+    def _smote_oversample_if_possible_random_otherwise(self, X, y):
+        if min(np.unique(y, return_counts=True)[1]) < 2:
+            return self._random_oversample(X, y)
+
+        n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
+        smote = SMOTE(k_neighbors=n_neighbors)
+        smote.fit(X, y)
+        return smote.fit_resample(X, y)
