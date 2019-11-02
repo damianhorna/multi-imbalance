@@ -85,7 +85,7 @@ def test_choose_samples_when_correct(mdo_mock):
     V = np.array([7.53e-02, 5.91e-3])
     oversampling_rate = 2
     weights = [0.3, 0.7]
-    expected_result = np.array([[0.391485, 0.232378], [0.631741, 0.190915]])
+    expected_result = np.array([[0.391485, 0.230027], [0.631741, 0.183352]])
 
     S_temp = clf._MDO_oversampling(T, V, oversampling_rate, weights)
     assert_array_almost_equal(S_temp, expected_result)
@@ -108,7 +108,7 @@ def test_zero_variance(mdo_mock):
     V = np.array([0, 0])
     oversampling_rate = 2
     weights = [0.3, 0.7]
-    expected_result = np.array([[0.157618, 0.353591], [0.254349, 0.332314]])
+    expected_result = np.array([[0.157618, 0.330578], [0.254349, 0.263499]])
 
     S_temp = clf._MDO_oversampling(T, V, oversampling_rate, weights)
     assert_array_almost_equal(S_temp, expected_result)
