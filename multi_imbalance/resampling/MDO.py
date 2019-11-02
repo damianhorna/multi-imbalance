@@ -1,4 +1,5 @@
 from collections import Counter
+from copy import deepcopy
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
@@ -87,22 +88,25 @@ class MDO(object):
 
     def _MDO_oversampling(self, T, v, oversampling_rate, weights):
         oversampled_set = list()
-        V = v + 1e-16
-
+        V = np.clip(np.copy(v), a_min=0.001, a_max=None)
         for _ in range(oversampling_rate):
             idx = self.random_state.choice(np.arange(len(T)), p=weights)
             X = np.square(T[idx])
             a = np.sum(X / V)
             alpha_V = a * V
+            alpha_V[alpha_V < 0.001] = 0.001
 
             s = 0
             features_vector = list()
             for alpha_V_j in alpha_V[:-1]:
                 sqrt_avj = np.sqrt(alpha_V_j)
+
                 r = self.random_state.uniform(low=-sqrt_avj, high=sqrt_avj)
                 s += r ** 2 / sqrt_avj
                 features_vector.append(r)
-
+            # if s > 1:
+                # print("ERRROR")
+                # print(s)
             last = (1 - s) * alpha_V[-1]
             last_feature = np.sqrt(last) if last > 0 else 0
             random_last_feature = self.random_state.choice([-last_feature, last_feature], 1)[0]
