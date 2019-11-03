@@ -11,7 +11,7 @@ class GlobalCS(object):
     for each class to achieve majority class size
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.quantities = None
 
     def fit_transform(self, X, y, shuffle: bool = True):
