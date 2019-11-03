@@ -5,8 +5,8 @@ The characteristics of the available datasets are presented in the table below.
  ID    Name             Repository     Class distribution                                            #S       #F
  1     balance_scale    UCI            46.1 : 46.1 : 7.8                                             625      4
  2     cmc              UCI            42.7 : 34.7 : 22.6                                            1,473    9
- 3     cleveland        UCI            53.9 : 18.2 : 11.8 : 11.8 : 4.4                               297      13
- 4     dermatology      UCI            31   : 19.8 : 16.8 : 13.4 : 13.4 : 5.6                        358      34
+ 3     cleveland        UCI            53.9 : 18.2 : 11.8 : 11.8 : 4.4                               303      13
+ 4     dermatology      UCI            31   : 19.8 : 16.8 : 13.4 : 13.4 : 5.6                        366      34
  5     ecoli            UCI            42.6 : 22.9 : 15.5 : 10.4 : 6    : 1.5  : 0.6 : 0.6           336      7
  6     glass            UCI            35.5 : 32.7 : 13.6 : 8    : 6.1  : 4.2                        214      9
  7     hayes_roth       UCI            38.6 : 38.6 : 22.7                                            132      5
@@ -86,3 +86,7 @@ def load_datasets(data_home=DATA_HOME_BASIC):
         datasets[it] = Bunch(data=X, target=y, DESCR=it)
 
     return datasets
+
+
+if __name__ == "__main__":
+    data = load_datasets(data_home="../../data/")

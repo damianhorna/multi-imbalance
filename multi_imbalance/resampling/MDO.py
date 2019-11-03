@@ -15,7 +15,7 @@ class MDO(object):
 
     """
 
-    def __init__(self, k=9, k1_frac=.5, seed=0):
+    def __init__(self, k=9, k1_frac=.0, seed=0):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
@@ -75,12 +75,20 @@ class MDO(object):
         chosen_minor_class_samples_to_oversample = minor_set[quantity_same_class_neighbours >= self.k1]
 
         weights = quantity_same_class_neighbours[quantity_same_class_neighbours >= self.k1] / self.k2
-        weights /= np.sum(weights)
+        weights_sum = np.sum(weights)
+
+        if weights_sum != 0:
+            weights /= np.sum(weights)
+        elif len(weights) > 0:
+            value = 1 / len(weights)
+            weights += value
 
         return chosen_minor_class_samples_to_oversample, weights
 
-    def _MDO_oversampling(self, T, V, oversampling_rate, weights):
+    def _MDO_oversampling(self, T, v, oversampling_rate, weights):
         oversampled_set = list()
+        V = v + 1e-16
+
         for _ in range(oversampling_rate):
             idx = self.random_state.choice(np.arange(len(T)), p=weights)
             X = np.square(T[idx])
