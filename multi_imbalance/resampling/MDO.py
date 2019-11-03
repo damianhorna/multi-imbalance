@@ -101,12 +101,10 @@ class MDO(object):
             alpha_V[alpha_V < 0.001] = 0.001
 
             s = 0
-            ra = []
             features_vector = list()
             for alpha_V_j in alpha_V[:-1]:
                 sqrt_avj = np.sqrt(alpha_V_j)
                 r = self.random_state.uniform(low=-sqrt_avj, high=sqrt_avj)
-                ra.append(r)
                 s += r ** 2 / alpha_V_j
                 features_vector.append(r)
 
