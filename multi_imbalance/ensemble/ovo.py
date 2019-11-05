@@ -161,7 +161,7 @@ class OVO(BaseEstimator):
         if min(np.unique(y, return_counts=True)[1]) < 2:
             return self._random_oversample(X, y)
 
-        n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         smote = SMOTE(k_neighbors=n_neighbors)
         smote.fit(X, y)
         return smote.fit_resample(X, y)
