@@ -1,4 +1,5 @@
 from collections import Counter
+from copy import deepcopy
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
@@ -47,20 +48,24 @@ class MDO(object):
             if len(chosen_minor_class_samples_to_oversample) == 0:
                 continue
 
-            chosen_samples_mean = np.mean(chosen_minor_class_samples_to_oversample, axis=0)
-            zero_mean_samples = chosen_minor_class_samples_to_oversample - chosen_samples_mean
-
-            n_components = min(zero_mean_samples.shape)
-            pca = PCA(n_components=n_components).fit(zero_mean_samples)
-
-            uncorrelated_samples = pca.transform(zero_mean_samples)
-            variables_variance = np.diag(np.cov(uncorrelated_samples, rowvar=False))
             oversampling_rate = goal_quantity - quantities[class_label]
-
             if oversampling_rate > 0:
-                oversampled_set = self._MDO_oversampling(uncorrelated_samples, variables_variance, oversampling_rate,
-                                                         weights)
-                oversampled_set = pca.inverse_transform(oversampled_set) + chosen_samples_mean
+                if len(chosen_minor_class_samples_to_oversample) == 1:
+                    oversampled_set = np.repeat(chosen_minor_class_samples_to_oversample, oversampling_rate, axis=0)
+                else:
+                    chosen_samples_features_mean = np.mean(chosen_minor_class_samples_to_oversample, axis=0)
+                    zero_mean_samples = chosen_minor_class_samples_to_oversample - chosen_samples_features_mean
+
+                    n_components = min(zero_mean_samples.shape)
+                    pca = PCA(n_components=n_components).fit(zero_mean_samples)
+
+                    uncorrelated_samples = pca.transform(zero_mean_samples)
+                    variables_variance = np.diag(np.cov(uncorrelated_samples, rowvar=False))
+
+                    oversampled_set = self._MDO_oversampling(uncorrelated_samples, variables_variance,
+                                                             oversampling_rate,
+                                                             weights)
+                    oversampled_set = pca.inverse_transform(oversampled_set) + chosen_samples_features_mean
 
                 oversampled_X = np.vstack((oversampled_X, oversampled_set))
                 oversampled_y = np.hstack((oversampled_y, np.array([class_label] * oversampling_rate)))
@@ -87,20 +92,20 @@ class MDO(object):
 
     def _MDO_oversampling(self, T, v, oversampling_rate, weights):
         oversampled_set = list()
-        V = v + 1e-16
-
+        V = np.clip(np.copy(v), a_min=0.001, a_max=None)
         for _ in range(oversampling_rate):
             idx = self.random_state.choice(np.arange(len(T)), p=weights)
             X = np.square(T[idx])
             a = np.sum(X / V)
             alpha_V = a * V
+            alpha_V[alpha_V < 0.001] = 0.001
 
             s = 0
             features_vector = list()
             for alpha_V_j in alpha_V[:-1]:
                 sqrt_avj = np.sqrt(alpha_V_j)
                 r = self.random_state.uniform(low=-sqrt_avj, high=sqrt_avj)
-                s += r ** 2 / sqrt_avj
+                s += r ** 2 / alpha_V_j
                 features_vector.append(r)
 
             last = (1 - s) * alpha_V[-1]
