@@ -5,6 +5,7 @@ from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from imblearn.over_sampling import SMOTE
+from resampling.GlobalCS import GlobalCS
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -32,7 +33,7 @@ class ECOC(BaseEstimator):
 
         oversample: method for oversampling imbalanced data. Possible methods:
         * None : no oversampling applied,
-        * 'random' : random oversampling - random chosen instances of minority classes are duplicated
+        * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
 
         encoding : algorithm for encoding classes. Possible encodings:
@@ -98,8 +99,8 @@ class ECOC(BaseEstimator):
                                         self._code_matrix[self._labels.tolist().index(y[idx])][classifier_idx] == 0]
             X_filtered = np.delete(X, excluded_classes_indices, 0)
             y_filtered = np.delete(y, excluded_classes_indices)
-            binary_labels = [self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
-                             y_filtered]
+            binary_labels = np.array([self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
+                                      y_filtered])
             X_filtered, binary_labels = self._oversample(X_filtered, binary_labels, self.oversample_binary)
             classifier.fit(X_filtered, binary_labels)
 
@@ -228,7 +229,7 @@ class ECOC(BaseEstimator):
             np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
     def _oversample(self, X, y, strategy=None):
-        allowed_oversampling = [None, 'random', 'SMOTE']
+        allowed_oversampling = [None, 'globalCS', 'SMOTE']
         if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, allowed_oversampling))
@@ -236,30 +237,11 @@ class ECOC(BaseEstimator):
             return X, y
         elif strategy is None:
             return X, y
-        elif strategy == 'random':
-            return self._random_oversample(X, y)
+        elif strategy == 'globalCS':
+            gcs = GlobalCS()
+            return gcs.fit_transform(X, y)
         elif strategy == 'SMOTE':
             return self._smote_oversample_if_possible_random_otherwise(X, y)
-
-    def _random_oversample(self, X, y, random_state=0):
-        random_state = check_random_state(random_state)
-
-        values, counts = np.unique(y, return_counts=True)
-        max_cardinality = np.max(counts)
-        instances_to_be_added = max_cardinality - counts
-
-        for clazz, missing_examples in zip(values, instances_to_be_added):
-            y_clazz_indices = np.where(y == clazz)
-            X_clazz = X[y_clazz_indices]
-            for _ in range(missing_examples):
-                rand_idx = random_state.randint(0, X_clazz.shape[0])
-                y = np.append(y, clazz)
-                X = np.vstack([X, X_clazz[rand_idx]])
-
-        return X, y
-
-    def _smote_oversample(self, X, y):
-        pass
 
     def _get_classifier(self):
         allowed_classifiers = ('CART', 'NB', 'KNN')
@@ -278,7 +260,7 @@ class ECOC(BaseEstimator):
 
     def _smote_oversample_if_possible_random_otherwise(self, X, y):
         if min(np.unique(y, return_counts=True)[1]) < 2:
-            return self._random_oversample(X, y)
+            return GlobalCS().fit_transform(X, y)
 
         n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
         smote = SMOTE(k_neighbors=n_neighbors)
