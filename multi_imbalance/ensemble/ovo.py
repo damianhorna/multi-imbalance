@@ -5,6 +5,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_random_state
+from resampling.GlobalCS import GlobalCS
 
 from imblearn.over_sampling import SMOTE
 
@@ -129,37 +130,21 @@ class OVO(BaseEstimator):
         return self._labels[np.argmax(scores)]
 
     def _oversample(self, X, y, strategy=None):
-        allowed_oversampling = [None, 'random', 'SMOTE']
+        allowed_oversampling = [None, 'globalCS', 'SMOTE']
         if strategy not in allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (strategy, allowed_oversampling))
         elif strategy is None:
             return X, y
-        elif strategy == 'random':
-            return self._random_oversample(X, y)
+        elif strategy == 'globalCS':
+            gcs = GlobalCS()
+            return gcs.fit_transform(X, y)
         elif strategy == 'SMOTE':
             return self._smote_oversample_if_possible_random_otherwise(X, y)
 
-    def _random_oversample(self, X, y, random_state=0):
-        random_state = check_random_state(random_state)
-
-        values, counts = np.unique(y, return_counts=True)
-        max_cardinality = np.max(counts)
-        instances_to_be_added = max_cardinality - counts
-
-        for clazz, missing_examples in zip(values, instances_to_be_added):
-            y_clazz_indices = np.where(y == clazz)
-            X_clazz = X[y_clazz_indices]
-            for _ in range(missing_examples):
-                rand_idx = random_state.randint(0, X_clazz.shape[0])
-                y = np.append(y, clazz)
-                X = np.vstack([X, X_clazz[rand_idx]])
-
-        return X, y
-
     def _smote_oversample_if_possible_random_otherwise(self, X, y):
         if min(np.unique(y, return_counts=True)[1]) < 2:
-            return self._random_oversample(X, y)
+            return GlobalCS().fit_transform(X, y)
 
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         smote = SMOTE(k_neighbors=n_neighbors)
