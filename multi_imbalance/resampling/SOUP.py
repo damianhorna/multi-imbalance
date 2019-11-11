@@ -36,7 +36,10 @@ class SOUP(object):
         result_X, result_y = list(), list()
         self.neigh_clf.fit(X)
         self.quantities = Counter(y)
-        self.goal_quantity = np.mean(list(self.quantities.values()), dtype=int)
+
+        max_q = max(list(self.quantities.values()))
+        min_q = min(list(self.quantities.values()))
+        self.goal_quantity = np.mean((min_q, max_q), dtype=int)
 
         for class_name, class_quantity in self.quantities.items():
 
