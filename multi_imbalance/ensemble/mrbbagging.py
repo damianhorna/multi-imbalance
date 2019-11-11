@@ -15,7 +15,7 @@ class MRBBagging(object):
         grouped_data = dict()
         for cl in classes:
             assert cl is not None, "Missing class name"
-            grouped_data[cl] = [d for d in data if d[1] == cl]
+            grouped_data[cl] = list(filter(lambda d: d[1] == cl, data))
         return classes, grouped_data
 
     def fit(self, x, y, n, k, learning_algorithm):
