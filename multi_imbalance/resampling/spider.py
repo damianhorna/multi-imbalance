@@ -113,7 +113,7 @@ class SPIDER3:
             List of classes associated with minimal cost of misclassification.
         """
 
-        C = self.majority_classes + self.intermediate_classes + self.minority_classes
+        C = self.minority_classes + self.intermediate_classes + self.majority_classes
         vals = []
         for cj in C:
             s = 0
@@ -122,6 +122,7 @@ class SPIDER3:
             vals.append(s)
         C = np.array(C)
         vals = np.array(vals)
+        vals = np.round(vals, 6)
         return C[vals == vals[np.argmin(vals)]]
 
     @staticmethod
@@ -259,7 +260,15 @@ class SPIDER3:
             self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
 
         self.neigh_clf.fit(DS[:, :-1])
-        indices = self.neigh_clf.kneighbors([x[:-1]], return_distance=False)[0]
+        within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 * self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1],return_distance=True)
+        unique_distances = np.unique(sorted(within_radius[0][0]))
+        all_distances = within_radius[0][0]
+        all_indices = within_radius[1][0]
+        indices = []
+        for dist in unique_distances:
+            if len(indices) < self.k:
+                indices += (all_indices[all_distances == dist]).tolist()
+
         if c is not None:
             result = []
             for idx in indices:
@@ -288,4 +297,3 @@ class SPIDER3:
 
     def ds_as_rs_union(self):
         return self._union(self.DS, self._union(self.AS, self.RS))
-
