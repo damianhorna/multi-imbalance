@@ -57,7 +57,7 @@ def test_knn():
     DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
     assert (DS[4] == spider._knn(DS[0], DS, c="MAJ")).all()
     assert (DS[4] == spider._knn(DS[2], DS, c="MAJ")).all()
-    assert (DS[0] == spider._knn(DS[4], DS, c="MIN")).all()
+    assert (np.array([DS[0], DS[1]]) == spider._knn(DS[4], DS, c="MIN")).all()
 
 
 def test_nearest():
@@ -91,4 +91,4 @@ def test_min_cost_classes():
     DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
     spider._min_cost_classes(DS[0], DS)
     assert (spider._min_cost_classes(DS[0], DS) == ["MAJ"]).all()
-    assert (spider._min_cost_classes(DS[4], DS) == ["MIN"]).all()
+    assert (spider._min_cost_classes(DS[4], DS) == ["MIN", "MAJ"]).all()
