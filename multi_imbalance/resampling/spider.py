@@ -1,6 +1,5 @@
 import numpy as np
-from sklearn.metrics import confusion_matrix
-from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
+from sklearn.neighbors import NearestNeighbors
 
 
 class SPIDER3:
@@ -294,62 +293,3 @@ class SPIDER3:
 
     def ds_as_rs_union(self):
         return self._union(self.DS, self._union(self.AS, self.RS))
-
-
-def read_train_and_test_data(overlap, imbalance_ratio, i):
-    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
-        content = f.readlines()
-    content = [x.strip().split(",") for x in content][5:]
-    data = np.array(content)
-    X_train, y_train = data[:, :-1].astype(float), data[:, -1].astype(object)
-
-    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
-        content = f.readlines()
-    content = [x.strip().split(",") for x in content][5:]
-    data = np.array(content)
-    X_test, y_test = data[:, :-1].astype(float), data[:, -1].astype(object)
-
-    return X_train, y_train, X_test, y_test
-
-
-def train_and_test():
-    neigh = KNeighborsClassifier(n_neighbors=1)
-    # for i in range(0, 2):
-    #     X_train[:, i] = (X_train[:, i] - np.mean(X_train[:, i])) / np.std(X_train[:, i])
-    #     X_test[:, i] = (X_test[:, i] - np.mean(X_test[:, i])) / np.std(X_test[:, i])
-    neigh.fit(X_train, y_train)
-    y_pred = neigh.predict(X_test)
-    labels = ['MIN', 'INT', 'MAJ']
-    # for i, label in enumerate(labels):
-    #     print(
-    #         f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
-    return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[i,
-                                                                    :].sum() for i, label in enumerate(labels)]
-
-
-if __name__ == "__main__":
-    for imbalance_ratio in ["30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
-        print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in [1, 0, 2]:
-            print(f"Overlap: {overlap}")
-            min_tpr = []
-            int_tpr = []
-            maj_tpr = []
-            for i in range(1, 3):  # 11):
-                X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
-                cost = np.ones((3, 3))
-                for i in range(3):
-                    cost[i][i] = 0
-
-                cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
-
-                clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
-                              intermediate_classes=['INT'], minority_classes=['MIN'])
-                X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
-                min_t, int_t, maj_t = train_and_test()
-                min_tpr.append(min_t)
-                int_tpr.append(int_t)
-                maj_tpr.append(maj_t)
-            print(f"MIN TPR:{np.array(min_tpr).mean()}")
-            print(f"INT TPR:{np.array(int_tpr).mean()}")
-            print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
