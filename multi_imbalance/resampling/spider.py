@@ -336,20 +336,20 @@ def train_and_test():
 
 
 if __name__ == "__main__":
-    for imbalance_ratio in ["30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
+    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
         print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in [1, 0, 2]:
+        for overlap in [0, 1, 2]:
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1, 3):  # 11):
+            for i in range(1, 11):  # 11):
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
                     cost[i][i] = 0
 
-                cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
+                cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
                               intermediate_classes=['INT'], minority_classes=['MIN'])
