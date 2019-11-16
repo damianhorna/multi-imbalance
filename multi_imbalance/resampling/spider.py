@@ -1,7 +1,49 @@
+from collections import Counter
+
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
 
+from multi_imbalance.datasets import load_datasets
+from collections import Counter
+import pandas as pd
+from IPython.core.display import display
+from sklearn.metrics import accuracy_score
+
+from sklearn.model_selection import StratifiedKFold
+from sklearn.tree import DecisionTreeClassifier
+
+from multi_imbalance.datasets import load_datasets
+from multi_imbalance.resampling.SOUP import SOUP
+from multi_imbalance.resampling.MDO import MDO
+from multi_imbalance.resampling.GlobalCS import GlobalCS
+
+from imblearn.metrics import geometric_mean_score
+from imblearn.over_sampling import SMOTE
+
+import seaborn as sns
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+maj_int_min = {
+    "1czysty-cut": {'maj': [0],'int': [2],'min': [1]},
+    "2delikatne-cut": {'maj': [0],'int': [2],'min': [1]},
+    "3mocniej-cut": {'maj': [0],'int': [2],'min': [1]},
+    "4delikatne-bezover-cut": {'maj': [0],'int': [2],'min': [1]},
+    "balance-scale": {'maj': [2, 1],'int': [],'min': [0]},
+    "cleveland": {'maj': [0],'int': [1],'min': [2, 3, 4]},
+    "cleveland_v2": {'maj': [0],'int': [],'min': [1,2,3]},
+    "cmc": {'maj': [0, 2],'int': [],'min': [1]},
+    "dermatology": {'maj': [0,],'int': [2, 1, 4, 3],'min': [5]},
+    "glass": {'maj': [1, 0],'int': [3],'min': [5, 2, 4]},
+    "hayes-roth": {'maj': [],'int': [],'min': [0,1, 2]},
+    "new_ecoli": {'maj': [0],'int': [1,4],'min': [2, 3]},
+    "new_led7digit": {'maj': [3, 5, 0, 2,4,1],'int': [],'min': []},
+    "new_vehicle": {'maj': [1],'int': [],'min': [0, 2]},
+    "new_winequality-red": {'maj': [0, 1],'int': [2],'min': [3]},
+    "new_yeast": {'maj': [0, 1],'int': [8, 7],'min': [6,5,4,3,2]},
+    "thyroid-newthyroid": {'maj': [0],'int': [],'min': [1,2]}
+}
 
 class SPIDER3:
     """
@@ -335,7 +377,7 @@ def train_and_test():
                                                                     :].sum() for i, label in enumerate(labels)]
 
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
         print(f"Imbalance ratio: {imbalance_ratio}")
         for overlap in [0, 1, 2]:
@@ -361,3 +403,107 @@ if __name__ == "__main__":
             print(f"MIN TPR:{np.array(min_tpr).mean()}")
             print(f"INT TPR:{np.array(int_tpr).mean()}")
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
+
+
+def calc_cost_matrix(dataset_name):
+    #default
+    no_classes = np.unique(datasets[dataset_name].target).size
+    cost = np.ones((no_classes, no_classes))
+
+    X, y = datasets[dataset_name].data, datasets[dataset_name].target
+    element_count = Counter(y)
+    cardinality_pairs = list(element_count.items())
+    for c1,_ in cardinality_pairs:
+        for c2,_ in cardinality_pairs:
+            f2_overlap_volume = 1
+            for i in range(X.shape[1]):
+                f2_overlap_volume = f2_overlap_volume * (min(X[y == c1][:,i].max(), X[y == c2][:,i].max()) - max(X[y == c1][:,i].min(), X[y == c2][:,i].min())) / (max(X[y == c1][:,i].max(), X[y == c2][:,i].max()) - min(X[y == c1][:,i].min(), X[y == c2][:,i].min()) + 0.000001)
+            cost[c2, c1] = f2_overlap_volume
+    np.fill_diagonal(cost, 0)
+    max_overlap = cost.max() + 0.000001
+    cost = cost / max_overlap + np.ones((no_classes, no_classes))
+    np.fill_diagonal(cost,0)
+    #print(cost)
+    return cost
+
+
+if __name__ == "__main__":
+    datasets = load_datasets()
+    results_g_mean = dict()
+    results_acc = dict()
+
+    for dataset_name, dataset_values in datasets.items():
+        if dataset_name != 'dermatology': #or dataset_name != 'new_ecoli':
+            continue
+        print(dataset_name)
+
+        X, y = dataset_values.data, dataset_values.target
+
+        if len(X) > 1000:
+            continue
+
+        results_g_mean[dataset_name] = dict()
+        results_acc[dataset_name] = dict()
+
+        for resample in ['base', 'global', 'soup', 'mdo', 'spider']:
+
+            skf = StratifiedKFold(n_splits=5, random_state=0)
+            acc, g_mean = list(), list()
+            for train_index, test_index in skf.split(X, y):
+                X_train, X_test = X[train_index], X[test_index]
+                y_train, y_test = y[train_index], y[test_index]
+                error_flag = False
+                clf_tree = DecisionTreeClassifier(random_state=0)
+
+                if resample == 'base':
+                    X_train_resampled, y_train_resampled = X_train, y_train
+                elif resample == 'soup':
+                    soup = SOUP()
+                    X_train_resampled, y_train_resampled = soup.fit_transform(np.copy(X_train), np.copy(y_train))
+                elif resample == 'global':
+                    global_cs = GlobalCS()
+                    X_train_resampled, y_train_resampled = global_cs.fit_transform(np.copy(X_train), np.copy(y_train))
+                elif resample == 'smote':
+                    try:
+                        smote = SMOTE()
+                        X_train_resampled, y_train_resampled = smote.fit_sample(np.copy(X_train), np.copy(y_train))
+                    except Exception as e:
+                        error_flag = True
+                        print(resample, dataset_name, e)
+                        X_train_resampled, y_train_resampled = X_train, y_train
+                elif resample == 'mdo':
+                    mdo = MDO(k=9, k1_frac=0, seed=0)
+                    X_train_resampled, y_train_resampled = mdo.fit_transform(np.copy(X_train), np.copy(y_train))
+                elif resample == 'spider':
+                    cost = calc_cost_matrix(dataset_name)
+                    clf = SPIDER3(k=5, cost=cost, majority_classes=maj_int_min[dataset_name]['maj'],
+                                  intermediate_classes=maj_int_min[dataset_name]['int'],
+                                  minority_classes=maj_int_min[dataset_name]['min'])
+                    X_train_resampled, y_train_resampled = clf.fit_transform(X_train.astype(np.float64), y_train)
+
+                clf_tree.fit(X_train_resampled, y_train_resampled)
+                y_pred = clf_tree.predict(X_test)
+                g_mean.append(geometric_mean_score(y_test, y_pred, correction=0.001))
+                acc.append(accuracy_score(y_test, y_pred))
+
+            result_g_mean = None if error_flag else round(np.mean(g_mean), 3)
+            result_acc = None if error_flag else round(np.mean(acc), 3)
+
+            results_g_mean[dataset_name][resample] = result_g_mean
+            results_acc[dataset_name][resample] = result_acc
+
+    display("G-MEAN")
+    df = pd.DataFrame(results_g_mean).T
+    display(df)
+
+    # display("ACC")
+    # df2 = pd.DataFrame(results_acc).T
+    # display(df2)
+
+    display("MEAN G-MEAN")
+    df.fillna(df.median(), inplace=True)
+    display(df.mean())
+
+    # display("MEAN ACC")
+    # display(df2.mean())
+
