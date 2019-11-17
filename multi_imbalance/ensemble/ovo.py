@@ -5,7 +5,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import check_random_state
-from resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.GlobalCS import GlobalCS
 
 from imblearn.over_sampling import SMOTE
 
@@ -52,7 +52,7 @@ class OVO(BaseEstimator):
         self._labels = np.array([])
         self._minority_classes = list()
 
-    def fit(self, X, y, minority_classes):
+    def fit(self, X, y, minority_classes=None):
         """
         Parameters
         ----------
@@ -64,6 +64,9 @@ class OVO(BaseEstimator):
         -------
         self: object
         """
+        if minority_classes is None:
+            minority_classes = list()
+
         self._labels = np.unique(y)
         self._minority_classes = minority_classes
         num_of_classes = len(self._labels)
