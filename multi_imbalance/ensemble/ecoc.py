@@ -5,7 +5,7 @@ from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from imblearn.over_sampling import SMOTE
-from resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.GlobalCS import GlobalCS
 
 from sklearn.tree import DecisionTreeClassifier
 
@@ -18,7 +18,7 @@ class ECOC(BaseEstimator):
     closest to test instance is chosen.
     """
 
-    def __init__(self, binary_classifier='CART', distance='hamming', penalty=1.0, oversample_all=None,
+    def __init__(self, binary_classifier='CART', distance='hamming', oversample_all=None,
                  oversample_binary=None, encoding='dense', n_neighbors=5):
         """
         Parameters
@@ -45,9 +45,8 @@ class ECOC(BaseEstimator):
 
         """
         self.binary_classifier = binary_classifier
-        self.distance = distance
-        self.penalty = penalty
         self.oversample_all = oversample_all
+        self.distance = distance
         self.encoding = encoding
         self.oversample_binary = oversample_binary
         self.n_neighbors = n_neighbors
