@@ -1,13 +1,11 @@
 import numpy as np
-
+from imblearn.over_sampling import SMOTE
 from sklearn.base import BaseEstimator
 from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.utils import check_random_state
-from multi_imbalance.resampling.GlobalCS import GlobalCS
+from sklearn.tree import DecisionTreeClassifier
 
-from imblearn.over_sampling import SMOTE
+from multi_imbalance.resampling.GlobalCS import GlobalCS
 
 
 class OVO(BaseEstimator):
@@ -20,6 +18,11 @@ class OVO(BaseEstimator):
     derived depending on chosen aggregation model.
 
     """
+
+    _allowed_classifiers = ['CART', 'NB', 'KNN']
+    _allowed_voting_strategies = ['max']
+    _allowed_oversampling = [None, 'globalCS', 'SMOTE']
+    _allowed_oversample_between = ['all', 'maj-min']
 
     def __init__(self, voting_strategy='max', binary_classifier='CART', n_neighbors=5, oversample_binary=None,
                  oversample_between='all'):
@@ -108,15 +111,14 @@ class OVO(BaseEstimator):
                 first_class, second_class = self._labels[row], self._labels[col]
                 filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
                 X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
-                if self.should_perform_ovesampling(first_class, second_class):
+                if self.should_perform_oversampling(first_class, second_class):
                     X_filtered, y_filtered = self._oversample(X_filtered, y_filtered, strategy=self.oversample_binary)
                 self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
     def _get_classifier(self):
-        allowed_classifiers = ('CART', 'NB', 'KNN')
-        if self.binary_classifier not in allowed_classifiers:
+        if self.binary_classifier not in OVO._allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
-                             % (self.binary_classifier, allowed_classifiers))
+                             % (self.binary_classifier, OVO._allowed_classifiers))
         elif self.binary_classifier == 'CART':
             decision_tree_classifier = DecisionTreeClassifier()
             return decision_tree_classifier
@@ -128,10 +130,9 @@ class OVO(BaseEstimator):
             return knn
 
     def _perform_voting(self, binary_outputs_matrix):
-        allowed_voting_strategies = ('max',)
-        if self.voting_strategy not in allowed_voting_strategies:
+        if self.voting_strategy not in OVO._allowed_voting_strategies:
             raise ValueError("Unknown voting strategy: %s, expected to be one of %s."
-                             % (self.voting_strategy, allowed_voting_strategies))
+                             % (self.voting_strategy, OVO._allowed_voting_strategies))
         elif self.voting_strategy == 'max':
             return self._perform_max_voting(binary_outputs_matrix)
 
@@ -143,10 +144,9 @@ class OVO(BaseEstimator):
         return self._labels[np.argmax(scores)]
 
     def _oversample(self, X, y, strategy=None):
-        allowed_oversampling = [None, 'globalCS', 'SMOTE']
-        if strategy not in allowed_oversampling:
+        if strategy not in OVO._allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (strategy, allowed_oversampling))
+                             % (strategy, OVO._allowed_oversampling))
         elif strategy is None:
             return X, y
         elif strategy == 'globalCS':
@@ -164,11 +164,10 @@ class OVO(BaseEstimator):
         smote.fit(X, y)
         return smote.fit_resample(X, y)
 
-    def should_perform_ovesampling(self, first_class, second_class):
-        allowed_oversample_between = ['all', 'maj-min']
-        if self.oversample_between not in allowed_oversample_between:
+    def should_perform_oversampling(self, first_class, second_class):
+        if self.oversample_between not in OVO._allowed_oversample_between:
             raise ValueError("Unknown strategy for oversampling: %s, expected to be one of %s."
-                             % (self.oversample_between, allowed_oversample_between))
+                             % (self.oversample_between, OVO._allowed_oversample_between))
         elif self.oversample_between == 'all':
             return True
         elif self.oversample_between == 'maj-min':
