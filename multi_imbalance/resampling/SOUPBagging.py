@@ -8,11 +8,7 @@ from multi_imbalance.resampling.SOUP import SOUP
 
 
 def fit_clf(args):
-    clf, X, y = args
-    x_sampled, y_sampled = resample(X, y, stratify=y)
-    x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
-    clf.fit(x_resampled, y_resampled)
-    return clf
+    return SOUPBagging.fit_classifier(args)
 
 
 class SOUPBagging(object):
@@ -25,6 +21,14 @@ class SOUPBagging(object):
                 self.classifiers.append(deepcopy(classifier))
             else:
                 self.classifiers.append(KNeighborsClassifier())
+
+    @staticmethod
+    def fit_classifier(args):
+        clf, X, y = args
+        x_sampled, y_sampled = resample(X, y, stratify=y)
+        x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
+        clf.fit(x_resampled, y_resampled)
+        return clf
 
     def fit(self, X, y):
         """
