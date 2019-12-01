@@ -2,28 +2,24 @@ import multiprocessing
 from copy import deepcopy
 
 import numpy as np
-from imblearn.metrics import geometric_mean_score
-from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
-from multi_imbalance.datasets import load_datasets
 from multi_imbalance.resampling.SOUP import SOUP
 
 
 def fit_clf(args):
-    clf, X, y, seed = args
-    x_sampled, y_sampled = resample(X, y, stratify=y, random_state=seed)
+    clf, X, y = args
+    x_sampled, y_sampled = resample(X, y, stratify=y)
     x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
     clf.fit(x_resampled, y_resampled)
     return clf
 
 
 class SOUPBagging(object):
-    def __init__(self, classifier=None, n_classifiers=30, seed=0):
+    def __init__(self, classifier=None, n_classifiers=30):
         self.classifiers = list()
         self.n_classifiers = n_classifiers
         self.classes = None
-        self.random_state = seed
         for _ in range(n_classifiers):
             if classifier is not None:
                 self.classifiers.append(deepcopy(classifier))
@@ -42,7 +38,7 @@ class SOUPBagging(object):
         NUM_CORE = 4  # set to the number of cores you want to use
 
         pool = multiprocessing.Pool(NUM_CORE)
-        self.classifiers = pool.map(fit_clf, [(clf, X, y, self.random_state) for clf in self.classifiers])
+        self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
         pool.close()
         pool.join()
 
@@ -75,11 +71,3 @@ class SOUPBagging(object):
 
         p = np.sum(results, axis=0)
         return p
-
-
-# dataset = load_datasets()['new_ecoli']
-#
-# X, y = dataset.data, dataset.target
-# clf = SOUPBagging()
-# X_train, X_test, y_train, y_test = train_test_split(X, y)
-# clf.fit(X_train, y_train)
