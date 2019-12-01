@@ -39,7 +39,7 @@ class SOUPBagging(object):
         """
         self.classes = np.unique(y)
 
-        NUM_CORE = 4  # set to the number of cores you want to use
+        NUM_CORE = multiprocessing.cpu_count()
 
         pool = multiprocessing.Pool(NUM_CORE)
         self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
