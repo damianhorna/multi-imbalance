@@ -45,6 +45,7 @@ maj_int_min = {
     "thyroid-newthyroid": {'maj': [0],'int': [],'min': [1,2]}
 }
 
+
 class SPIDER3:
     """
     SPIDER3 algorithm implementation for selective preprocessing of multi-class imbalanced data sets.
@@ -100,7 +101,7 @@ class SPIDER3:
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
 
-        for int_min_class in self.intermediate_classes + self.minority_classes:
+        for int_min_class in self.intermediate_classes + self.minority_classes: ## TODO: kolejność klas zgodnie z malejącą licznością
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._relabel_nn(x)
@@ -377,7 +378,8 @@ def train_and_test():
                                                                     :].sum() for i, label in enumerate(labels)]
 
 
-if __name__ == "__main__2":
+if __name__ == "__main__":
+    tprs = []
     for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
         print(f"Imbalance ratio: {imbalance_ratio}")
         for overlap in [0, 1, 2]:
@@ -391,43 +393,27 @@ if __name__ == "__main__2":
                 for i in range(3):
                     cost[i][i] = 0
 
-                cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
+                cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
+                #cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
                               intermediate_classes=['INT'], minority_classes=['MIN'])
-                X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
+                #X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
                 min_t, int_t, maj_t = train_and_test()
                 min_tpr.append(min_t)
                 int_tpr.append(int_t)
                 maj_tpr.append(maj_t)
+            tprs.append([np.array(min_tpr).mean(), np.array(int_tpr).mean(), np.array(maj_tpr).mean()])
             print(f"MIN TPR:{np.array(min_tpr).mean()}")
             print(f"INT TPR:{np.array(int_tpr).mean()}")
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
+    np.savetxt("base.csv", np.array(tprs), delimiter=",")
 
 
-def calc_cost_matrix(dataset_name):
-    #default
-    no_classes = np.unique(datasets[dataset_name].target).size
-    cost = np.ones((no_classes, no_classes))
-
-    X, y = datasets[dataset_name].data, datasets[dataset_name].target
-    element_count = Counter(y)
-    cardinality_pairs = list(element_count.items())
-    for c1,_ in cardinality_pairs:
-        for c2,_ in cardinality_pairs:
-            f2_overlap_volume = 1
-            for i in range(X.shape[1]):
-                f2_overlap_volume = f2_overlap_volume * (min(X[y == c1][:,i].max(), X[y == c2][:,i].max()) - max(X[y == c1][:,i].min(), X[y == c2][:,i].min())) / (max(X[y == c1][:,i].max(), X[y == c2][:,i].max()) - min(X[y == c1][:,i].min(), X[y == c2][:,i].min()) + 0.000001)
-            cost[c2, c1] = f2_overlap_volume
-    np.fill_diagonal(cost, 0)
-    max_overlap = cost.max() + 0.000001
-    cost = cost / max_overlap + np.ones((no_classes, no_classes))
-    np.fill_diagonal(cost,0)
-    #print(cost)
-    return cost
 
 
-if __name__ == "__main__":
+
+if __name__ == "__main__2":
     datasets = load_datasets()
     results_g_mean = dict()
     results_acc = dict()
