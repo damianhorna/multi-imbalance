@@ -44,16 +44,17 @@ class SOUP:
                              reverse=True)
         asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
                              reverse=False)
+
         for class_name, class_quantity in dsc_maj_cls:
-            self._undersample(X, y, class_name)
+            X, y = self._undersample(X, y, class_name)
 
         for class_name, class_quantity in asc_min_cls:
-            self._oversample(X, y, class_name)
+            X, y = self._oversample(X, y, class_name)
 
         if shuffle:
-            result_X, result_y = sklearn.utils.shuffle(X, y)
+            X, y = sklearn.utils.shuffle(X, y)
 
-        return np.array(result_X), np.array(result_y)
+        return np.array(X), np.array(y)
 
     def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
@@ -89,7 +90,7 @@ class SOUP:
         safe_levels_list = sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1))
         samples_to_remove_quantity = max(0, int(class_quantity - self.goal_quantity))
         if samples_to_remove_quantity > 0:
-            remove_indices = list(map(itemgetter(0), safe_levels_list[-samples_to_remove_quantity:]))
+            remove_indices = list(map(itemgetter(0), safe_levels_list[:samples_to_remove_quantity]))
             X = np.delete(X, remove_indices, axis=0)
             y = np.delete(y, remove_indices, axis=0)
 
@@ -98,13 +99,15 @@ class SOUP:
     def _oversample(self, X, y, class_name):
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
         class_quantity = self.quantities[class_name]
-        safe_levels_list = sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1), reverse=True)
+        safe_levels_list = list(sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1), reverse=True))
 
-        for i in range(self.goal_quantity):
-            sample_level_ranking_to_duplicate: int = i % class_quantity
-            sample_id, sample_safe_level = safe_levels_list[sample_level_ranking_to_duplicate]
-            X.append(X[sample_id])
-            y.append(y[sample_id])
+        difference = self.goal_quantity - class_quantity
+        while difference > 0:
+            quantity_items_to_copy = min(difference, class_quantity)
+            indices_to_copy = list(map(itemgetter(0), safe_levels_list[:quantity_items_to_copy]))
+            X = np.vstack((X, X[indices_to_copy]))
+            y = np.hstack((y, y[indices_to_copy]))
+            difference -= quantity_items_to_copy
 
         return X, y
 
