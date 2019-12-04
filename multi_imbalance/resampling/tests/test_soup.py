@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import pytest
+from numpy.testing import assert_array_almost_equal
 
 from multi_imbalance.resampling.SOUP import SOUP
 
@@ -68,12 +69,13 @@ complete_test_data = [
 ]
 
 safe_levels_test_data = [
-    (X, y_balanced, y_balanced_0_class_safe_levels),
-    (X, y_balanced, y_balanced_1_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_0_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_1_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_0_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_1_class_safe_levels),
+    # x,y,class_name,expected undersampling,oversampling quantity
+    (X, y_balanced, 0, 10, 10),
+    (X, y_balanced, 1, 10, 10),
+    (X, y_imb_easy, 0, 10, 10),
+    (X, y_imb_easy, 1, 6, 14),
+    (X, y_imb_hard, 0, 10, 10),
+    (X, y_imb_hard, 1, 6, 14,),
 ]
 
 
@@ -95,7 +97,7 @@ def test_calculating_safe_levels_for_sample(X, y, zero_safe_levels, one_safe_lev
     neighbour_quantities = Counter({0: 3, 1: 2})
 
     safe_level = clf._calculate_sample_safe_level(0, neighbour_quantities)
-    assert safe_level == first_sample_safe
+    assert_array_almost_equal(safe_level, first_sample_safe)
 
 
 @pytest.mark.parametrize("X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
@@ -106,32 +108,26 @@ def test_calculating_safe_levels_for_class(X, y, zero_safe_levels, one_safe_leve
     zero_levels = clf._construct_class_safe_levels(X, y, 0)
     one_levels = clf._construct_class_safe_levels(X, y, 1)
 
-    assert zero_levels == zero_safe_levels
-    assert one_levels == one_safe_levels
+    zero_levels == zero_safe_levels
+    one_levels == one_safe_levels
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_oversample(X, y, safe_levels, soup_mock):
+@pytest.mark.parametrize("X, y, class_name, expected_undersampling, expected_oversampling", safe_levels_test_data)
+def test_undersample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
-    if len(safe_levels) <= 10:
-        oversampled_X, oversampled_y = clf._oversample(X, y, safe_levels)
-        assert len(oversampled_X) == 10
-        assert len(oversampled_y) == 10
-    else:
-        with pytest.raises(AttributeError):
-            _, _ = clf._oversample(X, y, safe_levels)
+    oversampled_X, oversampled_y = list(), list()
+    clf._oversample(X, y, class_name, oversampled_X, oversampled_y)
+    assert len(oversampled_X) == expected_oversampling
+    assert len(oversampled_y) == expected_oversampling
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_undersample(X, y, safe_levels, soup_mock):
+@pytest.mark.parametrize("X, y, class_name, expected_undersampling, expected_oversampling", safe_levels_test_data)
+def test_undersample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
-    if len(safe_levels) >= 10:
-        undersampled_X, undersampled_y = clf._undersample(X, y, safe_levels)
-        assert len(undersampled_X) == 10
-        assert len(undersampled_y) == 10
-    else:
-        with pytest.raises(AttributeError):
-            _, _ = clf._undersample(X, y, safe_levels)
+    undersampled_X, undersampled_y = list(), list()
+    clf._undersample(X, y, class_name, undersampled_X, undersampled_y)
+    assert len(undersampled_X) == expected_undersampling
+    assert len(undersampled_y) == expected_undersampling
 
 
 def test_invalid_input_when_not_enough_labels():

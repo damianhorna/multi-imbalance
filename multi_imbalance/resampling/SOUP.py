@@ -1,3 +1,6 @@
+import io
+import pstats
+
 from collections import Counter, defaultdict
 from operator import itemgetter
 
@@ -12,8 +15,9 @@ import seaborn as sns
 
 from multi_imbalance.utils.data import construct_flat_2pc_df
 import matplotlib.pyplot as plt
-
 from timeit import timeit
+
+import cProfile
 
 
 class SOUP:
@@ -44,20 +48,20 @@ class SOUP:
         assert len(X.shape) == 2, 'X should have 2 dimension'
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
 
-        self.neigh_clf.fit(X)
         self.quantities = Counter(y)
-        max_q = max(list(self.quantities.values()))
-        min_q = min(list(self.quantities.values()))
-        self.goal_quantity = np.mean((min_q, max_q), dtype=int)
+        self.goal_quantity = self._calculate_goal_quantity()
+
         dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity), key=itemgetter(1),
                              reverse=True)
         asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
                              reverse=False)
         result_X, result_y = list(), list()
         for class_name, class_quantity in dsc_maj_cls:
+            self.neigh_clf.fit(X)
             self._undersample(X, y, class_name, result_X, result_y)
 
         for class_name, class_quantity in asc_min_cls:
+            self.neigh_clf.fit(X)
             self._oversample(X, y, class_name, result_X, result_y)
 
         if shuffle:
@@ -68,35 +72,31 @@ class SOUP:
     def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
-        class_safe_levels = defaultdict(float)
-        for sample_id in indices_in_class:
-            neighbours_quantities = self._calculate_neighbour_quantities_for_sample(X, y, sample_id)
-            class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
-        return class_safe_levels
+        neighbour_indices = self.neigh_clf.kneighbors(X[indices_in_class], return_distance=False)
+        neighbour_classes = y[neighbour_indices]
 
-    def _calculate_neighbour_quantities_for_sample(self, X, y, sample_id):
-        sample_row = [list(X[sample_id])]
-        neighbours_indices = self.neigh_clf.kneighbors(sample_row, return_distance=False)[0]
-        neighbours_classes = y[neighbours_indices[1:]]
-        neighbours_quantities = Counter(neighbours_classes)
-        return neighbours_quantities
+        class_safe_levels = defaultdict(float)
+        for i, sample_id in enumerate(indices_in_class):
+            neighbours_quantities = Counter(neighbour_classes[i])
+            class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
+
+        return class_safe_levels
 
     def _calculate_sample_safe_level(self, class_name, neighbours_quantities: Counter):
         safe_level = 0
         q: Counter = self.quantities
 
-        for neighbour_class_name, neighbour_class_quantity in neighbours_quantities.items():
-            similarity_between_classes = min(q[class_name], q[neighbour_class_name]) / max(q[class_name],
-                                                                                           q[neighbour_class_name])
-            safe_level += neighbour_class_quantity * similarity_between_classes / self.k
-        return safe_level
+        for neigh_label, neigh_q in neighbours_quantities.items():
+            similarity_between_classes = min(q[class_name], q[neigh_label]) / max(q[class_name], q[neigh_label])
+            safe_level += neigh_q * similarity_between_classes
+        return safe_level / self.k
 
     def _undersample(self, X, y, class_name, result_X, result_y):
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
 
         class_quantity = self.quantities[class_name]
         safe_levels_list = sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1))
-        samples_to_remove_quantity = int(class_quantity - self.goal_quantity)
+        samples_to_remove_quantity = max(0, int(class_quantity - self.goal_quantity))
         safe_levels_list = safe_levels_list[samples_to_remove_quantity:]
 
         undersampled_X = [X[idx] for idx, _ in safe_levels_list]
@@ -120,38 +120,52 @@ class SOUP:
         result_X.extend(oversampled_X)
         result_y.extend(oversampled_y)
 
+    def _calculate_goal_quantity(self):
+        max_q = max(list(self.quantities.values()))
+        min_q = min(list(self.quantities.values()))
+        return np.mean((min_q, max_q), dtype=int)
 
-def test():
-    sns.set_style('darkgrid')
 
-    dataset = load_datasets()['new_ecoli']
-
-    X, y = dataset.data, dataset.target
-
-    clf = SOUP()
-    resampled_X, resampled_y = clf.fit_transform(X, y, shuffle=False)
-
-    # n = len(Counter(y).keys())
-    # p = sns.color_palette("husl", n)
-    #
-    # pca = PCA(n_components=2)
-    # pca.fit(X)
-    #
-    # fig, axs = plt.subplots(ncols=2, nrows=2)
-    # fig.set_size_inches(16, 10)
-    # axs = axs.flatten()
-    #
-    # axs[1].set_title("Base")
-    # sns.countplot(y, ax=axs[0], palette=p)
-    # X = pca.transform(X)
-    # df = construct_flat_2pc_df(X, y)
-    # sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[1], legend='full', palette=p)
-    #
-    # axs[3].set_title("SOUP")
-    # sns.countplot(resampled_y, ax=axs[2], palette=p)
-    # resampled_X = pca.transform(resampled_X)
-    # df = construct_flat_2pc_df(resampled_X, resampled_y)
-    # sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[3], legend='full', palette=p)
-    # plt.show()
-
-print(timeit(test, number=100))
+# def test():
+#     sns.set_style('darkgrid')
+#
+#     dataset = load_datasets()['new_ecoli']
+#     #
+#     X, y = dataset.data, dataset.target
+#
+#     clf = SOUP()
+#     resampled_X, resampled_y = clf.fit_transform(X, y, shuffle=False)
+#
+#     n = len(Counter(y).keys())
+#     p = sns.color_palette("husl", n)
+#
+#     pca = PCA(n_components=2)
+#     pca.fit(X)
+#
+#     fig, axs = plt.subplots(ncols=2, nrows=2)
+#     fig.set_size_inches(16, 10)
+#     axs = axs.flatten()
+#
+#     axs[1].set_title("Base")
+#     sns.countplot(y, ax=axs[0], palette=p)
+#     X = pca.transform(X)
+#     df = construct_flat_2pc_df(X, y)
+#     sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[1], legend='full', palette=p)
+#
+#     axs[3].set_title("SOUP")
+#     sns.countplot(resampled_y, ax=axs[2], palette=p)
+#     resampled_X = pca.transform(resampled_X)
+#     df = construct_flat_2pc_df(resampled_X, resampled_y)
+#     sns.scatterplot(x='x1', y='x2', hue='y', style='y', data=df, alpha=0.7, ax=axs[3], legend='full', palette=p)
+#     plt.show()
+#
+#
+# # print(timeit(test, number=1))
+#
+# # pr = cProfile.Profile()
+# # pr.enable()
+# # for i in range(100):
+# test()
+# # pr.disable()
+# # ps = pstats.Stats(pr).sort_stats('cumulative')
+# # ps.print_stats()
