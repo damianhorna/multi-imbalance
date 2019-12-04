@@ -12,8 +12,9 @@ def fit_clf(args):
 
 
 class SOUPBagging(object):
-    def __init__(self, classifier=None, n_classifiers=30):
+    def __init__(self, classifier=None, n_classifiers=5):
         self.classifiers = list()
+        self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
         self.classes = None
         for _ in range(n_classifiers):
@@ -39,9 +40,7 @@ class SOUPBagging(object):
         """
         self.classes = np.unique(y)
 
-        NUM_CORE = multiprocessing.cpu_count()
-
-        pool = multiprocessing.Pool(NUM_CORE)
+        pool = multiprocessing.Pool(self.num_core)
         self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
         pool.close()
         pool.join()
@@ -73,4 +72,5 @@ class SOUPBagging(object):
         for i, clf in enumerate(self.classifiers):
             results[i] = clf.predict_proba(X)
 
-        return results
+        p = np.sum(results, axis=0)
+        return p
