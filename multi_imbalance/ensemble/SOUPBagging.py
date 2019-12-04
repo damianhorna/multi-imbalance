@@ -73,5 +73,4 @@ class SOUPBagging(object):
         for i, clf in enumerate(self.classifiers):
             results[i] = clf.predict_proba(X)
 
-        p = np.sum(results, axis=0)
-        return p
+        return results
