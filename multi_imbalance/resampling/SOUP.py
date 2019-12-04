@@ -1,23 +1,9 @@
-import io
-import pstats
-
 from collections import Counter, defaultdict
 from operator import itemgetter
 
 import numpy as np
 import sklearn
-from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
-
-from multi_imbalance.datasets import load_datasets
-
-import seaborn as sns
-
-from multi_imbalance.utils.data import construct_flat_2pc_df
-import matplotlib.pyplot as plt
-from timeit import timeit
-
-import cProfile
 
 
 class SOUP:
