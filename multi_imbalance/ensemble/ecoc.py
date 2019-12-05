@@ -36,17 +36,22 @@ class ECOC(BaseEstimator):
         distance: distance according to which the closest class is chosen. Possible distances:
         * 'hamming': Hamming's distance
 
-        oversample: method for oversampling imbalanced data. Possible methods:
+        oversample_binary: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
         * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
 
         encoding : algorithm for encoding classes. Possible encodings:
-        * 'dense'
-        * 'sparse'
-        * 'OVO'
-        * 'OVA'
-        * 'complete'
+        * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
+        * 'sparse' : ceil(10log2(num_of_classes)) dichotomies, 0 with probability 0.5, -1 and 1 with probability 0.25 each
+        * 'OVO' : 'one vs one' - n(n-1)/2 dichotomies, where n is number of classes, one for each pair of classes.
+         Each column has one 1 and one -1 for classes included in particular pair, 0s for remaining classes.
+        * 'OVA' : 'one vs all' - number of dichotomies is equal to number of classes. Each column has one 1 and
+            -1 for all remaining rows
+        * 'complete' : 2^(n-1)-1 dichotomies, reference
+            T. G. Dietterich and G. Bakiri.
+            Solving multiclass learning problems via error-correcting output codes.
+            Journal of Artificial Intelligence Research, 2:263–286, 1995.
 
         """
         self.binary_classifier = binary_classifier
