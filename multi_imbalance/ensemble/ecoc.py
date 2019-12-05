@@ -1,5 +1,5 @@
 import numpy as np
-
+import os
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
@@ -121,6 +121,14 @@ class ECOC(BaseEstimator):
                              % (self.encoding, allowed_encodings))
 
     def _encode_dense(self, number_of_classes, random_state=0, number_of_code_generations=10000):
+        try:
+            dirname = os.path.dirname(__file__)
+            matrix = np.load(dirname + f'/cached_matrices/dense_{number_of_classes}.npy')
+            return matrix
+        except:
+            pass
+
+
         number_of_columns = int(np.ceil(10 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
         random_state = check_random_state(random_state)
@@ -146,6 +154,13 @@ class ECOC(BaseEstimator):
         return code_matrix
 
     def _encode_sparse(self, number_of_classes, random_state=0, number_of_code_generations=1000):
+        try:
+            dirname = os.path.dirname(__file__)
+            matrix = np.load(dirname + f'/cached_matrices/sparse_{number_of_classes}.npy')
+            return matrix
+        except:
+            pass
+
         number_of_columns = int(np.ceil(15 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
         random_state = check_random_state(random_state)
