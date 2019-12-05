@@ -1,13 +1,14 @@
-import numpy as np
 import os
+
+import numpy as np
+from imblearn.over_sampling import SMOTE
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_random_state
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
-from imblearn.over_sampling import SMOTE
-from multi_imbalance.resampling.GlobalCS import GlobalCS
-
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import check_random_state
+
+from multi_imbalance.resampling.GlobalCS import GlobalCS
 
 
 class ECOC(BaseEstimator):
@@ -18,7 +19,11 @@ class ECOC(BaseEstimator):
     closest to test instance is chosen.
     """
 
-    def __init__(self, binary_classifier='CART', distance='hamming', oversample_all=None,
+    _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
+    _allowed_oversampling = [None, 'globalCS', 'SMOTE']
+    _allowed_classifiers = ['CART', 'NB', 'KNN']
+
+    def __init__(self, binary_classifier='CART', distance='hamming',
                  oversample_binary=None, encoding='dense', n_neighbors=5):
         """
         Parameters
@@ -45,7 +50,6 @@ class ECOC(BaseEstimator):
 
         """
         self.binary_classifier = binary_classifier
-        self.oversample_all = oversample_all
         self.distance = distance
         self.encoding = encoding
         self.oversample_binary = oversample_binary
@@ -65,7 +69,6 @@ class ECOC(BaseEstimator):
         -------
         self: object
         """
-        X, y = self._oversample(X, y, self.oversample_all)
         self._labels = np.unique(y)
         self._gen_code_matrix()
         self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
@@ -100,12 +103,10 @@ class ECOC(BaseEstimator):
             y_filtered = np.delete(y, excluded_classes_indices)
             binary_labels = np.array([self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
                                       y_filtered])
-            X_filtered, binary_labels = self._oversample(X_filtered, binary_labels, self.oversample_binary)
+            X_filtered, binary_labels = self._oversample(X_filtered, binary_labels)
             classifier.fit(X_filtered, binary_labels)
 
     def _gen_code_matrix(self):
-        allowed_encodings = ('dense', 'sparse', 'complete', 'OVA', 'OVO')
-
         if self.encoding == 'dense':
             self._code_matrix = self._encode_dense(self._labels.shape[0])
         elif self.encoding == 'sparse':
@@ -118,7 +119,7 @@ class ECOC(BaseEstimator):
             self._code_matrix = self._encode_ova(self._labels.shape[0])
         else:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (self.encoding, allowed_encodings))
+                             % (self.encoding, ECOC._allowed_encodings))
 
     def _encode_dense(self, number_of_classes, random_state=0, number_of_code_generations=10000):
         try:
@@ -127,7 +128,6 @@ class ECOC(BaseEstimator):
             return matrix
         except:
             pass
-
 
         number_of_columns = int(np.ceil(10 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
@@ -242,26 +242,24 @@ class ECOC(BaseEstimator):
         return self._labels[
             np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
-    def _oversample(self, X, y, strategy=None):
-        allowed_oversampling = [None, 'globalCS', 'SMOTE']
-        if strategy not in allowed_oversampling:
+    def _oversample(self, X, y):
+        if self.oversample_binary not in ECOC._allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (self.encoding, allowed_oversampling))
+                             % (self.encoding, ECOC._allowed_oversampling))
         elif np.unique(y).size == 1:
             return X, y
-        elif strategy is None:
+        elif self.oversample_binary is None:
             return X, y
-        elif strategy == 'globalCS':
+        elif self.oversample_binary == 'globalCS':
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
-        elif strategy == 'SMOTE':
+        elif self.oversample_binary == 'SMOTE':
             return self._smote_oversample_if_possible_random_otherwise(X, y)
 
     def _get_classifier(self):
-        allowed_classifiers = ('CART', 'NB', 'KNN')
-        if self.binary_classifier not in allowed_classifiers:
+        if self.binary_classifier not in ECOC._allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
-                             % (self.binary_classifier, allowed_classifiers))
+                             % (self.binary_classifier, ECOC._allowed_classifiers))
         elif self.binary_classifier == 'CART':
             decision_tree_classifier = DecisionTreeClassifier()  # by default pruning is disabled
             return decision_tree_classifier
