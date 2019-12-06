@@ -15,7 +15,7 @@ from multi_imbalance.datasets import load_datasets
 from multi_imbalance.resampling.GlobalCS import GlobalCS
 from multi_imbalance.resampling.MDO import MDO
 from multi_imbalance.resampling.SOUP import SOUP
-from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from multi_imbalance.utils.array_util import (union, setdiff, contains, index_of)
 
 maj_int_min = {
     "1czysty-cut": {'maj': [0], 'int': [2], 'min': [1]},
@@ -36,9 +36,6 @@ maj_int_min = {
     "new_yeast": {'maj': [0, 1], 'int': [8, 7], 'min': [6, 5, 4, 3, 2]},
     "thyroid-newthyroid": {'maj': [0], 'int': [], 'min': [1, 2]}
 }
-
-MEAN = {}
-STD = {}
 
 
 class SPIDER3:
@@ -99,7 +96,9 @@ class SPIDER3:
 
         self.plot(f"GENERATED-{figure_number}_before_processing.png")
         figure_number += 1
+        self.restart_perspective()
         self.calculate_weak_majority_examples()
+        self.restore_perspective()
         self.DS = setdiff(self.DS, self.RS)
 
         self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
@@ -116,6 +115,7 @@ class SPIDER3:
             figure_number += 1
 
             self.restart_perspective()
+            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             int_min_as = self.calc_int_min_as(int_min_class)
             for x in union(int_min_ds, int_min_as):
                 self._clean_nn(x)
@@ -125,6 +125,7 @@ class SPIDER3:
             figure_number += 1
 
             self.restart_perspective()
+            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._amplify(x)
             self.restore_perspective()
@@ -154,11 +155,11 @@ class SPIDER3:
 
     def normalize(self, dataset):
         for col in range(dataset.shape[1] - 1):
-            dataset[:, col] = (dataset[:, col] - self.means[col]) / self.stds[col]
+            dataset[:, col] = (dataset[:, col] - self.means[col]) / (4*self.stds[col])
 
     def denormalize(self, dataset):
         for col in range(dataset.shape[1] - 1):
-            dataset[:, col] = dataset[:, col] * self.stds[col] + self.means[col]
+            dataset[:, col] = dataset[:, col] * self.stds[col] * 4 + self.means[col]
 
     def plot(self, path, dataset=None):
         if dataset is None:
@@ -332,29 +333,28 @@ def read_train_and_test_data(overlap, imbalance_ratio, i):
 
 def train_and_test():
     neigh = KNeighborsClassifier(n_neighbors=1)
-    # for i in range(0, 2):
-    #     X_train[:, i] = (X_train[:, i] - np.mean(X_train[:, i])) / np.std(X_train[:, i])
-    #     X_test[:, i] = (X_test[:, i] - np.mean(X_test[:, i])) / np.std(X_test[:, i])
+    for i in range(0, 2):
+        std = union(X_train,X_test)[:,i].std()
+        mean = union(X_train,X_test)[:,i].mean()
+        X_train[:, i] = (X_train[:, i] - mean) / (4 * std)
+        X_test[:, i] = (X_test[:, i] - mean) / (4 * std)
     neigh.fit(X_train, y_train)
     y_pred = neigh.predict(X_test)
     labels = ['MIN', 'INT', 'MAJ']
-    # for i, label in enumerate(labels):
-    #     print(
-    #         f"{label} TPR: {confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[:, i].sum()}")
     return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[i,
                                                                     :].sum() for i, label in enumerate(labels)]
 
 
 if __name__ == "__main__":
     tprs = []
-    for imbalance_ratio in ["30-40-15-15"]:  # "70-30-0-0", "40-50-10-0",
+    for imbalance_ratio in ["70-30-0-0"]: #, "40-50-10-0", "30-40-15-15"
         print(f"Imbalance ratio: {imbalance_ratio}")
         for overlap in [0]:  # , 1, 2
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1, 2):  # 11
+            for i in range(2,3):  # 11
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
@@ -365,22 +365,21 @@ if __name__ == "__main__":
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
                               intermediate_classes=['INT'], minority_classes=['MIN'])
-                for k in range(0, 2):
-                    MEAN[k] = np.mean(X_train[:, k])
-                    STD[k] = np.std(X_train[:, k])
-                # for k in range(0, 2):
-                #     X_train[:, k] = (X_train[:, k] - np.mean(X_train[:, k])) / np.std(X_train[:, k])
-                #     X_test[:, k] = (X_test[:, k] - np.mean(X_test[:, k])) / np.std(X_test[:, k])
                 X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
                 min_t, int_t, maj_t = train_and_test()
+                from collections import Counter
+                print(Counter(y_train))
                 min_tpr.append(min_t)
+                print(min_t)
                 int_tpr.append(int_t)
+                print(int_t)
                 maj_tpr.append(maj_t)
+                print(maj_t)
             tprs.append([np.array(min_tpr).mean(), np.array(int_tpr).mean(), np.array(maj_tpr).mean()])
             print(f"MIN TPR:{np.array(min_tpr).mean()}")
             print(f"INT TPR:{np.array(int_tpr).mean()}")
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
-    np.savetxt("costs.csv", np.array(tprs), delimiter=",")
+    np.savetxt("base.csv", np.array(tprs), delimiter=",")
 
 if __name__ == "__main__2":
     datasets = load_datasets()
