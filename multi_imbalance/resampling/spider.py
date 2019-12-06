@@ -24,6 +24,7 @@ from imblearn.over_sampling import SMOTE
 import seaborn as sns
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+from multi_imbalance.utils.array_util import (union, setdiff, contains)
 
 maj_int_min = {
     "1czysty-cut": {'maj': [0],'int': [2],'min': [1]},
@@ -104,7 +105,7 @@ class SPIDER3:
         self.plot(f"GENERATED-{figure_number}_before_processing.png")
         figure_number += 1
         self.calculate_weak_majority_examples()
-        self.DS = self._setdiff(self.DS, self.RS)
+        self.DS = setdiff(self.DS, self.RS)
 
         self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
         figure_number += 1
@@ -118,7 +119,7 @@ class SPIDER3:
             figure_number += 1
 
             int_min_as = self.calc_int_min_as(int_min_class)
-            for x in self._union(int_min_ds, int_min_as):
+            for x in union(int_min_ds, int_min_as):
                 self._clean_nn(x)
 
             self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
@@ -130,7 +131,7 @@ class SPIDER3:
             self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
             figure_number += 1
 
-        self.DS = self._union(self.DS, self.AS)
+        self.DS = union(self.DS, self.AS)
 
         self.plot(f"GENERATED-{figure_number}_final.png", dataset=self.DS)
 
@@ -175,7 +176,7 @@ class SPIDER3:
             majority_examples = self.DS[self.DS[:, -1] == majority_class]
             for x in majority_examples:
                 if majority_class not in self._min_cost_classes(x, self.DS):
-                    self.RS = self._union(self.RS, np.array([x]))
+                    self.RS = union(self.RS, np.array([x]))
 
     def _min_cost_classes(self, x, DS):
         """
@@ -204,77 +205,6 @@ class SPIDER3:
         vals = np.round(vals, 6)
         return C[vals == vals[np.argmin(vals)]]
 
-    @staticmethod
-    def _setdiff(arr1, arr2):
-        """
-        Performs the difference over two numpy arrays.
-
-        :param arr1:
-            Numpy array number 1.
-        :param arr2:
-            Numpy array number 2.
-        :return:
-            Result of the difference of arr1 and arr2.
-        """
-
-        arr2tolist = arr2.tolist()
-        arr1tolist = arr1.tolist()
-        for element in arr2tolist:
-            if element in arr1tolist:
-                arr1 = np.delete(arr1, arr1.tolist().index(element), 0)
-        return arr1
-
-    @staticmethod
-    def _union(arr1, arr2):
-        """
-        Performs the union over two numpy arrays
-        (not removing duplicates, as it's how the algorithm SPIDER3 actually works).
-
-        :param arr1:
-            Numpy array number 1.
-        :param arr2:
-            Numpy array number 2.
-        :return:
-            The union of arr1 and arr2.
-        """
-
-        if arr1.size == 0:
-            return arr2
-        elif arr2.size == 0:
-            return arr1
-        else:
-            return np.append(arr1, arr2, axis=0)
-
-    def _intersect(self, arr1, arr2):
-        """
-        Performs the intersection operation over two numpy arrays (not removing duplicates).
-
-        :param arr1:
-            Numpy array number 1.
-        :param arr2:
-            Numpy array number 2.
-        :return:
-            The intersection of arr1 and arr2.
-        """
-
-        if arr1.size == 0 or arr2.size == 0:
-            return np.array([])
-
-        result = np.array([])
-        for x1 in arr1:
-            for x2 in arr2:
-                if all(x1 == x2):
-                    result = self._union(result, np.array([x1]))
-        return result
-
-
-    @staticmethod
-    def _contains(dataset, example):
-        for x in dataset:
-            if all(x == example):
-                return True
-        return False
-
     def _relabel_nn(self, x):
         """
         Performs relabeling in the nearest neighborhood of x.
@@ -285,26 +215,10 @@ class SPIDER3:
         """
         nearest_neighbors = self._knn(x, self.ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if self._contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
-                self.RS = self._setdiff(self.RS, np.array([neighbor]))
+            if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+                self.RS = setdiff(self.RS, np.array([neighbor]))
                 neighbor[-1] = x[-1]
-                self.AS = self._union(self.AS, np.array([neighbor]))
-
-    def _nearest(self, x, TS):
-        """
-        Returns nearest neighbor of x in TS.
-
-        :param x:
-            Single observation.
-        :param TS:
-            Temporal set.
-        :return:
-            Nearest neighbor of x in TS.
-        """
-        TS = self._setdiff(TS, np.array([x]))
-        clf = NearestNeighbors(n_neighbors=1).fit(TS[:, :-1])
-        indices = clf.kneighbors([x[:-1]], return_distance=False)
-        return TS[indices[0]][0]
+                self.AS = union(self.AS, np.array([neighbor]))
 
     def _clean_nn(self, x):
         """
@@ -318,8 +232,8 @@ class SPIDER3:
         for neighbor in nearest_neighbors:
             if self._class_of(neighbor) in self.majority_classes and \
                     self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
-                self.DS = self._setdiff(self.DS, np.array([neighbor]))
-                self.RS = self._setdiff(self.RS, np.array([neighbor]))
+                self.DS = setdiff(self.DS, np.array([neighbor]))
+                self.RS = setdiff(self.RS, np.array([neighbor]))
 
     def _knn(self, x, DS):
         """
@@ -335,7 +249,7 @@ class SPIDER3:
             These neighbors from k nearest that belong to class c if specified. Otherwise all of them.
         """
 
-        DS = self._setdiff(DS, np.array([x]))
+        DS = setdiff(DS, np.array([x]))
         if DS.shape[0] < self.k:
             self.neigh_clf = NearestNeighbors(n_neighbors=DS.shape[0])
         else:
@@ -364,14 +278,14 @@ class SPIDER3:
 
         while self._class_of(x) not in self._min_cost_classes(x, self.ds_as_rs_union()):
             y = x.copy()
-            self.AS = self._union(self.AS, np.asarray([y]))
+            self.AS = union(self.AS, np.asarray([y]))
 
     @staticmethod
     def _class_of(example):
         return example[-1]
 
     def ds_as_rs_union(self):
-        return self._union(self.DS, self._union(self.AS, self.RS))
+        return union(self.DS, union(self.AS, self.RS))
 
 
 def read_train_and_test_data(overlap, imbalance_ratio, i):

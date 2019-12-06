@@ -10,14 +10,14 @@ spider = SPIDER3(1, cost, majority_classes=["MAJ"], intermediate_classes=["INT"]
 def test_union():
     arr1 = np.array([[1, 2, 3]])
     arr2 = np.array([[4, 5, 6]])
-    actual = spider._union(arr1, arr2)
+    actual = _union(arr1, arr2)
     expected = np.array([[1, 2, 3], [4, 5, 6]])
     assert (actual == expected).all()
 
     arr1 = np.array([[1, 2, 3], [4, 5, 6]])
     arr2 = np.array([[1, 2, 3]])
 
-    actual = spider._union(arr1, arr2)
+    actual = _union(arr1, arr2)
     expected = np.array([[1, 2, 3], [4, 5, 6], [1, 2, 3]])
 
     assert (actual == expected).all()
@@ -27,7 +27,7 @@ def test_intersect():
     arr1 = np.array([[1, 2, 3], [4, 5, 6]])
     arr2 = np.array([[1, 2, 3]])
 
-    actual = spider._intersect(arr1, arr2)
+    actual = _intersect(arr1, arr2)
     expected = np.array([[1, 2, 3]])
 
     assert (actual == expected).all()
@@ -37,7 +37,7 @@ def test_setdiff():
     arr1 = np.array([[1, 2, 3], [4, 5, 6]])
     arr2 = np.array([[1, 2, 3]])
 
-    actual = spider._setdiff(arr1, arr2)
+    actual = _setdiff(arr1, arr2)
     expected = np.array([[4, 5, 6]])
 
     assert (actual == expected).all()
