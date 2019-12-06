@@ -317,7 +317,7 @@ class SPIDER3:
                 self.DS = self._setdiff(self.DS, np.array([neighbor]))
                 self.RS = self._setdiff(self.RS, np.array([neighbor]))
 
-    def _knn(self, x, DS, c=None):
+    def _knn(self, x, DS):
         """
         Returns k nearest neighbors of x in DS that belong to c class if specified.
 
@@ -347,14 +347,7 @@ class SPIDER3:
             if len(indices) < self.k:
                 indices += (all_indices[all_distances == dist]).tolist()
 
-        if c is not None:
-            result = []
-            for idx in indices:
-                if self._class_of(DS[idx]) == c:
-                    result.append(DS[idx])
-            return np.array(result)
-        else:
-            return DS[indices]
+        return DS[indices]
 
     def _amplify(self, x):
         """
