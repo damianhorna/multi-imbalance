@@ -25,6 +25,7 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from collections import Counter
 
 maj_int_min = {
     "1czysty-cut": {'maj': [0],'int': [2],'min': [1]},
