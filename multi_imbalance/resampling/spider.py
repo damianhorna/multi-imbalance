@@ -1,51 +1,44 @@
-from collections import Counter
-
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import confusion_matrix
-from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
-
-from multi_imbalance.datasets import load_datasets
-from collections import Counter
 import pandas as pd
+import seaborn as sns
 from IPython.core.display import display
+from imblearn.metrics import geometric_mean_score
+from imblearn.over_sampling import SMOTE
 from sklearn.metrics import accuracy_score
-
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold
+from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from multi_imbalance.datasets import load_datasets
-from multi_imbalance.resampling.SOUP import SOUP
-from multi_imbalance.resampling.MDO import MDO
 from multi_imbalance.resampling.GlobalCS import GlobalCS
-
-from imblearn.metrics import geometric_mean_score
-from imblearn.over_sampling import SMOTE
-
-import seaborn as sns
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
+from multi_imbalance.resampling.MDO import MDO
+from multi_imbalance.resampling.SOUP import SOUP
 from multi_imbalance.utils.array_util import (union, setdiff, contains)
-from collections import Counter
 
 maj_int_min = {
-    "1czysty-cut": {'maj': [0],'int': [2],'min': [1]},
-    "2delikatne-cut": {'maj': [0],'int': [2],'min': [1]},
-    "3mocniej-cut": {'maj': [0],'int': [2],'min': [1]},
-    "4delikatne-bezover-cut": {'maj': [0],'int': [2],'min': [1]},
-    "balance-scale": {'maj': [2, 1],'int': [],'min': [0]},
-    "cleveland": {'maj': [0],'int': [1],'min': [2, 3, 4]},
-    "cleveland_v2": {'maj': [0],'int': [],'min': [1,2,3]},
-    "cmc": {'maj': [0, 2],'int': [],'min': [1]},
-    "dermatology": {'maj': [0,],'int': [2, 1, 4, 3],'min': [5]},
-    "glass": {'maj': [1, 0],'int': [3],'min': [5, 2, 4]},
-    "hayes-roth": {'maj': [],'int': [],'min': [0,1, 2]},
-    "new_ecoli": {'maj': [0],'int': [1,4],'min': [2, 3]},
-    "new_led7digit": {'maj': [3, 5, 0, 2,4,1],'int': [],'min': []},
-    "new_vehicle": {'maj': [1],'int': [],'min': [0, 2]},
-    "new_winequality-red": {'maj': [0, 1],'int': [2],'min': [3]},
-    "new_yeast": {'maj': [0, 1],'int': [8, 7],'min': [6,5,4,3,2]},
-    "thyroid-newthyroid": {'maj': [0],'int': [],'min': [1,2]}
+    "1czysty-cut": {'maj': [0], 'int': [2], 'min': [1]},
+    "2delikatne-cut": {'maj': [0], 'int': [2], 'min': [1]},
+    "3mocniej-cut": {'maj': [0], 'int': [2], 'min': [1]},
+    "4delikatne-bezover-cut": {'maj': [0], 'int': [2], 'min': [1]},
+    "balance-scale": {'maj': [2, 1], 'int': [], 'min': [0]},
+    "cleveland": {'maj': [0], 'int': [1], 'min': [2, 3, 4]},
+    "cleveland_v2": {'maj': [0], 'int': [], 'min': [1, 2, 3]},
+    "cmc": {'maj': [0, 2], 'int': [], 'min': [1]},
+    "dermatology": {'maj': [0, ], 'int': [2, 1, 4, 3], 'min': [5]},
+    "glass": {'maj': [1, 0], 'int': [3], 'min': [5, 2, 4]},
+    "hayes-roth": {'maj': [], 'int': [], 'min': [0, 1, 2]},
+    "new_ecoli": {'maj': [0], 'int': [1, 4], 'min': [2, 3]},
+    "new_led7digit": {'maj': [3, 5, 0, 2, 4, 1], 'int': [], 'min': []},
+    "new_vehicle": {'maj': [1], 'int': [], 'min': [0, 2]},
+    "new_winequality-red": {'maj': [0, 1], 'int': [2], 'min': [3]},
+    "new_yeast": {'maj': [0, 1], 'int': [8, 7], 'min': [6, 5, 4, 3, 2]},
+    "thyroid-newthyroid": {'maj': [0], 'int': [], 'min': [1, 2]}
 }
+
+MEAN = {}
+STD = {}
 
 
 class SPIDER3:
@@ -87,6 +80,8 @@ class SPIDER3:
         self.intermediate_classes = intermediate_classes
         self.minority_classes = minority_classes
         self.AS, self.RS = np.array([]), np.array([])
+        self.stds = [1] * 3
+        self.means = [0] * 3
 
     def fit_transform(self, X, y):
         """
@@ -100,7 +95,6 @@ class SPIDER3:
         """
         figure_number = 0
 
-
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
 
         self.plot(f"GENERATED-{figure_number}_before_processing.png")
@@ -111,23 +105,29 @@ class SPIDER3:
         self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
         figure_number += 1
 
-        for int_min_class in self.intermediate_classes + self.minority_classes: ## TODO: kolejność klas zgodnie z malejącą licznością
+        for int_min_class in self.intermediate_classes + self.minority_classes:  ## TODO: kolejność klas zgodnie z malejącą licznością
+            self.restart_perspective()
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._relabel_nn(x)
+            self.restore_perspective()
 
             self.plot(f"GENERATED-{figure_number}_after_relabelling_to_{int_min_class}.png")
             figure_number += 1
 
+            self.restart_perspective()
             int_min_as = self.calc_int_min_as(int_min_class)
             for x in union(int_min_ds, int_min_as):
                 self._clean_nn(x)
+            self.restore_perspective()
 
             self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
             figure_number += 1
 
+            self.restart_perspective()
             for x in int_min_ds:
                 self._amplify(x)
+            self.restore_perspective()
 
             self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
             figure_number += 1
@@ -137,6 +137,28 @@ class SPIDER3:
         self.plot(f"GENERATED-{figure_number}_final.png", dataset=self.DS)
 
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def restart_perspective(self):
+        for col in range(self.ds_as_rs_union().shape[1] - 1):
+            self.stds[col] = self.ds_as_rs_union()[:, col].std()
+            self.means[col] = self.ds_as_rs_union()[:, col].mean()
+
+        for dataset in [self.DS, self.RS, self.AS]:
+            if dataset.shape[0] > 0:
+                self.normalize(dataset)
+
+    def restore_perspective(self):
+        for dataset in [self.DS, self.RS, self.AS]:
+            if dataset.shape[0] > 0:
+                self.denormalize(dataset)
+
+    def normalize(self, dataset):
+        for col in range(dataset.shape[1] - 1):
+            dataset[:, col] = (dataset[:, col] - self.means[col]) / self.stds[col]
+
+    def denormalize(self, dataset):
+        for col in range(dataset.shape[1] - 1):
+            dataset[:, col] = dataset[:, col] * self.stds[col] + self.means[col]
 
     def plot(self, path, dataset=None):
         if dataset is None:
@@ -199,7 +221,7 @@ class SPIDER3:
         for cj in C:
             s = 0
             for ci in C:
-                s += ((kneighbors[:,-1] == ci).astype(int).sum() / self.k) * self.cost[C.index(ci), C.index(cj)]
+                s += ((kneighbors[:, -1] == ci).astype(int).sum() / self.k) * self.cost[C.index(ci), C.index(cj)]
             vals.append(s)
         C = np.array(C)
         vals = np.array(vals)
@@ -216,7 +238,8 @@ class SPIDER3:
         """
         nearest_neighbors = self._knn(x, self.ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+            if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(
+                    neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
                 self.RS = setdiff(self.RS, np.array([neighbor]))
                 neighbor[-1] = x[-1]
                 self.AS = union(self.AS, np.array([neighbor]))
@@ -257,7 +280,9 @@ class SPIDER3:
             self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
 
         self.neigh_clf.fit(DS[:, :-1])
-        within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 * self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1],return_distance=True)
+        within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=
+        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 *
+        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1], return_distance=True)
         unique_distances = np.unique(sorted(within_radius[0][0]))
         all_distances = within_radius[0][0]
         all_indices = within_radius[1][0]
@@ -322,27 +347,30 @@ def train_and_test():
 
 if __name__ == "__main__":
     tprs = []
-    for imbalance_ratio in [ "30-40-15-15"]:  # "70-30-0-0", "40-50-10-0",
+    for imbalance_ratio in ["30-40-15-15"]:  # "70-30-0-0", "40-50-10-0",
         print(f"Imbalance ratio: {imbalance_ratio}")
         for overlap in [0]:  # , 1, 2
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1, 2): # 11
+            for i in range(1, 2):  # 11
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
                     cost[i][i] = 0
 
                 cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
-                #cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
+                # cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
                               intermediate_classes=['INT'], minority_classes=['MIN'])
                 for k in range(0, 2):
-                    X_train[:, k] = (X_train[:, k] - np.mean(X_train[:, k])) / np.std(X_train[:, k])
-                    X_test[:, k] = (X_test[:, k] - np.mean(X_test[:, k])) / np.std(X_test[:, k])
+                    MEAN[k] = np.mean(X_train[:, k])
+                    STD[k] = np.std(X_train[:, k])
+                # for k in range(0, 2):
+                #     X_train[:, k] = (X_train[:, k] - np.mean(X_train[:, k])) / np.std(X_train[:, k])
+                #     X_test[:, k] = (X_test[:, k] - np.mean(X_test[:, k])) / np.std(X_test[:, k])
                 X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
                 min_t, int_t, maj_t = train_and_test()
                 min_tpr.append(min_t)
@@ -354,17 +382,13 @@ if __name__ == "__main__":
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
     np.savetxt("costs.csv", np.array(tprs), delimiter=",")
 
-
-
-
-
 if __name__ == "__main__2":
     datasets = load_datasets()
     results_g_mean = dict()
     results_acc = dict()
 
     for dataset_name, dataset_values in datasets.items():
-        if dataset_name != 'dermatology': #or dataset_name != 'new_ecoli':
+        if dataset_name != 'dermatology':  # or dataset_name != 'new_ecoli':
             continue
         print(dataset_name)
 
@@ -437,4 +461,3 @@ if __name__ == "__main__2":
 
     # display("MEAN ACC")
     # display(df2.mean())
-
