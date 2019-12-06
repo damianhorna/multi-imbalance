@@ -267,6 +267,14 @@ class SPIDER3:
                     result = self._union(result, np.array([x1]))
         return result
 
+
+    @staticmethod
+    def _contains(dataset, example):
+        for x in dataset:
+            if all(x == example):
+                return True
+        return False
+
     def _relabel_nn(self, x):
         """
         Performs relabeling in the nearest neighborhood of x.
@@ -276,15 +284,11 @@ class SPIDER3:
         :return:
         """
         nearest_neighbors = self._knn(x, self.ds_as_rs_union())
-        TS = self._intersect(self.RS, nearest_neighbors)
-        while TS.shape[0] > 0 and \
-                any(majority_class in self._min_cost_classes(x, self.ds_as_rs_union())
-                    for majority_class in self.majority_classes):
-            y = self._nearest(x, TS)
-            TS = self._setdiff(TS, np.array([y]))
-            self.RS = self._setdiff(self.RS, np.array([y]))
-            y[-1] = x[-1]
-            self.AS = self._union(self.AS, np.array([y]))
+        for neighbor in nearest_neighbors:
+            if self._contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+                self.RS = self._setdiff(self.RS, np.array([neighbor]))
+                neighbor[-1] = x[-1]
+                self.AS = self._union(self.AS, np.array([neighbor]))
 
     def _nearest(self, x, TS):
         """
