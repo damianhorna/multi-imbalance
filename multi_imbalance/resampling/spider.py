@@ -96,26 +96,59 @@ class SPIDER3:
         :return:
             Resampled X along with accordingly modified labels.
         """
+        figure_number = 0
+
 
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
+
+        self.plot(f"GENERATED-{figure_number}_before_processing.png")
+        figure_number += 1
         self.calculate_weak_majority_examples()
         self.DS = self._setdiff(self.DS, self.RS)
+
+        self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
+        figure_number += 1
 
         for int_min_class in self.intermediate_classes + self.minority_classes: ## TODO: kolejność klas zgodnie z malejącą licznością
             int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
             for x in int_min_ds:
                 self._relabel_nn(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_relabelling_to_{int_min_class}.png")
+            figure_number += 1
+
             int_min_as = self.calc_int_min_as(int_min_class)
             for x in self._union(int_min_ds, int_min_as):
                 self._clean_nn(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
+            figure_number += 1
+
             for x in int_min_ds:
                 self._amplify(x)
 
+            self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
+            figure_number += 1
+
         self.DS = self._union(self.DS, self.AS)
 
+        self.plot(f"GENERATED-{figure_number}_final.png", dataset=self.DS)
+
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def plot(self, path, dataset=None):
+        if dataset is None:
+            dataset = self.ds_as_rs_union()
+        plt.figure(figsize=(12, 12))
+        sns.scatterplot(x='x1', y='x2', hue='y', style='y',
+                        data=pd.DataFrame(data=pd.DataFrame(data=dataset, columns=["x1", "x2", "y"]),
+                                          columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
+        plt.savefig(path)
+
+        spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
+        plt.figure(figsize=(12, 12))
+        sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS', data=spider_result, alpha=0.7, legend=False)
+        plt.savefig(f"{path[:-4]}_spider.png")
 
     def calc_int_min_as(self, int_min_class):
         """
@@ -277,15 +310,12 @@ class SPIDER3:
             Single observation.
         :return:
         """
-
-        for majority_class in self.majority_classes:
-            TS = self._knn(x, self.ds_as_rs_union(), majority_class)
-            while TS.shape[0] > 0 and \
-                    majority_class in self._min_cost_classes(x, self.ds_as_rs_union()):
-                y = self._nearest(x, TS)
-                TS = self._setdiff(TS, np.array([y]))
-                self.DS = self._setdiff(self.DS, np.array([y]))
-                self.RS = self._setdiff(self.RS, np.array([y]))
+        nearest_neighbors = self._knn(x, self.ds_as_rs_union())
+        for neighbor in nearest_neighbors:
+            if self._class_of(neighbor) in self.majority_classes and \
+                    self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+                self.DS = self._setdiff(self.DS, np.array([neighbor]))
+                self.RS = self._setdiff(self.RS, np.array([neighbor]))
 
     def _knn(self, x, DS, c=None):
         """
@@ -380,14 +410,14 @@ def train_and_test():
 
 if __name__ == "__main__":
     tprs = []
-    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]:  #"70-30-0-0", "40-50-10-0",
+    for imbalance_ratio in [ "30-40-15-15"]:  # "70-30-0-0", "40-50-10-0",
         print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in [0, 1, 2]:
+        for overlap in [0]:  # , 1, 2
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(1, 11):  # 11):
+            for i in range(1, 2): # 11
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
@@ -398,7 +428,10 @@ if __name__ == "__main__":
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
                               intermediate_classes=['INT'], minority_classes=['MIN'])
-                #X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
+                for k in range(0, 2):
+                    X_train[:, k] = (X_train[:, k] - np.mean(X_train[:, k])) / np.std(X_train[:, k])
+                    X_test[:, k] = (X_test[:, k] - np.mean(X_test[:, k])) / np.std(X_test[:, k])
+                X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
                 min_t, int_t, maj_t = train_and_test()
                 min_tpr.append(min_t)
                 int_tpr.append(int_t)
@@ -407,7 +440,7 @@ if __name__ == "__main__":
             print(f"MIN TPR:{np.array(min_tpr).mean()}")
             print(f"INT TPR:{np.array(int_tpr).mean()}")
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
-    np.savetxt("base.csv", np.array(tprs), delimiter=",")
+    np.savetxt("costs.csv", np.array(tprs), delimiter=",")
 
 
 
