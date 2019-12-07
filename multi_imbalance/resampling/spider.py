@@ -162,18 +162,19 @@ class SPIDER3:
             dataset[:, col] = dataset[:, col] * self.stds[col] * 4 + self.means[col]
 
     def plot(self, path, dataset=None):
-        if dataset is None:
-            dataset = self.ds_as_rs_union()
-        plt.figure(figsize=(12, 12))
-        sns.scatterplot(x='x1', y='x2', hue='y', style='y',
-                        data=pd.DataFrame(data=pd.DataFrame(data=dataset, columns=["x1", "x2", "y"]),
-                                          columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
-        plt.savefig(path)
-
-        spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
-        plt.figure(figsize=(12, 12))
-        sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS', data=spider_result, alpha=0.7, legend=False)
-        plt.savefig(f"{path[:-4]}_spider.png")
+        pass
+        # if dataset is None:
+        #     dataset = self.ds_as_rs_union()
+        # plt.figure(figsize=(12, 12))
+        # sns.scatterplot(x='x1', y='x2', hue='y', style='y',
+        #                 data=pd.DataFrame(data=pd.DataFrame(data=dataset, columns=["x1", "x2", "y"]),
+        #                                   columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
+        # plt.savefig(path)
+        #
+        # spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
+        # plt.figure(figsize=(12, 12))
+        # sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS', data=spider_result, alpha=0.7, legend=False)
+        # plt.savefig(f"{path[:-4]}_spider.png")
 
     def calc_int_min_as(self, int_min_class):
         """
@@ -347,20 +348,23 @@ def train_and_test():
 
 if __name__ == "__main__":
     tprs = []
-    for imbalance_ratio in ["70-30-0-0"]: #, "40-50-10-0", "30-40-15-15"
+    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]: #,
         print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in [0]:  # , 1, 2
+        for overlap in [0, 1, 2]:  # , 1, 2
             print(f"Overlap: {overlap}")
             min_tpr = []
             int_tpr = []
             maj_tpr = []
-            for i in range(2,3):  # 11
+            for i in range(1,11):  # 11
                 X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
                 cost = np.ones((3, 3))
                 for i in range(3):
                     cost[i][i] = 0
 
-                cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
+                # cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
+                # cost = np.reshape(np.array([0, 3, 7, 2, 0, 5, 3, 2, 0]), (3, 3))
+                cost = np.reshape(np.array([0, 1, 1, 3, 0, 1, 7, 5, 0]), (3, 3)) # odkopana
+                cost = np.reshape(np.array([0, 1, 1, 2, 0, 1, 6, 3, 0]), (3, 3)) # try 1
                 # cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
@@ -368,18 +372,18 @@ if __name__ == "__main__":
                 X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
                 min_t, int_t, maj_t = train_and_test()
                 from collections import Counter
-                print(Counter(y_train))
+                # print(Counter(y_train))
                 min_tpr.append(min_t)
-                print(min_t)
+                # print(min_t)
                 int_tpr.append(int_t)
-                print(int_t)
+                # print(int_t)
                 maj_tpr.append(maj_t)
-                print(maj_t)
+                # print(maj_t)
             tprs.append([np.array(min_tpr).mean(), np.array(int_tpr).mean(), np.array(maj_tpr).mean()])
             print(f"MIN TPR:{np.array(min_tpr).mean()}")
             print(f"INT TPR:{np.array(int_tpr).mean()}")
             print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
-    np.savetxt("base.csv", np.array(tprs), delimiter=",")
+    np.savetxt("costs.csv", np.array(tprs), delimiter=",")
 
 if __name__ == "__main__2":
     datasets = load_datasets()
