@@ -131,8 +131,8 @@ class ECOC(BaseEstimator):
             dirname = os.path.dirname(__file__)
             matrix = np.load(dirname + f'/cached_matrices/dense_{number_of_classes}.npy')
             return matrix
-        except:
-            pass
+        except IOError:
+            print(f'Could not find cached matrix for dense code for {number_of_classes} classes, generating matrix...')
 
         number_of_columns = int(np.ceil(10 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
@@ -163,8 +163,8 @@ class ECOC(BaseEstimator):
             dirname = os.path.dirname(__file__)
             matrix = np.load(dirname + f'/cached_matrices/sparse_{number_of_classes}.npy')
             return matrix
-        except:
-            pass
+        except IOError:
+            print(f'Could not find cached matrix for sparse code for {number_of_classes} classes, generating matrix...')
 
         number_of_columns = int(np.ceil(15 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
