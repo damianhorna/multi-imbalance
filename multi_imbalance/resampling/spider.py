@@ -43,8 +43,6 @@ class SPIDER3:
         self.intermediate_classes = intermediate_classes
         self.minority_classes = minority_classes
         self.AS, self.RS = np.array([]), np.array([])
-        self.stds = [1] * 3
-        self.means = [0] * 3
 
     def fit_transform(self, X, y):
         """
@@ -57,6 +55,7 @@ class SPIDER3:
             Resampled X along with accordingly modified labels.
         """
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
+        self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
         if self.cost is None:
             self.cost = self._estimate_cost_matrix(y)
 
