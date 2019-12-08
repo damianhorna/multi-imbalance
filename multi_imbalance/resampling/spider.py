@@ -128,6 +128,10 @@ class SPIDER3:
         self._restore_perspective()
 
     def _restart_perspective(self):
+        """
+        Performs normalization over resampled dataset.
+        :return:
+        """
         for col in range(self._ds_as_rs_union().shape[1] - 1):
             self.stds[col] = self._ds_as_rs_union()[:, col].std()
             self.means[col] = self._ds_as_rs_union()[:, col].mean()
@@ -137,6 +141,10 @@ class SPIDER3:
                 self._normalize(dataset)
 
     def _restore_perspective(self):
+        """
+        Denormalizes for further processing.
+        :return:
+        """
         for dataset in [self.DS, self.RS, self.AS]:
             if dataset.shape[0] > 0:
                 self._denormalize(dataset)
