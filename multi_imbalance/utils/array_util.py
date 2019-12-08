@@ -65,7 +65,7 @@ def index_of(arr, example):
     return -1
 
 
-def _intersect(arr1, arr2):
+def intersect(arr1, arr2):
     """
     Performs the intersection operation over two numpy arrays (not removing duplicates).
 

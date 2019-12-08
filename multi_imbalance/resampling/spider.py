@@ -89,13 +89,13 @@ class SPIDER3:
         class_cardinality = Counter(y)
         classes = list(class_cardinality.keys())
         cost = np.ones([len(classes), len(classes)])
-        for i, (c1, card1) in enumerate(class_cardinality):
-            for j, (c2, card2) in enumerate(class_cardinality):
+        for i, (c1, card1) in enumerate(class_cardinality.items()):
+            for j, (c2, card2) in enumerate(class_cardinality.items()):
                 if j > i:
                     cost[i, j] = 1
                 else:
                     cost[i, j] = card1 / card2
-        cost = np.fill_diagonal(cost, 0)
+        np.fill_diagonal(cost, 0)
         return cost
 
     def _sort_by_cardinality(self, y):
