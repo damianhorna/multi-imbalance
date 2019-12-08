@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import pytest
+from numpy.testing import assert_array_almost_equal
 
 from multi_imbalance.resampling.SOUP import SOUP
 
@@ -29,7 +30,7 @@ X = np.array([
 ])
 
 y_balanced = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-y_balanced_first_sample_safe_level = 1
+y_balanced_first_sample_safe_level = 0.8
 y_balanced_0_class_safe_levels = defaultdict(float,
                                              {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0, 8: 1.0,
                                               9: 1.0})
@@ -38,7 +39,7 @@ y_balanced_1_class_safe_levels = defaultdict(float,
                                               18: 1.0, 19: 1.0})
 
 y_imb_easy = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1])
-y_imb_easy_first_sample_safe_level = 0.7714285714285714
+y_imb_easy_first_sample_safe_level = 0.685714
 y_imb_easy_0_class_safe_levels = defaultdict(float, {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 6: 1.0, 7: 1.0,
                                                      8: 0.8857142857142858, 9: 1.0, 10: 0.7714285714285714,
                                                      11: 0.7714285714285714, 12: 0.6571428571428571,
@@ -48,7 +49,7 @@ y_imb_easy_1_class_safe_levels = defaultdict(float,
                                               16: 0.7714285714285714, 18: 0.8857142857142858, 19: 0.8857142857142858})
 
 y_imb_hard = np.array([0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0])
-y_imb_hard_first_sample_safe_level = 0.7714285714285714
+y_imb_hard_first_sample_safe_level = 0.685714
 y_imb_hard_quantities_0_class_safe_levels = defaultdict(float, {0: 0.8857142857142858, 1: 0.7714285714285714,
                                                                 2: 0.8857142857142858, 3: 0.8857142857142858,
                                                                 4: 0.8857142857142858, 5: 0.7714285714285714,
@@ -68,12 +69,13 @@ complete_test_data = [
 ]
 
 safe_levels_test_data = [
-    (X, y_balanced, y_balanced_0_class_safe_levels),
-    (X, y_balanced, y_balanced_1_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_0_class_safe_levels),
-    (X, y_imb_easy, y_imb_easy_1_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_0_class_safe_levels),
-    (X, y_imb_hard, y_imb_hard_quantities_1_class_safe_levels),
+    # x,y,class_name,expected undersampling,oversampling quantity
+    (X, y_balanced, 0, 20, 20),
+    (X, y_balanced, 1, 20, 20),
+    (X, y_imb_easy, 0, 16, 20),
+    (X, y_imb_easy, 1, 20, 24),
+    (X, y_imb_hard, 0, 16, 20),
+    (X, y_imb_hard, 1, 20, 24),
 ]
 
 
@@ -81,9 +83,8 @@ safe_levels_test_data = [
 def soup_mock():
     def _get_parametrized_soup(X, y):
         clf = SOUP(k=5)
-        clf.neigh_clf.fit(X)
         clf.quantities = Counter(y)
-        clf.goal_quantity = 10
+        clf.goal_quantity = clf._calculate_goal_quantity()
         return clf
 
     return _get_parametrized_soup
@@ -92,10 +93,10 @@ def soup_mock():
 @pytest.mark.parametrize("X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
 def test_calculating_safe_levels_for_sample(X, y, zero_safe_levels, one_safe_levels, first_sample_safe, soup_mock):
     clf = soup_mock(X, y)
-    neighbour_quantities = Counter({0: 3, 1: 2})
+    neighbour_quantities = Counter({0: 3, 1: 1})
 
     safe_level = clf._calculate_sample_safe_level(0, neighbour_quantities)
-    assert safe_level == first_sample_safe
+    assert_array_almost_equal(safe_level, first_sample_safe)
 
 
 @pytest.mark.parametrize("X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
@@ -106,32 +107,24 @@ def test_calculating_safe_levels_for_class(X, y, zero_safe_levels, one_safe_leve
     zero_levels = clf._construct_class_safe_levels(X, y, 0)
     one_levels = clf._construct_class_safe_levels(X, y, 1)
 
-    assert zero_levels == zero_safe_levels
-    assert one_levels == one_safe_levels
+    zero_levels == zero_safe_levels
+    one_levels == one_safe_levels
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_oversample(X, y, safe_levels, soup_mock):
+@pytest.mark.parametrize("X, y, class_name, expected_undersampling, expected_oversampling", safe_levels_test_data)
+def test_oversample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
-    if len(safe_levels) <= 10:
-        oversampled_X, oversampled_y = clf._oversample(X, y, safe_levels)
-        assert len(oversampled_X) == 10
-        assert len(oversampled_y) == 10
-    else:
-        with pytest.raises(AttributeError):
-            _, _ = clf._oversample(X, y, safe_levels)
+    oversampled_X, oversampled_y = clf._oversample(X, y, class_name)
+    assert len(oversampled_X) == expected_oversampling
+    assert len(oversampled_y) == expected_oversampling
 
 
-@pytest.mark.parametrize("X, y, safe_levels", safe_levels_test_data)
-def test_undersample(X, y, safe_levels, soup_mock):
+@pytest.mark.parametrize("X, y, class_name, expected_undersampling, expected_oversampling", safe_levels_test_data)
+def test_undersample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
-    if len(safe_levels) >= 10:
-        undersampled_X, undersampled_y = clf._undersample(X, y, safe_levels)
-        assert len(undersampled_X) == 10
-        assert len(undersampled_y) == 10
-    else:
-        with pytest.raises(AttributeError):
-            _, _ = clf._undersample(X, y, safe_levels)
+    undersampled_X, undersampled_y = clf._undersample(X, y, class_name)
+    assert len(undersampled_X) == expected_undersampling
+    assert len(undersampled_y) == expected_undersampling
 
 
 def test_invalid_input_when_not_enough_labels():
