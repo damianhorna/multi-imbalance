@@ -135,6 +135,10 @@ class SPIDER3:
             self.stds[col] = self._ds_as_rs_union()[:, col].std()
             self.means[col] = self._ds_as_rs_union()[:, col].mean()
 
+        for col in range(self._ds_as_rs_union().shape[1] - 1):
+            if self.stds[col] == 0:
+                self.stds[col] = 1e-6
+
         for dataset in [self.DS, self.RS, self.AS]:
             if dataset.shape[0] > 0:
                 self._normalize(dataset)
