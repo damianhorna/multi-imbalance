@@ -363,8 +363,10 @@ if __name__ == "__main__":
 
                 # cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
                 # cost = np.reshape(np.array([0, 3, 7, 2, 0, 5, 3, 2, 0]), (3, 3))
-                cost = np.reshape(np.array([0, 1, 1, 3, 0, 1, 7, 5, 0]), (3, 3)) # odkopana
-                cost = np.reshape(np.array([0, 1, 1, 2, 0, 1, 6, 3, 0]), (3, 3)) # try 1
+                # cost = np.reshape(np.array([0, 1, 1, 3, 0, 1, 7, 5, 0]), (3, 3)) # odkopana
+                # cost = np.reshape(np.array([0, 1, 1, 2, 0, 1, 6, 3, 0]), (3, 3)) # try 1
+                # cost = np.reshape(np.array([0, 2, 6, 1, 0, 3, 1, 1, 0]), (3, 3)) # try 2
+                cost = np.reshape(np.array([0, 1/2, 16, 2, 0, 1/3, 6, 3, 0]), (3, 3)) # try 3
                 # cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
 
                 clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
