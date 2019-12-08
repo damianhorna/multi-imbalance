@@ -1,41 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import seaborn as sns
-from IPython.core.display import display
-from imblearn.metrics import geometric_mean_score
-from imblearn.over_sampling import SMOTE
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-from sklearn.model_selection import StratifiedKFold
-from sklearn.neighbors import NearestNeighbors, KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-
-from multi_imbalance.datasets import load_datasets
-from multi_imbalance.resampling.GlobalCS import GlobalCS
-from multi_imbalance.resampling.MDO import MDO
-from multi_imbalance.resampling.SOUP import SOUP
-from multi_imbalance.utils.array_util import (union, setdiff, contains, index_of)
-
-maj_int_min = {
-    "1czysty-cut": {'maj': [0], 'int': [2], 'min': [1]},
-    "2delikatne-cut": {'maj': [0], 'int': [2], 'min': [1]},
-    "3mocniej-cut": {'maj': [0], 'int': [2], 'min': [1]},
-    "4delikatne-bezover-cut": {'maj': [0], 'int': [2], 'min': [1]},
-    "balance-scale": {'maj': [2, 1], 'int': [], 'min': [0]},
-    "cleveland": {'maj': [0], 'int': [1], 'min': [2, 3, 4]},
-    "cleveland_v2": {'maj': [0], 'int': [], 'min': [1, 2, 3]},
-    "cmc": {'maj': [0, 2], 'int': [], 'min': [1]},
-    "dermatology": {'maj': [0, ], 'int': [2, 1, 4, 3], 'min': [5]},
-    "glass": {'maj': [1, 0], 'int': [3], 'min': [5, 2, 4]},
-    "hayes-roth": {'maj': [], 'int': [], 'min': [0, 1, 2]},
-    "new_ecoli": {'maj': [0], 'int': [1, 4], 'min': [2, 3]},
-    "new_led7digit": {'maj': [3, 5, 0, 2, 4, 1], 'int': [], 'min': []},
-    "new_vehicle": {'maj': [1], 'int': [], 'min': [0, 2]},
-    "new_winequality-red": {'maj': [0, 1], 'int': [2], 'min': [3]},
-    "new_yeast": {'maj': [0, 1], 'int': [8, 7], 'min': [6, 5, 4, 3, 2]},
-    "thyroid-newthyroid": {'maj': [0], 'int': [], 'min': [1, 2]}
-}
+from sklearn.neighbors import NearestNeighbors
+from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from collections import Counter
 
 
 class SPIDER3:
@@ -90,93 +56,71 @@ class SPIDER3:
         :return:
             Resampled X along with accordingly modified labels.
         """
-        figure_number = 0
-
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
 
-        self.plot(f"GENERATED-{figure_number}_before_processing.png")
-        figure_number += 1
-        self.restart_perspective()
-        self.calculate_weak_majority_examples()
-        self.restore_perspective()
+        self._restart_perspective()
+        self._calculate_weak_majority_examples()
+        self._restore_perspective()
         self.DS = setdiff(self.DS, self.RS)
+        class_cardinality = Counter(y)
+        # to ensure looping over classes with decreasing cardinality.
+        int_classes = sorted(self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz])
+        min_classes = sorted(self.minority_classes, key=lambda clazz: -class_cardinality[clazz])
 
-        self.plot(f"GENERATED-{figure_number}_after_processing_majority.png")
-        figure_number += 1
-
-        for int_min_class in self.intermediate_classes + self.minority_classes:  ## TODO: kolejność klas zgodnie z malejącą licznością
-            self.restart_perspective()
-            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
-            for x in int_min_ds:
-                self._relabel_nn(x)
-            self.restore_perspective()
-
-            self.plot(f"GENERATED-{figure_number}_after_relabelling_to_{int_min_class}.png")
-            figure_number += 1
-
-            self.restart_perspective()
-            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
-            int_min_as = self.calc_int_min_as(int_min_class)
-            for x in union(int_min_ds, int_min_as):
-                self._clean_nn(x)
-            self.restore_perspective()
-
-            self.plot(f"GENERATED-{figure_number}_after_cleaning_{int_min_class}.png")
-            figure_number += 1
-
-            self.restart_perspective()
-            int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
-            for x in int_min_ds:
-                self._amplify(x)
-            self.restore_perspective()
-
-            self.plot(f"GENERATED-{figure_number}_after_amplifying_{int_min_class}.png")
-            figure_number += 1
+        for int_min_class in int_classes + min_classes:
+            self.relabel(int_min_class)
+            self.clean(int_min_class)
+            self.amplify(int_min_class)
 
         self.DS = union(self.DS, self.AS)
 
-        self.plot(f"GENERATED-{figure_number}_final.png", dataset=self.DS)
-
         return self.DS[:, :-1], self.DS[:, -1]
 
-    def restart_perspective(self):
-        for col in range(self.ds_as_rs_union().shape[1] - 1):
-            self.stds[col] = self.ds_as_rs_union()[:, col].std()
-            self.means[col] = self.ds_as_rs_union()[:, col].mean()
+    def amplify(self, int_min_class):
+        self._restart_perspective()
+        int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
+        for x in int_min_ds:
+            self._amplify_nn(x)
+        self._restore_perspective()
+
+    def clean(self, int_min_class):
+        self._restart_perspective()
+        int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
+        int_min_as = self._calc_int_min_as(int_min_class)
+        for x in union(int_min_ds, int_min_as):
+            self._clean_nn(x)
+        self._restore_perspective()
+
+    def relabel(self, int_min_class):
+        self._restart_perspective()
+        int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
+        for x in int_min_ds:
+            self._relabel_nn(x)
+        self._restore_perspective()
+
+    def _restart_perspective(self):
+        for col in range(self._ds_as_rs_union().shape[1] - 1):
+            self.stds[col] = self._ds_as_rs_union()[:, col].std()
+            self.means[col] = self._ds_as_rs_union()[:, col].mean()
 
         for dataset in [self.DS, self.RS, self.AS]:
             if dataset.shape[0] > 0:
-                self.normalize(dataset)
+                self._normalize(dataset)
 
-    def restore_perspective(self):
+    def _restore_perspective(self):
         for dataset in [self.DS, self.RS, self.AS]:
             if dataset.shape[0] > 0:
-                self.denormalize(dataset)
+                self._denormalize(dataset)
 
-    def normalize(self, dataset):
+    def _normalize(self, dataset):
         for col in range(dataset.shape[1] - 1):
-            dataset[:, col] = (dataset[:, col] - self.means[col]) / (4*self.stds[col])
+            dataset[:, col] = (dataset[:, col] - self.means[col]) / (4 * self.stds[col])
 
-    def denormalize(self, dataset):
+    def _denormalize(self, dataset):
         for col in range(dataset.shape[1] - 1):
             dataset[:, col] = dataset[:, col] * self.stds[col] * 4 + self.means[col]
 
-    def plot(self, path, dataset=None):
-        pass
-        # if dataset is None:
-        #     dataset = self.ds_as_rs_union()
-        # plt.figure(figsize=(12, 12))
-        # sns.scatterplot(x='x1', y='x2', hue='y', style='y',
-        #                 data=pd.DataFrame(data=pd.DataFrame(data=dataset, columns=["x1", "x2", "y"]),
-        #                                   columns=["x1", "x2", "y"]), alpha=0.7, legend=False)
-        # plt.savefig(path)
-        #
-        # spider_result = pd.read_csv(f"java_version/{path[:-4]}.csv")
-        # plt.figure(figsize=(12, 12))
-        # sns.scatterplot(x='X1', y='X2', hue='CLASS', style='CLASS', data=spider_result, alpha=0.7, legend=False)
-        # plt.savefig(f"{path[:-4]}_spider.png")
-
-    def calc_int_min_as(self, int_min_class):
+    def _calc_int_min_as(self, int_min_class):
         """
         Helper method to calculate examples form AS that belong to int_min_class parameter class.
         :param int_min_class:
@@ -191,7 +135,7 @@ class SPIDER3:
             int_min_as = np.array([])
         return int_min_as
 
-    def calculate_weak_majority_examples(self):
+    def _calculate_weak_majority_examples(self):
         """
         Calculates weak majority examples and appends them to the RS set.
         :return:
@@ -238,10 +182,10 @@ class SPIDER3:
             An observation.
         :return:
         """
-        nearest_neighbors = self._knn(x, self.ds_as_rs_union())
+        nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
             if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(
-                    neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+                    neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
                 self.RS = setdiff(self.RS, np.array([neighbor]))
                 neighbor[-1] = x[-1]
                 self.AS = union(self.AS, np.array([neighbor]))
@@ -254,10 +198,10 @@ class SPIDER3:
             Single observation.
         :return:
         """
-        nearest_neighbors = self._knn(x, self.ds_as_rs_union())
+        nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
             if self._class_of(neighbor) in self.majority_classes and \
-                    self._class_of(neighbor) in self._min_cost_classes(x, self.ds_as_rs_union()):
+                    self._class_of(neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
                 self.DS = setdiff(self.DS, np.array([neighbor]))
                 self.RS = setdiff(self.RS, np.array([neighbor]))
 
@@ -295,7 +239,7 @@ class SPIDER3:
 
         return DS[indices]
 
-    def _amplify(self, x):
+    def _amplify_nn(self, x):
         """
         Artificially amplifies example x by adding a copy of it to the AS.
 
@@ -304,7 +248,7 @@ class SPIDER3:
         :return:
         """
 
-        while self._class_of(x) not in self._min_cost_classes(x, self.ds_as_rs_union()):
+        while self._class_of(x) not in self._min_cost_classes(x, self._ds_as_rs_union()):
             y = x.copy()
             self.AS = union(self.AS, np.asarray([y]))
 
@@ -312,157 +256,5 @@ class SPIDER3:
     def _class_of(example):
         return example[-1]
 
-    def ds_as_rs_union(self):
+    def _ds_as_rs_union(self):
         return union(self.DS, union(self.AS, self.RS))
-
-
-def read_train_and_test_data(overlap, imbalance_ratio, i):
-    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-learn-{i}.arff") as f:
-        content = f.readlines()
-    content = [x.strip().split(",") for x in content][5:]
-    data = np.array(content)
-    X_train, y_train = data[:, :-1].astype(float), data[:, -1].astype(object)
-
-    with open(f"../../../3class-ho/3class-{imbalance_ratio}-overlap-{overlap}-test-{i}.arff") as f:
-        content = f.readlines()
-    content = [x.strip().split(",") for x in content][5:]
-    data = np.array(content)
-    X_test, y_test = data[:, :-1].astype(float), data[:, -1].astype(object)
-
-    return X_train, y_train, X_test, y_test
-
-
-def train_and_test():
-    neigh = KNeighborsClassifier(n_neighbors=1)
-    for i in range(0, 2):
-        std = union(X_train,X_test)[:,i].std()
-        mean = union(X_train,X_test)[:,i].mean()
-        X_train[:, i] = (X_train[:, i] - mean) / (4 * std)
-        X_test[:, i] = (X_test[:, i] - mean) / (4 * std)
-    neigh.fit(X_train, y_train)
-    y_pred = neigh.predict(X_test)
-    labels = ['MIN', 'INT', 'MAJ']
-    return [confusion_matrix(y_test, y_pred, labels=labels)[i, i] / confusion_matrix(y_test, y_pred, labels=labels)[i,
-                                                                    :].sum() for i, label in enumerate(labels)]
-
-
-if __name__ == "__main__":
-    tprs = []
-    for imbalance_ratio in ["70-30-0-0", "40-50-10-0", "30-40-15-15"]: #,
-        print(f"Imbalance ratio: {imbalance_ratio}")
-        for overlap in [0, 1, 2]:  # , 1, 2
-            print(f"Overlap: {overlap}")
-            min_tpr = []
-            int_tpr = []
-            maj_tpr = []
-            for i in range(1,11):  # 11
-                X_train, y_train, X_test, y_test = read_train_and_test_data(overlap, imbalance_ratio, i)
-                cost = np.ones((3, 3))
-                for i in range(3):
-                    cost[i][i] = 0
-
-                # cost = np.reshape(np.array([0, 2, 3, 3, 0, 2, 7, 5, 0]), (3, 3))
-                # cost = np.reshape(np.array([0, 3, 7, 2, 0, 5, 3, 2, 0]), (3, 3))
-                # cost = np.reshape(np.array([0, 1, 1, 3, 0, 1, 7, 5, 0]), (3, 3)) # odkopana
-                # cost = np.reshape(np.array([0, 1, 1, 2, 0, 1, 6, 3, 0]), (3, 3)) # try 1
-                # cost = np.reshape(np.array([0, 2, 6, 1, 0, 3, 1, 1, 0]), (3, 3)) # try 2
-                cost = np.reshape(np.array([0, 1/2, 16, 2, 0, 1/3, 6, 3, 0]), (3, 3)) # try 3
-                # cost = np.reshape(np.array([0, 1, 1, 1, 0, 1, 1, 1, 0]), (3, 3))
-
-                clf = SPIDER3(k=5, cost=cost, majority_classes=['MAJ'],
-                              intermediate_classes=['INT'], minority_classes=['MIN'])
-                X_train, y_train = clf.fit_transform(X_train.astype(np.float64), y_train)
-                min_t, int_t, maj_t = train_and_test()
-                from collections import Counter
-                # print(Counter(y_train))
-                min_tpr.append(min_t)
-                # print(min_t)
-                int_tpr.append(int_t)
-                # print(int_t)
-                maj_tpr.append(maj_t)
-                # print(maj_t)
-            tprs.append([np.array(min_tpr).mean(), np.array(int_tpr).mean(), np.array(maj_tpr).mean()])
-            print(f"MIN TPR:{np.array(min_tpr).mean()}")
-            print(f"INT TPR:{np.array(int_tpr).mean()}")
-            print(f"MAJ TPR:{np.array(maj_tpr).mean()}")
-    np.savetxt("costs.csv", np.array(tprs), delimiter=",")
-
-if __name__ == "__main__2":
-    datasets = load_datasets()
-    results_g_mean = dict()
-    results_acc = dict()
-
-    for dataset_name, dataset_values in datasets.items():
-        if dataset_name != 'dermatology':  # or dataset_name != 'new_ecoli':
-            continue
-        print(dataset_name)
-
-        X, y = dataset_values.data, dataset_values.target
-
-        if len(X) > 1000:
-            continue
-
-        results_g_mean[dataset_name] = dict()
-        results_acc[dataset_name] = dict()
-
-        for resample in ['base', 'global', 'soup', 'mdo', 'spider']:
-
-            skf = StratifiedKFold(n_splits=5, random_state=0)
-            acc, g_mean = list(), list()
-            for train_index, test_index in skf.split(X, y):
-                X_train, X_test = X[train_index], X[test_index]
-                y_train, y_test = y[train_index], y[test_index]
-                error_flag = False
-                clf_tree = DecisionTreeClassifier(random_state=0)
-
-                if resample == 'base':
-                    X_train_resampled, y_train_resampled = X_train, y_train
-                elif resample == 'soup':
-                    soup = SOUP()
-                    X_train_resampled, y_train_resampled = soup.fit_transform(np.copy(X_train), np.copy(y_train))
-                elif resample == 'global':
-                    global_cs = GlobalCS()
-                    X_train_resampled, y_train_resampled = global_cs.fit_transform(np.copy(X_train), np.copy(y_train))
-                elif resample == 'smote':
-                    try:
-                        smote = SMOTE()
-                        X_train_resampled, y_train_resampled = smote.fit_sample(np.copy(X_train), np.copy(y_train))
-                    except Exception as e:
-                        error_flag = True
-                        print(resample, dataset_name, e)
-                        X_train_resampled, y_train_resampled = X_train, y_train
-                elif resample == 'mdo':
-                    mdo = MDO(k=9, k1_frac=0, seed=0)
-                    X_train_resampled, y_train_resampled = mdo.fit_transform(np.copy(X_train), np.copy(y_train))
-                elif resample == 'spider':
-                    cost = calc_cost_matrix(dataset_name)
-                    clf = SPIDER3(k=5, cost=cost, majority_classes=maj_int_min[dataset_name]['maj'],
-                                  intermediate_classes=maj_int_min[dataset_name]['int'],
-                                  minority_classes=maj_int_min[dataset_name]['min'])
-                    X_train_resampled, y_train_resampled = clf.fit_transform(X_train.astype(np.float64), y_train)
-
-                clf_tree.fit(X_train_resampled, y_train_resampled)
-                y_pred = clf_tree.predict(X_test)
-                g_mean.append(geometric_mean_score(y_test, y_pred, correction=0.001))
-                acc.append(accuracy_score(y_test, y_pred))
-
-            result_g_mean = None if error_flag else round(np.mean(g_mean), 3)
-            result_acc = None if error_flag else round(np.mean(acc), 3)
-
-            results_g_mean[dataset_name][resample] = result_g_mean
-            results_acc[dataset_name][resample] = result_acc
-
-    display("G-MEAN")
-    df = pd.DataFrame(results_g_mean).T
-    display(df)
-
-    # display("ACC")
-    # df2 = pd.DataFrame(results_acc).T
-    # display(df2)
-
-    display("MEAN G-MEAN")
-    df.fillna(df.median(), inplace=True)
-    display(df.mean())
-
-    # display("MEAN ACC")
-    # display(df2.mean())
