@@ -10,6 +10,7 @@
 .DS_Store
 build
 
+.ipynb_checkpoints
 dist/
 MANIFEST
 doc/_build/
