@@ -19,7 +19,7 @@ class SPIDER3:
         Performs resampling of X.
     """
 
-    def __init__(self, k, cost, majority_classes, intermediate_classes, minority_classes):
+    def __init__(self, k, majority_classes, intermediate_classes, minority_classes, cost=None):
         """
         Parameters
         ----------
@@ -57,15 +57,14 @@ class SPIDER3:
             Resampled X along with accordingly modified labels.
         """
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
+        if self.cost is None:
+            self.cost = self._estimate_cost_matrix(y)
 
         self._restart_perspective()
         self._calculate_weak_majority_examples()
         self._restore_perspective()
         self.DS = setdiff(self.DS, self.RS)
-        class_cardinality = Counter(y)
-        # to ensure looping over classes with decreasing cardinality.
-        int_classes = sorted(self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz])
-        min_classes = sorted(self.minority_classes, key=lambda clazz: -class_cardinality[clazz])
+        int_classes, min_classes = self._sort_by_cardinality(y)
 
         for int_min_class in int_classes + min_classes:
             self.relabel(int_min_class)
@@ -75,6 +74,36 @@ class SPIDER3:
         self.DS = union(self.DS, self.AS)
 
         return self.DS[:, :-1], self.DS[:, -1]
+
+    @staticmethod
+    def _estimate_cost_matrix(y):
+        """
+        Method that estimates cost matrix automatically. For example given imbalance ratios of 1:2:6, the estimated
+        matrix will be:
+        [0 1 1
+        2 0 1
+        6 3 0]
+        :param y: labels
+        :return: cost matrix
+        """
+        class_cardinality = Counter(y)
+        classes = list(class_cardinality.keys())
+        cost = np.ones([len(classes), len(classes)])
+        for i, (c1, card1) in enumerate(class_cardinality):
+            for j, (c2, card2) in enumerate(class_cardinality):
+                if j > i:
+                    cost[i, j] = 1
+                else:
+                    cost[i, j] = card1 / card2
+        cost = np.fill_diagonal(cost, 0)
+        return cost
+
+    def _sort_by_cardinality(self, y):
+        class_cardinality = Counter(y)
+        # to ensure looping over classes with decreasing cardinality.
+        int_classes = sorted(self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz])
+        min_classes = sorted(self.minority_classes, key=lambda clazz: -class_cardinality[clazz])
+        return int_classes, min_classes
 
     def amplify(self, int_min_class):
         self._restart_perspective()
