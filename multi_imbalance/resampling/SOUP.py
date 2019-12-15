@@ -5,6 +5,7 @@ from operator import itemgetter
 import numpy as np
 import sklearn
 from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
 
 
 class SOUP:
@@ -15,7 +16,7 @@ class SOUP:
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 9) -> None:
+    def __init__(self, k: int = 5) -> None:
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
 
@@ -57,6 +58,7 @@ class SOUP:
         return np.array(X), np.array(y)
 
     def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
+        self.quantities = Counter(y)
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
         neigh_clf = NearestNeighbors(n_neighbors=self.k + 1).fit(X)
@@ -76,7 +78,9 @@ class SOUP:
 
         for neigh_label, neigh_q in neighbours_quantities.items():
             similarity_between_classes = min(q[class_name], q[neigh_label]) / max(q[class_name], q[neigh_label])
-            safe_level += neigh_q * similarity_between_classes / self.k
+            safe_level += neigh_q * similarity_between_classes
+
+        safe_level /= self.k
 
         if safe_level > 1:
             raise ValueError(f'Safe level is bigger than 1: {safe_level}')
