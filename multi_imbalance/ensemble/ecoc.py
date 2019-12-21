@@ -7,7 +7,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
-
+from sklearn.model_selection import train_test_split
+from collections import Counter
+from collections import defaultdict
 from multi_imbalance.resampling.GlobalCS import GlobalCS
 
 
@@ -22,9 +24,10 @@ class ECOC(BaseEstimator):
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
     _allowed_oversampling = [None, 'globalCS', 'SMOTE']
     _allowed_classifiers = ['CART', 'NB', 'KNN']
+    _allowed_weights = ['acc', 'avg_tpr_min']
 
     def __init__(self, binary_classifier='CART', distance='hamming',
-                 oversample_binary=None, encoding='dense', n_neighbors=5):
+                 oversample_binary='SMOTE', encoding='dense', n_neighbors=5, weights=None):
         """
         Parameters
         ----------
@@ -59,25 +62,40 @@ class ECOC(BaseEstimator):
         self.encoding = encoding
         self.oversample_binary = oversample_binary
         self.n_neighbors = n_neighbors
+        self.weights = weights
+
+        self.minority_classes = list()
 
         self._code_matrix = None
         self._binary_classifiers = []
         self._labels = None
+        self._dich_weights = None
 
-    def fit(self, X, y):
+    def fit(self, X, y, minority_classes=None):
         """
         Parameters
         ----------
         X: two dimensional numpy array (number of samples x number of features) with float numbers
         y: one dimensional numpy array with labels for rows in X
+        minority_classes: list of classes considered to be minority classes
         Returns
         -------
         self: object
         """
+        if minority_classes is not None:
+            self.minority_classes = minority_classes
+
+        if self.weights is not None:
+            X_train, X_for_weights, y_train, y_for_weights = train_test_split(X, y, test_size=0.2, stratify=y,
+                                                                              random_state=0)
+        else:
+            X_train, y_train = X, y
+
         self._labels = np.unique(y)
         self._gen_code_matrix()
         self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
-        self._learn_binary_classifiers(X, y)
+        self._learn_binary_classifiers(X_train, y_train)
+        self._calc_weights(X_for_weights, y_for_weights)
         return self
 
     def predict(self, X):
@@ -158,7 +176,7 @@ class ECOC(BaseEstimator):
                 code_matrix = tmp_code_matrix
         return code_matrix
 
-    def _encode_sparse(self, number_of_classes, random_state=0, number_of_code_generations=1000):
+    def _encode_sparse(self, number_of_classes, random_state=0, number_of_code_generations=10000):
         try:
             dirname = os.path.dirname(__file__)
             matrix = np.load(dirname + f'/cached_matrices/sparse_{number_of_classes}.npy')
@@ -244,8 +262,14 @@ class ECOC(BaseEstimator):
         return (~matrix.any(axis=0)).any()
 
     def _get_closest_class(self, row):
-        return self._labels[
-            np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
+        if self.weights is not None:
+            return self._labels[
+                np.argmin(
+                    [sum(np.multiply(self.dich_weights, (encoded_class - row) ** 2)) for encoded_class in
+                     self._code_matrix])]
+        else:
+            return self._labels[
+                np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
     def _oversample(self, X, y):
         if self.oversample_binary not in ECOC._allowed_oversampling:
@@ -283,3 +307,31 @@ class ECOC(BaseEstimator):
         smote = SMOTE(k_neighbors=n_neighbors)
         smote.fit(X, y)
         return smote.fit_resample(X, y)
+
+    def _calc_weights(self, X_for_weights, y_for_weights):
+        dich_weights = np.ones(self._code_matrix.shape[1])
+        if self.weights == 'acc':
+            for clf_idx, clf in enumerate(self._binary_classifiers):
+                samples_no = 0
+                correct_no = 0
+                for sample, sample_label in zip(X_for_weights, y_for_weights):
+                    samples_no += 1
+                    if clf.predict([sample])[0] == \
+                            self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
+                        correct_no += 1
+                if samples_no != 0:
+                    acc = correct_no / samples_no
+                    dich_weights[clf_idx] = -1 + 2 * acc
+        elif self.weights == 'avg_tpr_min':
+            min_counter = Counter([y for y in y_for_weights if y in self.minority_classes])
+
+            for clf_idx, clf in enumerate(self._binary_classifiers):
+                min_correct_pred = defaultdict(lambda: 0)
+                for sample, sample_label in zip(X_for_weights, y_for_weights):
+                    if clf.predict([sample])[0] == \
+                            self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
+                        min_correct_pred[sample_label] += 1
+                acc = np.mean([min_correct_pred[clazz] / min_counter[clazz] for clazz in min_counter.keys()])
+                dich_weights[clf_idx] = acc
+
+        self.dich_weights = dich_weights
