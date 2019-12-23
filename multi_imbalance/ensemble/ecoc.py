@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from collections import Counter
 from collections import defaultdict
 from multi_imbalance.resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.SOUP import SOUP
 
 
 class ECOC(BaseEstimator):
@@ -22,9 +23,9 @@ class ECOC(BaseEstimator):
     """
 
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
-    _allowed_oversampling = [None, 'globalCS', 'SMOTE']
+    _allowed_oversampling = [None, 'globalCS', 'SMOTE', 'SOUP']
     _allowed_classifiers = ['CART', 'NB', 'KNN']
-    _allowed_weights = ['acc', 'avg_tpr_min']
+    _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
     def __init__(self, binary_classifier='CART', distance='hamming',
                  oversample_binary='SMOTE', encoding='dense', n_neighbors=5, weights=None):
@@ -95,7 +96,8 @@ class ECOC(BaseEstimator):
         self._gen_code_matrix()
         self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
         self._learn_binary_classifiers(X_train, y_train)
-        self._calc_weights(X_for_weights, y_for_weights)
+        if self.weights is not None:
+            self._calc_weights(X_for_weights, y_for_weights)
         return self
 
     def predict(self, X):
@@ -284,6 +286,9 @@ class ECOC(BaseEstimator):
             return gcs.fit_transform(X, y)
         elif self.oversample_binary == 'SMOTE':
             return self._smote_oversample_if_possible_random_otherwise(X, y)
+        elif self.oversample_binary == 'SOUP':
+            soup = SOUP()
+            return soup.fit_transform(X, y)
 
     def _get_classifier(self):
         if self.binary_classifier not in ECOC._allowed_classifiers:
@@ -309,16 +314,21 @@ class ECOC(BaseEstimator):
         return smote.fit_resample(X, y)
 
     def _calc_weights(self, X_for_weights, y_for_weights):
+        if self.weights not in ECOC._allowed_weights:
+            raise ValueError("Unknown weighting strategy: %s, expected to be one of %s."
+                             % (self.weights, ECOC._allowed_weights))
+
         dich_weights = np.ones(self._code_matrix.shape[1])
         if self.weights == 'acc':
             for clf_idx, clf in enumerate(self._binary_classifiers):
                 samples_no = 0
                 correct_no = 0
                 for sample, sample_label in zip(X_for_weights, y_for_weights):
-                    samples_no += 1
-                    if clf.predict([sample])[0] == \
-                            self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
-                        correct_no += 1
+                    if self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx] != 0:
+                        samples_no += 1
+                        if clf.predict([sample])[0] == \
+                                self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
+                            correct_no += 1
                 if samples_no != 0:
                     acc = correct_no / samples_no
                     dich_weights[clf_idx] = -1 + 2 * acc
