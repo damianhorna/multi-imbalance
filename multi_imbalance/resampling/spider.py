@@ -266,9 +266,11 @@ class SPIDER3:
             self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
 
         self.neigh_clf.fit(DS[:, :-1])
+
         within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=
         self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 *
         self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1], return_distance=True)
+
         unique_distances = np.unique(sorted(within_radius[0][0]))
         all_distances = within_radius[0][0]
         all_indices = within_radius[1][0]

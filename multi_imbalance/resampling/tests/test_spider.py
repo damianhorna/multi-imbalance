@@ -56,6 +56,7 @@ def test_knn():
     y = np.array(["MIN", "MIN", "MAJ", "MAJ", "MAJ"])
 
     DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
+
     assert (DS[4] == spider._knn(DS[0], DS)).all()
 
 
@@ -75,7 +76,7 @@ def test_min_cost_classes():
     assert (spider._min_cost_classes(DS[0], DS) == ["MAJ"]).all()
     assert (spider._min_cost_classes(DS[4], DS) == ["MIN", "MAJ"]).all()
 
-
+    
 def test_estimate_cost_matrix():
     y = [0, 1, 1, 2, 2, 2, 2, 2, 2]
     cost = SPIDER3._estimate_cost_matrix(y).ravel().tolist()
