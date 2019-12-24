@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="multi-imbalance",
-    version="0.0.2",
+    version="0.0.3",
     author="Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza",
     author_email="horna.damian@gmail.com",
     description="Python package for tackling multiclass imbalance problems.",
