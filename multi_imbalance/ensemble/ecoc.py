@@ -27,8 +27,8 @@ class ECOC(BaseEstimator):
     _allowed_classifiers = ['CART', 'NB', 'KNN']
     _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
-    def __init__(self, binary_classifier='CART', distance='hamming',
-                 oversample_binary='SMOTE', encoding='dense', n_neighbors=5, weights=None):
+    def __init__(self, binary_classifier='CART', oversample_binary='SMOTE', encoding='dense', n_neighbors=5,
+                 weights=None):
         """
         Parameters
         ----------
@@ -59,7 +59,6 @@ class ECOC(BaseEstimator):
 
         """
         self.binary_classifier = binary_classifier
-        self.distance = distance
         self.encoding = encoding
         self.oversample_binary = oversample_binary
         self.n_neighbors = n_neighbors
