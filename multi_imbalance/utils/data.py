@@ -8,7 +8,7 @@ from pathlib import Path
 
 from IPython.core.display import display
 from scipy.io import arff
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.utils import Bunch
 
 
@@ -44,6 +44,8 @@ def preprocess_dataset(path):
     y = df.pop(df.columns[y_index])
 
     le = LabelEncoder()
+    scaler = StandardScaler()
+
     y = le.fit_transform(y)
 
     categorical_feature_mask = df.dtypes == object
@@ -52,13 +54,13 @@ def preprocess_dataset(path):
     non_categorical_cols = df.columns[~categorical_feature_mask].tolist()
 
     df[categorical_cols] = df[categorical_cols].replace({b'?': np.NaN})
-
     mode = df.mode().iloc[0]
     mean = df.filter(non_categorical_cols).mean()
 
     df[categorical_cols] = df.filter(categorical_cols).fillna(mode)
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
+    df[non_categorical_cols] = scaler.fit_transform(df[non_categorical_cols])
     X = pd.get_dummies(df, columns=categorical_cols)
     return X.to_numpy(), y
 

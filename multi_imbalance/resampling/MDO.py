@@ -45,8 +45,6 @@ class MDO(object):
         labels = list(set(y))
         minority_classes = None if class_balances is None else class_balances['min']
 
-        print(quantities, minority_classes)
-
         for class_label in labels:
             if minority_classes is not None and class_label not in minority_classes:
                 continue
