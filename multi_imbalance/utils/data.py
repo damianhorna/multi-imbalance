@@ -15,12 +15,10 @@ from sklearn.utils import Bunch
 def construct_flat_2pc_df(X, y) -> pd.DataFrame:
     """
     This function takes two dimensional X and one dimensional y arrays, concatenates and returns them as data frame
-
     Parameters
     ----------
     X two dimensional numpy array
     y one dimensional numpy array with labels
-
     -------
     Data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X
     """
@@ -76,3 +74,7 @@ def load_arff_datasets():
         datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
+
+
+if __name__ == '__main__':
+    datasets = load_arff_datasets()
