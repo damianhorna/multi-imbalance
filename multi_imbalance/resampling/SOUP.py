@@ -6,7 +6,6 @@ import numpy as np
 import sklearn
 from sklearn.neighbors import NearestNeighbors
 
-
 class SOUP:
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
@@ -19,13 +18,14 @@ class SOUP:
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
 
-    def fit_transform(self, _X, _y, shuffle: bool = True):
+    def fit_transform(self, _X, _y, maj_int_min=None, shuffle: bool = True):
         """
 
         Parameters
         ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
+        maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
 
         Returns
         -------
@@ -39,7 +39,7 @@ class SOUP:
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
 
         self.quantities = Counter(y)
-        self.goal_quantity = self._calculate_goal_quantity()
+        self.goal_quantity = self._calculate_goal_quantity(maj_int_min)
         dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity), key=itemgetter(1),
                              reverse=True)
         asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
@@ -111,7 +111,13 @@ class SOUP:
 
         return X, y
 
-    def _calculate_goal_quantity(self):
-        max_q = max(list(self.quantities.values()))
-        min_q = min(list(self.quantities.values()))
-        return np.mean((min_q, max_q), dtype=int)
+    def _calculate_goal_quantity(self, maj_int_min):
+        if maj_int_min is None:
+            maj_q = max(list(self.quantities.values()))
+            min_q = min(list(self.quantities.values()))
+        else:
+            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
+            maj_q = min(list(maj_classes.values()))
+            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
+            min_q = max(list(min_classes.values()))
+        return np.mean((min_q, maj_q), dtype=int)
