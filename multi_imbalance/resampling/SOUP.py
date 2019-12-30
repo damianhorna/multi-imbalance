@@ -111,7 +111,7 @@ class SOUP:
 
         return X, y
 
-    def _calculate_goal_quantity(self, maj_int_min):
+    def _calculate_goal_quantity(self, maj_int_min=None):
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))
             min_q = min(list(self.quantities.values()))
