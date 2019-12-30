@@ -60,7 +60,8 @@ def preprocess_dataset(path):
     df[categorical_cols] = df.filter(categorical_cols).fillna(mode)
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
-    df[non_categorical_cols] = scaler.fit_transform(df[non_categorical_cols])
+    if len(non_categorical_cols) >= 1:
+        df[non_categorical_cols] = scaler.fit_transform(df[non_categorical_cols])
     X = pd.get_dummies(df, columns=categorical_cols)
     return X.to_numpy(), y
 
