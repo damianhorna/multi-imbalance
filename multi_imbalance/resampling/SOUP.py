@@ -4,11 +4,11 @@ from operator import itemgetter
 
 import numpy as np
 import sklearn
+from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
-from sklearn.preprocessing import StandardScaler
 
 
-class SOUP:
+class SOUP(TransformerMixin):
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
     in each class. It also takes care of the similarity between classes, which means that it removes samples from
@@ -20,7 +20,7 @@ class SOUP:
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
 
-    def fit_transform(self, _X, _y, shuffle: bool = True):
+    def fit_transform(self, _X, _y, **fit_params):
         """
 
         Parameters
@@ -52,7 +52,7 @@ class SOUP:
         for class_name, class_quantity in asc_min_cls:
             X, y = self._oversample(X, y, class_name)
 
-        if shuffle:
+        if fit_params.get('shuffle'):
             X, y = sklearn.utils.shuffle(X, y)
 
         return np.array(X), np.array(y)

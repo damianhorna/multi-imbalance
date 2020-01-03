@@ -1,3 +1,4 @@
+from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
@@ -7,7 +8,7 @@ from collections import Counter
 from sklearn.decomposition import PCA
 
 
-class MDO(object):
+class MDO(TransformerMixin):
     """
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
     Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
@@ -23,7 +24,7 @@ class MDO(object):
         self.X, self.y = None, None
         self.prop = prop
 
-    def fit_transform(self, X, y, class_balances=None):
+    def fit_transform(self, X, y, **fit_params):
         """
 
         Parameters
@@ -43,6 +44,7 @@ class MDO(object):
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
         labels = list(set(y))
+        class_balances = fit_params.get('class_balances')
         minority_classes = None if class_balances is None else class_balances['min']
 
         for class_label in labels:

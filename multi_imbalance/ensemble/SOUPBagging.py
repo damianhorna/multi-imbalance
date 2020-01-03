@@ -2,6 +2,7 @@ import multiprocessing
 from copy import deepcopy
 
 import numpy as np
+from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
 from multi_imbalance.resampling.SOUP import SOUP
@@ -11,8 +12,9 @@ def fit_clf(args):
     return SOUPBagging.fit_classifier(args)
 
 
-class SOUPBagging(object):
+class SOUPBagging(BaggingClassifier):
     def __init__(self, classifier=None, n_classifiers=5):
+        super().__init__()
         self.classifiers = list()
         self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
