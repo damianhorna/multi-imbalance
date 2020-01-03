@@ -45,16 +45,44 @@ class SOUPBagging(object):
         pool.close()
         pool.join()
 
-    def predict(self, X):
+    def predict(self, X, strategy: str = 'average', maj_int_min: dict = None):
         """
         Predict class for X. The predicted class of an input sample is computed as the class with the highest
         sum of predicted probability.
 
         :param X: {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
+        :param strategy:
+            'average' - takes max from average values in prediction
+            'optimistic' - takes always best value of probability
+            'pessimistic' - takes always the worst value of probability
+            'mixed' - for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
+        :param maj_int_min: dict. It keeps indices of minority classes under 'min' key.
         :return: y : array of shape = [n_samples]. The predicted classes.
         """
         weights_sum = self.predict_proba(X)
-        y_result = np.argmax(weights_sum, axis=1)
+        if strategy == 'average':
+            p = np.sum(weights_sum, axis=0)
+        elif strategy == 'optimistic':
+            p = np.max(weights_sum, axis=0)
+        elif strategy == 'pessimistic':
+            p = np.min(weights_sum, axis=0)
+        elif strategy == 'mixed':
+            n_samples = X.shape[0]
+            n_classes = self.classes.shape[0]
+            p = np.zeros(shape=(n_samples, n_classes)) - 1
+
+            for i in range(n_classes):
+                two_dim_class_vector = weights_sum[:, :, i]  # [:,:,1] -> [classifiers x samples]
+                if i in maj_int_min['min']:
+                    squeeze_with_strategy = np.max(two_dim_class_vector, axis=0)
+                else:
+                    squeeze_with_strategy = np.min(two_dim_class_vector, axis=0)  # [1, n_samples, 1] -> [n_samples]
+                p[:, i] = squeeze_with_strategy
+            assert -1 not in p
+        else:
+            raise KeyError(f'Incorrect strategy param: ${strategy}')
+
+        y_result = np.argmax(p, axis=1)
         return y_result
 
     def predict_proba(self, X):
@@ -62,7 +90,7 @@ class SOUPBagging(object):
         Predict class probabilities for X.
 
         :param X:{array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
-        :return: p : array of shape = [n_samples, n_classes]. The class probabilities of the input samples.
+        :return: array of shape = [n_classifiers, n_samples, n_classes]. The class probabilities of the input samples.
         """
         n_samples = X.shape[0]
         n_classes = self.classes.shape[0]
@@ -72,5 +100,4 @@ class SOUPBagging(object):
         for i, clf in enumerate(self.classifiers):
             results[i] = clf.predict_proba(X)
 
-        p = np.sum(results, axis=0)
-        return p
+        return results
