@@ -74,17 +74,13 @@ class MRBBagging(object):
         return self
 
     def _set_classes_dict(self, classes):
-        classes = list(classes)
-        classes_dict = {}
-        for i, item in enumerate(classes):
-            classes_dict[i] = item
-        self.classifier_classes = classes_dict
+        self.classifier_classes = dict(enumerate(classes))
 
     def _count_votes(self, data):
         voting_matrix = np.zeros((len(data), len(self.classes)))
-        for c in range(len(self.classifiers)):
-            classes = self.classifiers[c].predict(data)
-            probabilities = self.classifiers[c].predict_proba(data)
+        for classifier_id in range(len(self.classifiers)):
+            classes = self.classifiers[classifier_id].predict(data)
+            probabilities = self.classifiers[classifier_id].predict_proba(data)
             for i, cl in enumerate(classes):
                 idx = list(self.classifier_classes.keys())[list(self.classifier_classes.values()).index(cl)]
                 voting_matrix[i][idx] += max(probabilities[i])
