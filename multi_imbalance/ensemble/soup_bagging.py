@@ -4,7 +4,7 @@ from copy import deepcopy
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
-from multi_imbalance.resampling.SOUP import SOUP
+from multi_imbalance.resampling.soup import SOUP
 
 
 def fit_clf(args):

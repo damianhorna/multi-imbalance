@@ -8,7 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
 
-from multi_imbalance.resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.global_cs import GlobalCS
 
 
 class ECOC(BaseEstimator):

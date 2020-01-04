@@ -26,7 +26,7 @@ pip install multi-imbalance
 
 ## Example usage
 ```python
-from multi_imbalance.resampling.MDO import MDO
+from multi_imbalance.resampling.mdo import MDO
 
 # Mahalanbois Distance Oversampling
 mdo = MDO(k=9, k1_frac=0, seed=0)

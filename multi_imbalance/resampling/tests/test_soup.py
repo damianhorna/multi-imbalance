@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
 
-from multi_imbalance.resampling.SOUP import SOUP
+from multi_imbalance.resampling.soup import SOUP
 
 X = np.array([
     [0.05837771, 0.57543339],

@@ -5,7 +5,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-from multi_imbalance.resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.global_cs import GlobalCS
 
 
 class OVO(BaseEstimator):
