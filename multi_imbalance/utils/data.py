@@ -62,6 +62,7 @@ def preprocess_dataset(path):
 
     if len(non_categorical_cols) >= 1:
         df[non_categorical_cols] = scaler.fit_transform(df[non_categorical_cols])
+
     X = pd.get_dummies(df, columns=categorical_cols)
     return X.to_numpy(), y
 
@@ -81,3 +82,4 @@ def load_arff_datasets():
 
 if __name__ == '__main__':
     datasets = load_arff_datasets()
+    x=5

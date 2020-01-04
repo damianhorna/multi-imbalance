@@ -103,3 +103,23 @@ class SOUPBagging(BaggingClassifier):
             results[i] = clf.predict_proba(X)
 
         return results
+
+
+if __name__ == '__main__':
+    from imblearn.metrics import geometric_mean_score
+    from sklearn.model_selection import train_test_split
+    from sklearn.neighbors import KNeighborsClassifier
+    from multi_imbalance.datasets import load_datasets
+
+    dataset = load_datasets()['new_ecoli']
+
+    X, y = dataset.data, dataset.target
+    print(X[:5])
+    print(y[:5])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    clf = KNeighborsClassifier()
+    vote_classifier = SOUPBagging(clf, n_classifiers=50)
+    vote_classifier.fit(X_train, y_train)
+    y_pred = vote_classifier.predict(X_test)
+    geometric_mean_score(y_test, y_pred, correction=0.001)
