@@ -37,9 +37,6 @@ class ECOC(BaseEstimator):
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
 
-        distance: distance according to which the closest class is chosen. Possible distances:
-        * 'hamming': Hamming's distance
-
         oversample_binary: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
         * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
@@ -56,6 +53,11 @@ class ECOC(BaseEstimator):
             T. G. Dietterich and G. Bakiri.
             Solving multiclass learning problems via error-correcting output codes.
             Journal of Artificial Intelligence Research, 2:263–286, 1995.
+
+        weights: strategy for dichotomies weighting. Possible values:
+        * None : no weighting applied
+        * 'acc' : accuracy-based weights
+        * 'avg_tpr_min' : weights based on average true positive rates of dichotomies
 
         """
         self.binary_classifier = binary_classifier
