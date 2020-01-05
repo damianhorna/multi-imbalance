@@ -27,7 +27,7 @@ class ECOC(BaseEstimator):
     _allowed_classifiers = ['CART', 'NB', 'KNN']
     _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
-    def __init__(self, binary_classifier='CART', oversample_binary='SMOTE', encoding='dense', n_neighbors=5,
+    def __init__(self, binary_classifier='KNN', oversample_binary='SOUP', encoding='OVO', n_neighbors=3,
                  weights=None):
         """
         Parameters
@@ -340,7 +340,7 @@ class ECOC(BaseEstimator):
                     if clf.predict([sample])[0] == \
                             self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
                         min_correct_pred[sample_label] += 1
-                acc = np.mean([min_correct_pred[clazz] / min_counter[clazz] for clazz in min_counter.keys()])
-                dich_weights[clf_idx] = acc
+                avg_tpr_min = np.mean([min_correct_pred[clazz] / min_counter[clazz] for clazz in min_counter.keys()])
+                dich_weights[clf_idx] = avg_tpr_min
 
         self.dich_weights = dich_weights
