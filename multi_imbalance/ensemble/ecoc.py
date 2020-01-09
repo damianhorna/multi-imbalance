@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
-from sklearn.base import BaseEstimator
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -14,7 +13,7 @@ from multi_imbalance.resampling.GlobalCS import GlobalCS
 from multi_imbalance.resampling.SOUP import SOUP
 
 
-class ECOC(BaseEstimator):
+class ECOC():
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
@@ -309,7 +308,7 @@ class ECOC(BaseEstimator):
         if min(np.unique(y, return_counts=True)[1]) < 2:
             return GlobalCS().fit_transform(X, y)
 
-        k_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
+        k_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         smote = SMOTE(k_neighbors=k_neighbors)
         smote.fit(X, y)
         return smote.fit_resample(X, y)
