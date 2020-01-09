@@ -1,4 +1,5 @@
 import multiprocessing
+import threading
 from collections import Counter
 from copy import deepcopy
 
@@ -10,8 +11,6 @@ from multi_imbalance.resampling.SOUP import SOUP
 from multi_imbalance.utils.array_util import setdiff
 from cvxpy import *
 
-np.random.seed(0)
-
 
 def fit_clf(args):
     return SOUPBagging.fit_classifier(args)
@@ -20,11 +19,12 @@ def fit_clf(args):
 class SOUPBagging(BaggingClassifier):
     def __init__(self, classifier=None, n_classifiers=5):
         super().__init__()
-        self.classifiers = list()
+        self.classifiers, self.clf_weights = list(), list()
         self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
         self.classes = None
         for _ in range(n_classifiers):
+            self.clf_weights.append(None)
             if classifier is not None:
                 self.classifiers.append(deepcopy(classifier))
             else:
@@ -32,15 +32,21 @@ class SOUPBagging(BaggingClassifier):
 
     @staticmethod
     def fit_classifier(args):
-        clf, X, y = args
-        x_sampled, y_sampled = resample(X, y, stratify=y)
-        print(X.shape, y.shape)
-        # print(np.hstack((X,[y])))
-        # out_of_bag = setdiff(np.hstack((X,y)), np.hstack((x_sampled, y_sampled)))
+        clf, X, y, resampled = args
+        x_sampled, y_sampled = resampled
+
+        out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
+        x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
         x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
         clf.fit(x_resampled, y_resampled)
-        return clf
+
+        result = clf.predict_proba(x_out)
+        class_sum_prob = np.sum(result, axis=0) + 0.001
+        class_quantities = Counter(y_out)
+        expected_sum_prob = np.array([class_quantities[i] for i in range(len(class_quantities))])
+        global_weights = expected_sum_prob / class_sum_prob
+        return clf, global_weights
 
     def fit(self, X, y):
         """
@@ -50,52 +56,16 @@ class SOUPBagging(BaggingClassifier):
         :return: self object
         """
         self.classes = np.unique(y)
+        pool = multiprocessing.Pool(self.num_core)
+        results = pool.map(fit_clf, [(clf, X, y, resample(X, y, stratify=y)) for clf in self.classifiers])
+        pool.close()
+        pool.join()
 
-        clf = self.classifiers[0]
-        x_sampled, y_sampled = resample(X, y, stratify=y)
-        out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
-        x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
-        class_quantities = Counter(y_out)
+        for i, (clf, weights) in enumerate(results):
+            self.classifiers[i] = clf
+            self.clf_weights[i] = weights
 
-        x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
-        clf.fit(x_resampled, y_resampled)
-
-        result = clf.predict_proba(x_out)
-
-        class_sum_prob = np.sum(result, axis=0) + 0.001
-        expected_sum_prob = np.array([class_quantities[i] for i in range(len(class_quantities))])
-        global_weights = expected_sum_prob / class_sum_prob
-
-        result = clf.predict_proba(x_out)
-
-        cls_var = [Variable(name=f'w_{str(i)}', nonneg=True) for i in range(len(class_quantities))]
-        epsilons, constraints = list(), list()
-        constraints.append(sum(cls_var) == 1)
-
-        for i in range(result.shape[0]):
-            expected = y_out[i]
-            for class_id in range(result.shape[1]):
-                if class_id != expected:
-                    if result[i, class_id] != 0:
-                        eps = Variable(name=f'eps_{str(i)}_{str(class_id)}', nonneg=True)
-                        constraints.append(result[i, expected] * cls_var[expected] - result[i, class_id] * cls_var[class_id] + eps >= 0)
-                        # epsilons.append((1 - class_quantities[expected] / len(y_out)) * eps)
-                        epsilons.append((class_quantities[expected] / len(y_out)) * eps)
-                        # epsilons.append(eps)
-
-        obj = Minimize(sum(epsilons))
-        problem = Problem(obj, constraints)
-        problem.solve(verbose=True)
-        if problem.status not in ["infeasible", "unbounded"]:
-            # Otherwise, problem.value is inf or -inf, respectively.
-            print("Optimal value: %s" % problem.value)
-        for variable in problem.variables():
-            print("Variable %s: value %s" % (variable.name(), variable.value))
-
-        # pool = multiprocessing.Pool(self.num_core)
-        # self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
-        # pool.close()
-        # pool.join()
+        self.clf_weights = np.array(self.clf_weights)
 
     def predict(self, X, strategy: str = 'average', maj_int_min: dict = None):
         """
@@ -131,6 +101,10 @@ class SOUPBagging(BaggingClassifier):
                     squeeze_with_strategy = np.min(two_dim_class_vector, axis=0)  # [1, n_samples, 1] -> [n_samples]
                 p[:, i] = squeeze_with_strategy
             assert -1 not in p
+        elif strategy == 'global':
+            for i, weight in enumerate(self.clf_weights):
+                weights_sum[i] *=  weight
+            p = np.sum(weights_sum, axis=0)
         else:
             raise KeyError(f'Incorrect strategy param: ${strategy}')
 
@@ -154,20 +128,3 @@ class SOUPBagging(BaggingClassifier):
 
         return results
 
-
-if __name__ == '__main__':
-    from imblearn.metrics import geometric_mean_score
-    from sklearn.model_selection import train_test_split
-    from sklearn.neighbors import KNeighborsClassifier
-    from multi_imbalance.datasets import load_datasets
-
-    dataset = load_datasets()['new_ecoli']
-
-    X, y = dataset.data, dataset.target
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-    clf = KNeighborsClassifier()
-    vote_classifier = SOUPBagging(clf, n_classifiers=1)
-    vote_classifier.fit(X_train, y_train)
-    y_pred = vote_classifier.predict(X_test)
-    print(geometric_mean_score(y_test, y_pred, correction=0.001))
