@@ -18,8 +18,8 @@ class ECOC(BaseEstimator):
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
-    of dichotomy). Then in the learning phase each dichotomy is learned. In the decoding phase the class which is
-    closest to test instance is chosen.
+    of binary classifier). Then in the learning phase each binary classifier is learned. In the decoding phase the class
+    which is closest to test instance in the sense of Hamming distance is chosen.
     """
 
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
@@ -27,17 +27,17 @@ class ECOC(BaseEstimator):
     _allowed_classifiers = ['CART', 'NB', 'KNN']
     _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
-    def __init__(self, binary_classifier='KNN', oversample_binary='SOUP', encoding='OVO', n_neighbors=3,
+    def __init__(self, binary_classifier='KNN', preprocessing='SOUP', encoding='OVO', n_neighbors=3,
                  weights=None):
         """
         Parameters
         ----------
-        binary_classifier: binary classifier used by dichotomies. Possible classifiers:
+        binary_classifier: binary classifier used by the algorithm. Possible classifiers:
         * 'CART': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
 
-        oversample_binary: method for oversampling between aggregated classes in each dichotomy. Possible methods:
+        preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
         * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
@@ -62,7 +62,7 @@ class ECOC(BaseEstimator):
         """
         self.binary_classifier = binary_classifier
         self.encoding = encoding
-        self.oversample_binary = oversample_binary
+        self.preprocessing = preprocessing
         self.n_neighbors = n_neighbors
         self.weights = weights
 
@@ -275,19 +275,19 @@ class ECOC(BaseEstimator):
                 np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
     def _oversample(self, X, y):
-        if self.oversample_binary not in ECOC._allowed_oversampling:
+        if self.preprocessing not in ECOC._allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, ECOC._allowed_oversampling))
         elif np.unique(y).size == 1:
             return X, y
-        elif self.oversample_binary is None:
+        elif self.preprocessing is None:
             return X, y
-        elif self.oversample_binary == 'globalCS':
+        elif self.preprocessing == 'globalCS':
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
-        elif self.oversample_binary == 'SMOTE':
+        elif self.preprocessing == 'SMOTE':
             return self._smote_oversample_if_possible_random_otherwise(X, y)
-        elif self.oversample_binary == 'SOUP':
+        elif self.preprocessing == 'SOUP':
             soup = SOUP()
             return soup.fit_transform(X, y)
 
