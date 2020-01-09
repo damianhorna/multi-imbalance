@@ -309,8 +309,8 @@ class ECOC(BaseEstimator):
         if min(np.unique(y, return_counts=True)[1]) < 2:
             return GlobalCS().fit_transform(X, y)
 
-        n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
-        smote = SMOTE(k_neighbors=n_neighbors)
+        k_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
+        smote = SMOTE(k_neighbors=k_neighbors)
         smote.fit(X, y)
         return smote.fit_resample(X, y)
 
