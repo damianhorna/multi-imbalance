@@ -8,7 +8,7 @@ from multi_imbalance.resampling.GlobalCS import GlobalCS
 from multi_imbalance.resampling.SOUP import SOUP
 
 
-class OVO():
+class OVO:
     """
 
     OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -36,11 +36,11 @@ class OVO():
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
 
         preprocessing: method for preprocessing of pairs of classes in the learning phase of ensemble.
-            Possible values:
-            * None: no preprocessing applied
-            * 'globalCS': oversampling with globalCS algorithm
-            * 'SMOTE': oversampling with SMOTE algorithm
-            * 'SOUP': oversampling and undersampling with SOUP algorithm
+        Possible values:
+        * None: no preprocessing applied
+        * 'globalCS': oversampling with globalCS algorithm
+        * 'SMOTE': oversampling with SMOTE algorithm
+        * 'SOUP': oversampling and undersampling with SOUP algorithm
 
         preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * 'all' - oversampling between each pair of classes
