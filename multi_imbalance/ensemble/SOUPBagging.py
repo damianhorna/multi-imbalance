@@ -1,4 +1,5 @@
 import multiprocessing
+from collections import Counter
 from copy import deepcopy
 
 import numpy as np
@@ -6,6 +7,9 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
 from multi_imbalance.resampling.SOUP import SOUP
+from multi_imbalance.utils.array_util import setdiff
+
+np.random.seed(0)
 
 
 def fit_clf(args):
@@ -29,6 +33,10 @@ class SOUPBagging(BaggingClassifier):
     def fit_classifier(args):
         clf, X, y = args
         x_sampled, y_sampled = resample(X, y, stratify=y)
+        print(X.shape, y.shape)
+        # print(np.hstack((X,[y])))
+        # out_of_bag = setdiff(np.hstack((X,y)), np.hstack((x_sampled, y_sampled)))
+
         x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
         clf.fit(x_resampled, y_resampled)
         return clf
@@ -42,10 +50,26 @@ class SOUPBagging(BaggingClassifier):
         """
         self.classes = np.unique(y)
 
-        pool = multiprocessing.Pool(self.num_core)
-        self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
-        pool.close()
-        pool.join()
+        clf = self.classifiers[0]
+        x_sampled, y_sampled = resample(X, y, stratify=y)
+        out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
+        x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
+        class_quantities = Counter(y_out)
+
+        x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
+        clf.fit(x_resampled, y_resampled)
+
+        result = clf.predict_proba(x_out)
+
+        class_sum_prob = np.sum(result, axis=0) + 0.001
+        expected_sum_prob = np.array([class_quantities[i] for i in range(len(class_quantities))])
+        global_weights = expected_sum_prob/class_sum_prob
+
+
+        # pool = multiprocessing.Pool(self.num_core)
+        # self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
+        # pool.close()
+        # pool.join()
 
     def predict(self, X, strategy: str = 'average', maj_int_min: dict = None):
         """
@@ -114,12 +138,10 @@ if __name__ == '__main__':
     dataset = load_datasets()['new_ecoli']
 
     X, y = dataset.data, dataset.target
-    print(X[:5])
-    print(y[:5])
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
     clf = KNeighborsClassifier()
-    vote_classifier = SOUPBagging(clf, n_classifiers=50)
+    vote_classifier = SOUPBagging(clf, n_classifiers=1)
     vote_classifier.fit(X_train, y_train)
     y_pred = vote_classifier.predict(X_test)
-    geometric_mean_score(y_test, y_pred, correction=0.001)
+    print(geometric_mean_score(y_test, y_pred, correction=0.001))
