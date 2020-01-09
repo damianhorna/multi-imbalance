@@ -8,6 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
 from multi_imbalance.resampling.SOUP import SOUP
 from multi_imbalance.utils.array_util import setdiff
+from cvxpy import *
 
 np.random.seed(0)
 
@@ -63,8 +64,33 @@ class SOUPBagging(BaggingClassifier):
 
         class_sum_prob = np.sum(result, axis=0) + 0.001
         expected_sum_prob = np.array([class_quantities[i] for i in range(len(class_quantities))])
-        global_weights = expected_sum_prob/class_sum_prob
+        global_weights = expected_sum_prob / class_sum_prob
 
+        result = clf.predict_proba(x_out)
+
+        cls_var = [Variable(name=f'w_{str(i)}', nonneg=True) for i in range(len(class_quantities))]
+        epsilons, constraints = list(), list()
+        constraints.append(sum(cls_var) == 1)
+
+        for i in range(result.shape[0]):
+            expected = y_out[i]
+            for class_id in range(result.shape[1]):
+                if class_id != expected:
+                    if result[i, class_id] != 0:
+                        eps = Variable(name=f'eps_{str(i)}_{str(class_id)}', nonneg=True)
+                        constraints.append(result[i, expected] * cls_var[expected] - result[i, class_id] * cls_var[class_id] + eps >= 0)
+                        # epsilons.append((1 - class_quantities[expected] / len(y_out)) * eps)
+                        epsilons.append((class_quantities[expected] / len(y_out)) * eps)
+                        # epsilons.append(eps)
+
+        obj = Minimize(sum(epsilons))
+        problem = Problem(obj, constraints)
+        problem.solve(verbose=True)
+        if problem.status not in ["infeasible", "unbounded"]:
+            # Otherwise, problem.value is inf or -inf, respectively.
+            print("Optimal value: %s" % problem.value)
+        for variable in problem.variables():
+            print("Variable %s: value %s" % (variable.name(), variable.value))
 
         # pool = multiprocessing.Pool(self.num_core)
         # self.classifiers = pool.map(fit_clf, [(clf, X, y) for clf in self.classifiers])
