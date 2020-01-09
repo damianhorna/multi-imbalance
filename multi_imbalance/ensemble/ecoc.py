@@ -296,7 +296,7 @@ class ECOC(BaseEstimator):
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, ECOC._allowed_classifiers))
         elif self.binary_classifier == 'CART':
-            decision_tree_classifier = DecisionTreeClassifier()  # by default pruning is disabled
+            decision_tree_classifier = DecisionTreeClassifier()
             return decision_tree_classifier
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
