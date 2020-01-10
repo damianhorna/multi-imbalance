@@ -118,12 +118,12 @@ class SOUP(TransformerMixin):
         return X, y
 
     def _calculate_goal_quantity(self, maj_int_min=None):
-        if maj_int_min is None:
-            maj_q = max(list(self.quantities.values()))
-            min_q = min(list(self.quantities.values()))
-        else:
-            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
-            maj_q = min(list(maj_classes.values()))
-            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
-            min_q = max(list(min_classes.values()))
+        # if maj_int_min is None:
+        #     maj_q = max(list(self.quantities.values()))
+        #     min_q = min(list(self.quantities.values()))
+        # else:
+        maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
+        maj_q = min(list(maj_classes.values()))
+        min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
+        min_q = max(list(min_classes.values()))
         return np.mean((min_q, maj_q), dtype=int)

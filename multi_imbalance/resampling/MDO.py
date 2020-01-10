@@ -44,8 +44,8 @@ class MDO(TransformerMixin):
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
         labels = list(set(y))
-        class_balances = fit_params.get('class_balances')
-        minority_classes = None if class_balances is None else class_balances['min']
+        class_balances = fit_params.get('maj_int_min')
+        minority_classes = class_balances['min']
 
         for class_label in labels:
             if minority_classes is not None and class_label not in minority_classes:

@@ -17,14 +17,15 @@ def fit_clf(args):
 
 
 class SOUPBagging(BaggingClassifier):
-    def __init__(self, classifier=None, n_classifiers=5):
+    def __init__(self, classifier=None, maj_int_min=None, n_classifiers=5):
         super().__init__()
         self.classifiers, self.clf_weights = list(), list()
+        self.maj_int_min = maj_int_min
         self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
         self.classes = None
         for _ in range(n_classifiers):
-            self.clf_weights.append(None)
+            self.clf_weights.append(1)
             if classifier is not None:
                 self.classifiers.append(deepcopy(classifier))
             else:
@@ -32,20 +33,24 @@ class SOUPBagging(BaggingClassifier):
 
     @staticmethod
     def fit_classifier(args):
-        clf, X, y, resampled = args
+        clf, X, y, resampled, maj_int_min = args
         x_sampled, y_sampled = resampled
 
         out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
-        x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled)
+        x_resampled, y_resampled = SOUP().fit_transform(x_sampled, y_sampled, maj_int_min=maj_int_min)
         clf.fit(x_resampled, y_resampled)
 
         result = clf.predict_proba(x_out)
         class_sum_prob = np.sum(result, axis=0) + 0.001
         class_quantities = Counter(y_out)
-        expected_sum_prob = np.array([class_quantities[i] for i in range(len(class_quantities))])
-        global_weights = expected_sum_prob / class_sum_prob
+        expected_sum_prob = np.array([class_quantities[i] for i in range(len(Counter(y)))])
+        try:
+            global_weights = expected_sum_prob / class_sum_prob
+        except Exception:
+            global_weights = np.ones(shape=len(Counter(y)))
+            print(f'Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}')
         return clf, global_weights
 
     def fit(self, X, y):
@@ -56,11 +61,12 @@ class SOUPBagging(BaggingClassifier):
         :return: self object
         """
         self.classes = np.unique(y)
+
         pool = multiprocessing.Pool(self.num_core)
-        results = pool.map(fit_clf, [(clf, X, y, resample(X, y, stratify=y)) for clf in self.classifiers])
+        results = pool.map(fit_clf,
+                           [(clf, X, y, resample(X, y, stratify=y), self.maj_int_min) for clf in self.classifiers])
         pool.close()
         pool.join()
-
         for i, (clf, weights) in enumerate(results):
             self.classifiers[i] = clf
             self.clf_weights[i] = weights
@@ -103,7 +109,7 @@ class SOUPBagging(BaggingClassifier):
             assert -1 not in p
         elif strategy == 'global':
             for i, weight in enumerate(self.clf_weights):
-                weights_sum[i] *=  weight
+                weights_sum[i] *= weight
             p = np.sum(weights_sum, axis=0)
         else:
             raise KeyError(f'Incorrect strategy param: ${strategy}')
@@ -127,4 +133,3 @@ class SOUPBagging(BaggingClassifier):
             results[i] = clf.predict_proba(X)
 
         return results
-

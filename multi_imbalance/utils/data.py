@@ -1,6 +1,6 @@
 import glob
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 import numpy as np
 import pandas as pd
@@ -36,7 +36,7 @@ def get_project_root() -> Path:
     return Path(__file__).parent.parent.parent
 
 
-def preprocess_dataset(path):
+def preprocess_dataset(path, return_cat_length=False):
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -44,8 +44,6 @@ def preprocess_dataset(path):
     y = df.pop(df.columns[y_index])
 
     le = LabelEncoder()
-    scaler = StandardScaler()
-
     y = le.fit_transform(y)
 
     categorical_feature_mask = df.dtypes == object
@@ -60,26 +58,29 @@ def preprocess_dataset(path):
     df[categorical_cols] = df.filter(categorical_cols).fillna(mode)
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
-    if len(non_categorical_cols) >= 1:
-        df[non_categorical_cols] = scaler.fit_transform(df[non_categorical_cols])
-
     X = pd.get_dummies(df, columns=categorical_cols)
-    return X.to_numpy(), y
+    if return_cat_length:
+        return X.to_numpy(), y, len(non_categorical_cols)
+    else:
+        return X.to_numpy(), y
 
 
-def load_arff_datasets():
+def load_arff_datasets(return_cat_length=False):
     dataset_paths = glob.glob(f'{get_project_root()}/data/arff/*')
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
         dataset_file = path.split('/')[-1]
         dataset_name = dataset_file.split('.')[0]
-        X, y = preprocess_dataset(path)
-        datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
+        if return_cat_length:
+            X, y, cat_length = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
+        else:
+            X, y = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
 
 
 if __name__ == '__main__':
-    datasets = load_arff_datasets()
-    x=5
+    datasets = load_arff_datasets(return_cat_length=True)
