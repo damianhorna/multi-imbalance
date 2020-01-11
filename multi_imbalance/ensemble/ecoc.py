@@ -13,7 +13,7 @@ from multi_imbalance.resampling.GlobalCS import GlobalCS
 from multi_imbalance.resampling.SOUP import SOUP
 
 
-class ECOC():
+class ECOC:
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
@@ -296,7 +296,7 @@ class ECOC():
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, ECOC._allowed_classifiers))
         elif self.binary_classifier == 'tree':
-            decision_tree_classifier = DecisionTreeClassifier()
+            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
             return decision_tree_classifier
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
