@@ -23,7 +23,7 @@ class ECOC():
 
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
     _allowed_oversampling = [None, 'globalCS', 'SMOTE', 'SOUP']
-    _allowed_classifiers = ['CART', 'NB', 'KNN']
+    _allowed_classifiers = ['tree', 'NB', 'KNN']
     _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
     def __init__(self, binary_classifier='KNN', preprocessing='SOUP', encoding='OVO', n_neighbors=3,
@@ -32,14 +32,15 @@ class ECOC():
         Parameters
         ----------
         binary_classifier: binary classifier used by the algorithm. Possible classifiers:
-        * 'CART': Decision Tree Classifier,
+        * 'tree': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
 
         preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
-        * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
+        * 'globalCS' : random oversampling - randomly chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
+        * 'SOUP' : Similarity Oversampling Undersampling Preprocessing
 
         encoding : algorithm for encoding classes. Possible encodings:
         * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
@@ -285,7 +286,7 @@ class ECOC():
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
         elif self.preprocessing == 'SMOTE':
-            return self._smote_oversample_if_possible_random_otherwise(X, y)
+            return self._smote_oversample(X, y)
         elif self.preprocessing == 'SOUP':
             soup = SOUP()
             return soup.fit_transform(X, y)
@@ -294,7 +295,7 @@ class ECOC():
         if self.binary_classifier not in ECOC._allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, ECOC._allowed_classifiers))
-        elif self.binary_classifier == 'CART':
+        elif self.binary_classifier == 'tree':
             decision_tree_classifier = DecisionTreeClassifier()
             return decision_tree_classifier
         elif self.binary_classifier == 'NB':
@@ -304,14 +305,14 @@ class ECOC():
             knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
             return knn
 
-    def _smote_oversample_if_possible_random_otherwise(self, X, y):
-        if min(np.unique(y, return_counts=True)[1]) < 2:
-            return GlobalCS().fit_transform(X, y)
-
-        k_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
-        smote = SMOTE(k_neighbors=k_neighbors)
-        smote.fit(X, y)
+    def _smote_oversample(self, X, y):
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
+        if n_neighbors == 0:
+            raise ValueError(
+                'In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class')
+        smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
+
 
     def _calc_weights(self, X_for_weights, y_for_weights):
         if self.weights not in ECOC._allowed_weights:
