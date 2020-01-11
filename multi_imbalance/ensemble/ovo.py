@@ -120,7 +120,7 @@ class OVO:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, OVO._allowed_classifiers))
         elif self.binary_classifier == 'tree':
-            decision_tree_classifier = DecisionTreeClassifier()
+            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
             return decision_tree_classifier
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
