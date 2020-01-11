@@ -152,12 +152,11 @@ class OVO:
             return soup.fit_transform(X, y)
 
     def _smote_oversample_if_possible_random_otherwise(self, X, y):
-        if min(np.unique(y, return_counts=True)[1]) < 2:
-            return GlobalCS().fit_transform(X, y)
-
-        n_neighbors = 3 if min(np.unique(y, return_counts=True)[1]) > 3 else 1
-        smote = SMOTE(k_neighbors=n_neighbors)
-        smote.fit(X, y)
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
+        if n_neighbors == 0:
+            raise ValueError(
+                'In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class')
+        smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
     def should_perform_oversampling(self, first_class, second_class):
