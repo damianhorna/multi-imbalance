@@ -19,14 +19,14 @@ y = np.array([1, 1, 1, 1, 1, 2, 2, 2, 3, 3])
 
 
 def test_fit_predict():
-    clf = ovo.OVO()
+    clf = ovo.OVO(preprocessing=None)
     clf.fit(X[:-1], y[:-1])
     predicted = clf.predict(X[-1].reshape(1, -1))
     assert predicted in (1, 2, 3)
 
 
 def test_binary_classifiers():
-    clf = ovo.OVO()
+    clf = ovo.OVO(preprocessing=None)
     clf.fit(X[:-1], y[:-1])
     classifiers = clf._binary_classifiers
 
