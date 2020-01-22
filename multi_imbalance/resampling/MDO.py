@@ -16,7 +16,7 @@ class MDO(TransformerMixin):
 
     """
 
-    def __init__(self, k=9, k1_frac=.0, seed=0, prop=1):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)

@@ -16,7 +16,7 @@ class SOUP(TransformerMixin):
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 5) -> None:
+    def __init__(self, k: int = 7) -> None:
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
 
