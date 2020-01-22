@@ -25,7 +25,6 @@ setuptools.setup(
         "seaborn>=0.9.0",
         "pytest>=5.1.2",
         "sklearn>=0.0",
-        "cvxpy",
         "imbalanced-learn",
     ]
 )
