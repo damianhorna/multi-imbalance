@@ -21,7 +21,7 @@ class MRBBagging(object):
 
     Methods:
     ----------
-    fit(x, y, k, learning_algorithm, undersampling=True)
+    fit(x, y)
         Build a MRBBagging ensemble of estimators from the training data.
 
     predict(data)
@@ -29,7 +29,7 @@ class MRBBagging(object):
     """
 
     def __init__(self, k, learning_algorithm, undersampling=True, feature_selection=False,
-                 all_random=False, half_features=True):
+                 random_fs=False, half_features=True):
         """
         Parameters
         ----------
@@ -37,7 +37,7 @@ class MRBBagging(object):
         :param learning_algorithm: classifier to be used
         :param undersampling: boolean value to determine if undersampling or oversampling should be performed
         :param feature_selection: boolean value to determine if feature selection should be performed
-        :param all_random: boolean value to determine if feature selection should be all random (if False, chi^2, F test
+        :param random_fs: boolean value to determine if feature selection should be all random (if False, chi^2, F test
         and random feature selection are performed)
         :param half_features: boolean value to determine if the number of features to be selected should be 50%
         (if False, it is set to the square root of the base number of features)
@@ -50,7 +50,7 @@ class MRBBagging(object):
         self.learning_algorithm = learning_algorithm
         self.undersampling = undersampling
         self.feature_selection = feature_selection
-        self.all_random = all_random
+        self.all_random = random_fs
         self.half_features = half_features
 
     def _group_data(self, x, y):
