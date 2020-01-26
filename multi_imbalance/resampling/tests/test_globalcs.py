@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 import numpy as np
 import pytest
 
-from multi_imbalance.resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.global_cs import GlobalCS
 
 X = np.array([
     [0.05837771, 0.57543339],
