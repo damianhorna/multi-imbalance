@@ -1,6 +1,6 @@
 import glob
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from IPython.core.display import display
 from scipy.io import arff
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.utils import Bunch
 
 
@@ -36,7 +36,7 @@ def get_project_root() -> Path:
     return Path(__file__).parent.parent.parent
 
 
-def preprocess_dataset(path):
+def preprocess_dataset(path, return_cat_length=False):
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -52,7 +52,6 @@ def preprocess_dataset(path):
     non_categorical_cols = df.columns[~categorical_feature_mask].tolist()
 
     df[categorical_cols] = df[categorical_cols].replace({b'?': np.NaN})
-
     mode = df.mode().iloc[0]
     mean = df.filter(non_categorical_cols).mean()
 
@@ -60,21 +59,28 @@ def preprocess_dataset(path):
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
     X = pd.get_dummies(df, columns=categorical_cols)
-    return X.to_numpy(), y
+    if return_cat_length:
+        return X.to_numpy(), y, len(non_categorical_cols)
+    else:
+        return X.to_numpy(), y
 
 
-def load_arff_datasets():
+def load_arff_datasets(return_cat_length=False):
     dataset_paths = glob.glob(f'{get_project_root()}/data/arff/*')
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
         dataset_file = path.split('/')[-1]
         dataset_name = dataset_file.split('.')[0]
-        X, y = preprocess_dataset(path)
-        datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
+        if return_cat_length:
+            X, y, cat_length = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
+        else:
+            X, y = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
 
 
 if __name__ == '__main__':
-    datasets = load_arff_datasets()
+    datasets = load_arff_datasets(return_cat_length=True)

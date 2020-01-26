@@ -4,10 +4,11 @@ from operator import itemgetter
 
 import numpy as np
 import sklearn
+from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 
-class SOUP:
+class SOUP(TransformerMixin):
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
     in each class. It also takes care of the similarity between classes, which means that it removes samples from
@@ -15,17 +16,18 @@ class SOUP:
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 9) -> None:
+    def __init__(self, k: int = 7) -> None:
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
 
-    def fit_transform(self, _X, _y, shuffle: bool = True):
+    def fit_transform(self, _X, _y, **fit_params):
         """
 
         Parameters
         ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
+        maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
 
         Returns
         -------
@@ -39,7 +41,8 @@ class SOUP:
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
 
         self.quantities = Counter(y)
-        self.goal_quantity = self._calculate_goal_quantity()
+        maj_int_min = fit_params.get('maj_int_min')
+        self.goal_quantity = self._calculate_goal_quantity(maj_int_min)
         dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity), key=itemgetter(1),
                              reverse=True)
         asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
@@ -51,12 +54,13 @@ class SOUP:
         for class_name, class_quantity in asc_min_cls:
             X, y = self._oversample(X, y, class_name)
 
-        if shuffle:
+        if fit_params.get('shuffle'):
             X, y = sklearn.utils.shuffle(X, y)
 
         return np.array(X), np.array(y)
 
     def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
+        self.quantities = Counter(y)
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
         neigh_clf = NearestNeighbors(n_neighbors=self.k + 1).fit(X)
@@ -76,7 +80,9 @@ class SOUP:
 
         for neigh_label, neigh_q in neighbours_quantities.items():
             similarity_between_classes = min(q[class_name], q[neigh_label]) / max(q[class_name], q[neigh_label])
-            safe_level += neigh_q * similarity_between_classes / self.k
+            safe_level += neigh_q * similarity_between_classes
+
+        safe_level /= self.k
 
         if safe_level > 1:
             raise ValueError(f'Safe level is bigger than 1: {safe_level}')
@@ -111,7 +117,13 @@ class SOUP:
 
         return X, y
 
-    def _calculate_goal_quantity(self):
-        max_q = max(list(self.quantities.values()))
-        min_q = min(list(self.quantities.values()))
-        return np.mean((min_q, max_q), dtype=int)
+    def _calculate_goal_quantity(self, maj_int_min=None):
+        if maj_int_min is None:
+            maj_q = max(list(self.quantities.values()))
+            min_q = min(list(self.quantities.values()))
+        else:
+            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
+            maj_q = min(list(maj_classes.values()))
+            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
+            min_q = max(list(min_classes.values()))
+        return np.mean((min_q, maj_q), dtype=int)

@@ -1,14 +1,14 @@
-from collections import Counter
-from copy import deepcopy
-
-from sklearn.decomposition import PCA
+from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
 from sklearn.utils import check_random_state
 
+from collections import Counter
+from sklearn.decomposition import PCA
 
-class MDO(object):
+
+class MDO(TransformerMixin):
     """
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
     Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
@@ -16,20 +16,22 @@ class MDO(object):
 
     """
 
-    def __init__(self, k=9, k1_frac=.0, seed=0):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
+        self.prop = prop
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y, **fit_params):
         """
 
         Parameters
         ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
+        class_balances list with minority class labels, if None every class will be oversampled
 
         Returns
         -------
@@ -41,14 +43,19 @@ class MDO(object):
         oversampled_X, oversampled_y = X.copy(), y.copy()
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
-
         labels = list(set(y))
+        class_balances = fit_params.get('maj_int_min')
+        minority_classes = class_balances['min']
+
         for class_label in labels:
+            if minority_classes is not None and class_label not in minority_classes:
+                continue
+
             chosen_minor_class_samples_to_oversample, weights = self._choose_samples(class_label)
             if len(chosen_minor_class_samples_to_oversample) == 0:
                 continue
 
-            oversampling_rate = goal_quantity - quantities[class_label]
+            oversampling_rate = int((goal_quantity - quantities[class_label]) * self.prop)
             if oversampling_rate > 0:
                 if len(chosen_minor_class_samples_to_oversample) == 1:
                     oversampled_set = np.repeat(chosen_minor_class_samples_to_oversample, oversampling_rate, axis=0)

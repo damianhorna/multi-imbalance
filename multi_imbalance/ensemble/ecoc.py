@@ -2,44 +2,45 @@ import os
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
-from sklearn.base import BaseEstimator
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
+from sklearn.model_selection import train_test_split
+from collections import Counter
+from collections import defaultdict
+from multi_imbalance.resampling.GlobalCS import GlobalCS
+from multi_imbalance.resampling.SOUP import SOUP
 
-from multi_imbalance.resampling.global_cs import GlobalCS
 
-
-class ECOC(BaseEstimator):
+class ECOC:
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
-    of dichotomy). Then in the learning phase each dichotomy is learned. In the decoding phase the class which is
-    closest to test instance is chosen.
+    of binary classifier). Then in the learning phase each binary classifier is learned. In the decoding phase the class
+    which is closest to test instance in the sense of Hamming distance is chosen.
     """
 
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
-    _allowed_oversampling = [None, 'globalCS', 'SMOTE']
-    _allowed_classifiers = ['CART', 'NB', 'KNN']
+    _allowed_oversampling = [None, 'globalCS', 'SMOTE', 'SOUP']
+    _allowed_classifiers = ['tree', 'NB', 'KNN']
+    _allowed_weights = [None, 'acc', 'avg_tpr_min']
 
-    def __init__(self, binary_classifier='CART', distance='hamming',
-                 oversample_binary=None, encoding='dense', n_neighbors=5):
+    def __init__(self, binary_classifier='KNN', preprocessing='SOUP', encoding='OVO', n_neighbors=3,
+                 weights=None):
         """
         Parameters
         ----------
-        binary_classifier: binary classifier used by dichotomies. Possible classifiers:
-        * 'CART': Decision Tree Classifier,
+        binary_classifier: binary classifier used by the algorithm. Possible classifiers:
+        * 'tree': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
 
-        distance: distance according to which the closest class is chosen. Possible distances:
-        * 'hamming': Hamming's distance
-
-        oversample_binary: method for oversampling between aggregated classes in each dichotomy. Possible methods:
+        preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
-        * 'globalCS' : random oversampling - random chosen instances of minority classes are duplicated
+        * 'globalCS' : random oversampling - randomly chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
+        * 'SOUP' : Similarity Oversampling Undersampling Preprocessing
 
         encoding : algorithm for encoding classes. Possible encodings:
         * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
@@ -53,31 +54,51 @@ class ECOC(BaseEstimator):
             Solving multiclass learning problems via error-correcting output codes.
             Journal of Artificial Intelligence Research, 2:263–286, 1995.
 
+        weights: strategy for dichotomies weighting. Possible values:
+        * None : no weighting applied
+        * 'acc' : accuracy-based weights
+        * 'avg_tpr_min' : weights based on average true positive rates of dichotomies
+
         """
         self.binary_classifier = binary_classifier
-        self.distance = distance
         self.encoding = encoding
-        self.oversample_binary = oversample_binary
+        self.preprocessing = preprocessing
         self.n_neighbors = n_neighbors
+        self.weights = weights
+
+        self.minority_classes = list()
 
         self._code_matrix = None
         self._binary_classifiers = []
         self._labels = None
+        self._dich_weights = None
 
-    def fit(self, X, y):
+    def fit(self, X, y, minority_classes=None):
         """
         Parameters
         ----------
         X: two dimensional numpy array (number of samples x number of features) with float numbers
         y: one dimensional numpy array with labels for rows in X
+        minority_classes: list of classes considered to be minority classes
         Returns
         -------
         self: object
         """
+        if minority_classes is not None:
+            self.minority_classes = minority_classes
+
+        if self.weights is not None:
+            X_train, X_for_weights, y_train, y_for_weights = train_test_split(X, y, test_size=0.2, stratify=y,
+                                                                              random_state=0)
+        else:
+            X_train, y_train = X, y
+
         self._labels = np.unique(y)
         self._gen_code_matrix()
         self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
-        self._learn_binary_classifiers(X, y)
+        self._learn_binary_classifiers(X_train, y_train)
+        if self.weights is not None:
+            self._calc_weights(X_for_weights, y_for_weights)
         return self
 
     def predict(self, X):
@@ -158,7 +179,7 @@ class ECOC(BaseEstimator):
                 code_matrix = tmp_code_matrix
         return code_matrix
 
-    def _encode_sparse(self, number_of_classes, random_state=0, number_of_code_generations=1000):
+    def _encode_sparse(self, number_of_classes, random_state=0, number_of_code_generations=10000):
         try:
             dirname = os.path.dirname(__file__)
             matrix = np.load(dirname + f'/cached_matrices/sparse_{number_of_classes}.npy')
@@ -244,29 +265,38 @@ class ECOC(BaseEstimator):
         return (~matrix.any(axis=0)).any()
 
     def _get_closest_class(self, row):
-        return self._labels[
-            np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
+        if self.weights is not None:
+            return self._labels[
+                np.argmin(
+                    [sum(np.multiply(self.dich_weights, (encoded_class - row) ** 2)) for encoded_class in
+                     self._code_matrix])]
+        else:
+            return self._labels[
+                np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
     def _oversample(self, X, y):
-        if self.oversample_binary not in ECOC._allowed_oversampling:
+        if self.preprocessing not in ECOC._allowed_oversampling:
             raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
                              % (self.encoding, ECOC._allowed_oversampling))
         elif np.unique(y).size == 1:
             return X, y
-        elif self.oversample_binary is None:
+        elif self.preprocessing is None:
             return X, y
-        elif self.oversample_binary == 'globalCS':
+        elif self.preprocessing == 'globalCS':
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
-        elif self.oversample_binary == 'SMOTE':
-            return self._smote_oversample_if_possible_random_otherwise(X, y)
+        elif self.preprocessing == 'SMOTE':
+            return self._smote_oversample(X, y)
+        elif self.preprocessing == 'SOUP':
+            soup = SOUP()
+            return soup.fit_transform(X, y)
 
     def _get_classifier(self):
         if self.binary_classifier not in ECOC._allowed_classifiers:
             raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
                              % (self.binary_classifier, ECOC._allowed_classifiers))
-        elif self.binary_classifier == 'CART':
-            decision_tree_classifier = DecisionTreeClassifier()  # by default pruning is disabled
+        elif self.binary_classifier == 'tree':
+            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
             return decision_tree_classifier
         elif self.binary_classifier == 'NB':
             gnb = GaussianNB()
@@ -275,11 +305,44 @@ class ECOC(BaseEstimator):
             knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
             return knn
 
-    def _smote_oversample_if_possible_random_otherwise(self, X, y):
-        if min(np.unique(y, return_counts=True)[1]) < 2:
-            return GlobalCS().fit_transform(X, y)
-
-        n_neighbors = min(5, min(np.unique(y, return_counts=True)[1]) - 1)
-        smote = SMOTE(k_neighbors=n_neighbors)
-        smote.fit(X, y)
+    def _smote_oversample(self, X, y):
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
+        if n_neighbors == 0:
+            raise ValueError(
+                'In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class')
+        smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
+
+
+    def _calc_weights(self, X_for_weights, y_for_weights):
+        if self.weights not in ECOC._allowed_weights:
+            raise ValueError("Unknown weighting strategy: %s, expected to be one of %s."
+                             % (self.weights, ECOC._allowed_weights))
+
+        dich_weights = np.ones(self._code_matrix.shape[1])
+        if self.weights == 'acc':
+            for clf_idx, clf in enumerate(self._binary_classifiers):
+                samples_no = 0
+                correct_no = 0
+                for sample, sample_label in zip(X_for_weights, y_for_weights):
+                    if self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx] != 0:
+                        samples_no += 1
+                        if clf.predict([sample])[0] == \
+                                self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
+                            correct_no += 1
+                if samples_no != 0:
+                    acc = correct_no / samples_no
+                    dich_weights[clf_idx] = -1 + 2 * acc
+        elif self.weights == 'avg_tpr_min':
+            min_counter = Counter([y for y in y_for_weights if y in self.minority_classes])
+
+            for clf_idx, clf in enumerate(self._binary_classifiers):
+                min_correct_pred = defaultdict(lambda: 0)
+                for sample, sample_label in zip(X_for_weights, y_for_weights):
+                    if clf.predict([sample])[0] == \
+                            self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
+                        min_correct_pred[sample_label] += 1
+                avg_tpr_min = np.mean([min_correct_pred[clazz] / min_counter[clazz] for clazz in min_counter.keys()])
+                dich_weights[clf_idx] = avg_tpr_min
+
+        self.dich_weights = dich_weights
