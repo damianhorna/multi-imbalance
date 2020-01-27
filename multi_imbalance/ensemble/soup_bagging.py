@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
-from multi_imbalance.resampling.SOUP import SOUP
+from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
 from cvxpy import *
 

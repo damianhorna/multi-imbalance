@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-import numpy
 from sklearn.tree import tree
 
 from multi_imbalance.ensemble.mrbbagging import MRBBagging
