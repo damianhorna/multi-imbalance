@@ -24,17 +24,17 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from collections import Counter
-from copy import deepcopy
-
-from sklearn.decomposition import PCA
+<pre><code class="python">from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
 from sklearn.utils import check_random_state
 
+from collections import Counter
+from sklearn.decomposition import PCA
 
-class MDO(object):
+
+class MDO(TransformerMixin):
     &#34;&#34;&#34;
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
     Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
@@ -42,20 +42,22 @@ class MDO(object):
 
     &#34;&#34;&#34;
 
-    def __init__(self, k=9, k1_frac=.0, seed=0):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
+        self.prop = prop
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y, **fit_params):
         &#34;&#34;&#34;
 
         Parameters
         ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
+        class_balances list with minority class labels, if None every class will be oversampled
 
         Returns
         -------
@@ -67,14 +69,19 @@ class MDO(object):
         oversampled_X, oversampled_y = X.copy(), y.copy()
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
-
         labels = list(set(y))
+        class_balances = fit_params.get(&#39;maj_int_min&#39;)
+        minority_classes = class_balances[&#39;min&#39;]
+
         for class_label in labels:
+            if minority_classes is not None and class_label not in minority_classes:
+                continue
+
             chosen_minor_class_samples_to_oversample, weights = self._choose_samples(class_label)
             if len(chosen_minor_class_samples_to_oversample) == 0:
                 continue
 
-            oversampling_rate = goal_quantity - quantities[class_label]
+            oversampling_rate = int((goal_quantity - quantities[class_label]) * self.prop)
             if oversampling_rate &gt; 0:
                 if len(chosen_minor_class_samples_to_oversample) == 1:
                     oversampled_set = np.repeat(chosen_minor_class_samples_to_oversample, oversampling_rate, axis=0)
@@ -164,7 +171,7 @@ class MDO(object):
 <dl>
 <dt id="multi_imbalance.resampling.mdo.MDO"><code class="flex name class">
 <span>class <span class="ident">MDO</span></span>
-<span>(</span><span>k=9, k1_frac=0.0, seed=0)</span>
+<span>(</span><span>k=5, k1_frac=0.4, seed=0, prop=1)</span>
 </code></dt>
 <dd>
 <section class="desc"><p>Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
@@ -174,7 +181,7 @@ with the same Mahalanbois distance from the centre of class to chosen sample.</p
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class MDO(object):
+<pre><code class="python">class MDO(TransformerMixin):
     &#34;&#34;&#34;
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
     Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
@@ -182,20 +189,22 @@ with the same Mahalanbois distance from the centre of class to chosen sample.</p
 
     &#34;&#34;&#34;
 
-    def __init__(self, k=9, k1_frac=.0, seed=0):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
+        self.prop = prop
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y, **fit_params):
         &#34;&#34;&#34;
 
         Parameters
         ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
+        class_balances list with minority class labels, if None every class will be oversampled
 
         Returns
         -------
@@ -207,14 +216,19 @@ with the same Mahalanbois distance from the centre of class to chosen sample.</p
         oversampled_X, oversampled_y = X.copy(), y.copy()
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
-
         labels = list(set(y))
+        class_balances = fit_params.get(&#39;maj_int_min&#39;)
+        minority_classes = class_balances[&#39;min&#39;]
+
         for class_label in labels:
+            if minority_classes is not None and class_label not in minority_classes:
+                continue
+
             chosen_minor_class_samples_to_oversample, weights = self._choose_samples(class_label)
             if len(chosen_minor_class_samples_to_oversample) == 0:
                 continue
 
-            oversampling_rate = goal_quantity - quantities[class_label]
+            oversampling_rate = int((goal_quantity - quantities[class_label]) * self.prop)
             if oversampling_rate &gt; 0:
                 if len(chosen_minor_class_samples_to_oversample) == 1:
                     oversampled_set = np.repeat(chosen_minor_class_samples_to_oversample, oversampling_rate, axis=0)
@@ -292,6 +306,10 @@ with the same Mahalanbois distance from the centre of class to chosen sample.</p
             quantity_with_same_label_in_neighbourhood.append(quantity_sample_neighbours_indices_with_same_label)
         return np.array(quantity_with_same_label_in_neighbourhood)</code></pre>
 </details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>sklearn.base.TransformerMixin</li>
+</ul>
 <h3>Methods</h3>
 <dl>
 <dt id="multi_imbalance.resampling.mdo.MDO.calculate_same_class_neighbour_quantities"><code class="name flex">
@@ -314,12 +332,13 @@ with the same Mahalanbois distance from the centre of class to chosen sample.</p
 </details>
 </dd>
 <dt id="multi_imbalance.resampling.mdo.MDO.fit_transform"><code class="name flex">
-<span>def <span class="ident">fit_transform</span></span>(<span>self, X, y)</span>
+<span>def <span class="ident">fit_transform</span></span>(<span>self, X, y, **fit_params)</span>
 </code></dt>
 <dd>
 <section class="desc"><h2 id="parameters">Parameters</h2>
 <p>X two dimensional numpy array (number of samples x number of features) with float numbers
-y one dimensional numpy array with labels for rows in X</p>
+y one dimensional numpy array with labels for rows in X
+class_balances list with minority class labels, if None every class will be oversampled</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>Resampled</code> <code>X</code> <code>and</code> <code>y</code></dt>
@@ -329,13 +348,14 @@ y one dimensional numpy array with labels for rows in X</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def fit_transform(self, X, y):
+<pre><code class="python">def fit_transform(self, X, y, **fit_params):
     &#34;&#34;&#34;
 
     Parameters
     ----------
     X two dimensional numpy array (number of samples x number of features) with float numbers
     y one dimensional numpy array with labels for rows in X
+    class_balances list with minority class labels, if None every class will be oversampled
 
     Returns
     -------
@@ -347,14 +367,19 @@ y one dimensional numpy array with labels for rows in X</p>
     oversampled_X, oversampled_y = X.copy(), y.copy()
     quantities = Counter(y)
     goal_quantity = int(max(list(quantities.values())))
-
     labels = list(set(y))
+    class_balances = fit_params.get(&#39;maj_int_min&#39;)
+    minority_classes = class_balances[&#39;min&#39;]
+
     for class_label in labels:
+        if minority_classes is not None and class_label not in minority_classes:
+            continue
+
         chosen_minor_class_samples_to_oversample, weights = self._choose_samples(class_label)
         if len(chosen_minor_class_samples_to_oversample) == 0:
             continue
 
-        oversampling_rate = goal_quantity - quantities[class_label]
+        oversampling_rate = int((goal_quantity - quantities[class_label]) * self.prop)
         if oversampling_rate &gt; 0:
             if len(chosen_minor_class_samples_to_oversample) == 1:
                 oversampled_set = np.repeat(chosen_minor_class_samples_to_oversample, oversampling_rate, axis=0)

@@ -26,7 +26,7 @@
 </summary>
 <pre><code class="python">import glob
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 import numpy as np
 import pandas as pd
@@ -34,7 +34,7 @@ from pathlib import Path
 
 from IPython.core.display import display
 from scipy.io import arff
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
 from sklearn.utils import Bunch
 
 
@@ -62,7 +62,7 @@ def get_project_root() -&gt; Path:
     return Path(__file__).parent.parent.parent
 
 
-def preprocess_dataset(path):
+def preprocess_dataset(path, return_cat_length=False):
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -78,7 +78,6 @@ def preprocess_dataset(path):
     non_categorical_cols = df.columns[~categorical_feature_mask].tolist()
 
     df[categorical_cols] = df[categorical_cols].replace({b&#39;?&#39;: np.NaN})
-
     mode = df.mode().iloc[0]
     mean = df.filter(non_categorical_cols).mean()
 
@@ -86,24 +85,31 @@ def preprocess_dataset(path):
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
     X = pd.get_dummies(df, columns=categorical_cols)
-    return X.to_numpy(), y
+    if return_cat_length:
+        return X.to_numpy(), y, len(non_categorical_cols)
+    else:
+        return X.to_numpy(), y
 
 
-def load_arff_datasets():
+def load_arff_datasets(return_cat_length=False):
     dataset_paths = glob.glob(f&#39;{get_project_root()}/data/arff/*&#39;)
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
         dataset_file = path.split(&#39;/&#39;)[-1]
         dataset_name = dataset_file.split(&#39;.&#39;)[0]
-        X, y = preprocess_dataset(path)
-        datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
+        if return_cat_length:
+            X, y, cat_length = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
+        else:
+            X, y = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
 
 
 if __name__ == &#39;__main__&#39;:
-    datasets = load_arff_datasets()</code></pre>
+    datasets = load_arff_datasets(return_cat_length=True)</code></pre>
 </details>
 </section>
 <section>
@@ -162,7 +168,7 @@ y one dimensional numpy array with labels</p>
 </details>
 </dd>
 <dt id="multi_imbalance.utils.data.load_arff_datasets"><code class="name flex">
-<span>def <span class="ident">load_arff_datasets</span></span>(<span>)</span>
+<span>def <span class="ident">load_arff_datasets</span></span>(<span>return_cat_length=False)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
@@ -170,21 +176,25 @@ y one dimensional numpy array with labels</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def load_arff_datasets():
+<pre><code class="python">def load_arff_datasets(return_cat_length=False):
     dataset_paths = glob.glob(f&#39;{get_project_root()}/data/arff/*&#39;)
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
         dataset_file = path.split(&#39;/&#39;)[-1]
         dataset_name = dataset_file.split(&#39;.&#39;)[0]
-        X, y = preprocess_dataset(path)
-        datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
+        if return_cat_length:
+            X, y, cat_length = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
+        else:
+            X, y = preprocess_dataset(path, return_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets</code></pre>
 </details>
 </dd>
 <dt id="multi_imbalance.utils.data.preprocess_dataset"><code class="name flex">
-<span>def <span class="ident">preprocess_dataset</span></span>(<span>path)</span>
+<span>def <span class="ident">preprocess_dataset</span></span>(<span>path, return_cat_length=False)</span>
 </code></dt>
 <dd>
 <section class="desc"></section>
@@ -192,7 +202,7 @@ y one dimensional numpy array with labels</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def preprocess_dataset(path):
+<pre><code class="python">def preprocess_dataset(path, return_cat_length=False):
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -208,7 +218,6 @@ y one dimensional numpy array with labels</p>
     non_categorical_cols = df.columns[~categorical_feature_mask].tolist()
 
     df[categorical_cols] = df[categorical_cols].replace({b&#39;?&#39;: np.NaN})
-
     mode = df.mode().iloc[0]
     mean = df.filter(non_categorical_cols).mean()
 
@@ -216,7 +225,10 @@ y one dimensional numpy array with labels</p>
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
     X = pd.get_dummies(df, columns=categorical_cols)
-    return X.to_numpy(), y</code></pre>
+    if return_cat_length:
+        return X.to_numpy(), y, len(non_categorical_cols)
+    else:
+        return X.to_numpy(), y</code></pre>
 </details>
 </dd>
 </dl>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.7.2" />
-<title>multi_imbalance.ensemble.test API documentation</title>
+<title>multi_imbalance.utils.min_int_maj API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -17,22 +17,37 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>multi_imbalance.ensemble.test</code></h1>
+<h1 class="title">Module <code>multi_imbalance.utils.min_int_maj</code></h1>
 </header>
 <section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">maj_int_min = {
+    &#34;1czysty-cut&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [2], &#39;min&#39;: [1]},
+    &#34;2delikatne-cut&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [2], &#39;min&#39;: [1]},
+    &#34;3mocniej-cut&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [2], &#39;min&#39;: [1]},
+    &#34;4delikatne-bezover-cut&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [2], &#39;min&#39;: [1]},
+    &#34;balance-scale&#34;: {&#39;maj&#39;: [2, 1], &#39;int&#39;: [], &#39;min&#39;: [0]},
+    &#34;cleveland&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [], &#39;min&#39;: [1, 2, 3, 4]},
+    &#34;cleveland_v2&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [], &#39;min&#39;: [1, 2, 3]},
+    &#34;car&#34;: {&#39;maj&#39;: [2, 0], &#39;int&#39;: [], &#39;min&#39;: [1, 3]},
+    &#34;cmc&#34;: {&#39;maj&#39;: [0, 2], &#39;int&#39;: [], &#39;min&#39;: [1]},
+    &#34;dermatology&#34;: {&#39;maj&#39;: [0, 2, 1, 4, 3], &#39;int&#39;: [], &#39;min&#39;: [5]},
+    &#34;flare&#34;: {&#39;maj&#39;: [1, 2, 3, 6], &#39;int&#39;: [], &#39;min&#39;: [4, 5]},
+    &#34;glass&#34;: {&#39;maj&#39;: [1, 0, 3], &#39;int&#39;: [], &#39;min&#39;: [5, 2, 4]},
+    &#34;hayes-roth&#34;: {&#39;maj&#39;: [0, 1], &#39;int&#39;: [], &#39;min&#39;: [2]},
+    &#34;new_ecoli&#34;: {&#39;maj&#39;: [0, 1], &#39;int&#39;: [], &#39;min&#39;: [4, 2, 3]},
+    &#34;new_led7digit&#34;: {&#39;maj&#39;: [3, 5, 0, 2], &#39;int&#39;: [], &#39;min&#39;: [4, 1]},
+    &#34;new_vehicle&#34;: {&#39;maj&#39;: [1], &#39;int&#39;: [], &#39;min&#39;: [0, 2]},
+    &#34;new_winequality-red&#34;: {&#39;maj&#39;: [0, 1], &#39;int&#39;: [], &#39;min&#39;: [2, 3]},
+    &#34;new_yeast&#34;: {&#39;maj&#39;: [0, 1, 8, 7], &#39;int&#39;: [], &#39;min&#39;: [6, 5, 4, 3, 2]},
+    &#34;thyroid-newthyroid&#34;: {&#39;maj&#39;: [0], &#39;int&#39;: [], &#39;min&#39;: [1, 2]}
+}</code></pre>
+</details>
 </section>
 <section>
-<h2 class="section-title" id="header-submodules">Sub-modules</h2>
-<dl>
-<dt><code class="name"><a title="multi_imbalance.ensemble.test.test_ecoc" href="test_ecoc.html">multi_imbalance.ensemble.test.test_ecoc</a></code></dt>
-<dd>
-<section class="desc"></section>
-</dd>
-<dt><code class="name"><a title="multi_imbalance.ensemble.test.test_ovo" href="test_ovo.html">multi_imbalance.ensemble.test.test_ovo</a></code></dt>
-<dd>
-<section class="desc"></section>
-</dd>
-</dl>
 </section>
 <section>
 </section>
@@ -49,13 +64,7 @@
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="multi_imbalance.ensemble" href="../index.html">multi_imbalance.ensemble</a></code></li>
-</ul>
-</li>
-<li><h3><a href="#header-submodules">Sub-modules</a></h3>
-<ul>
-<li><code><a title="multi_imbalance.ensemble.test.test_ecoc" href="test_ecoc.html">multi_imbalance.ensemble.test.test_ecoc</a></code></li>
-<li><code><a title="multi_imbalance.ensemble.test.test_ovo" href="test_ovo.html">multi_imbalance.ensemble.test.test_ovo</a></code></li>
+<li><code><a title="multi_imbalance.utils" href="index.html">multi_imbalance.utils</a></code></li>
 </ul>
 </li>
 </ul>

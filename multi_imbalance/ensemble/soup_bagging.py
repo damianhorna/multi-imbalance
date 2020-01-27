@@ -1,5 +1,4 @@
 import multiprocessing
-import threading
 from collections import Counter
 from copy import deepcopy
 
@@ -9,7 +8,6 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
 from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
-from cvxpy import *
 
 
 def fit_clf(args):

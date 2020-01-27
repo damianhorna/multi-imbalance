@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.7.2" />
-<title>multi_imbalance.ensemble.test.test_ecoc API documentation</title>
+<title>multi_imbalance.ensemble.tests.test_ecoc API documentation</title>
 <meta name="description" content="" />
 <link href='https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.0/normalize.min.css' rel='stylesheet'>
 <link href='https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/8.0.0/sanitize.min.css' rel='stylesheet'>
@@ -17,7 +17,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>multi_imbalance.ensemble.test.test_ecoc</code></h1>
+<h1 class="title">Module <code>multi_imbalance.ensemble.tests.test_ecoc</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -56,7 +56,7 @@ y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0])
 
 
 def test_random_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample_binary=&#39;globalCS&#39;)
+    ecoc_clf = ecoc.ECOC(preprocessing=&#39;globalCS&#39;)
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert len(X_oversampled) == len(y_oversampled)
@@ -65,7 +65,7 @@ def test_random_oversampling():
 
 
 def test_no_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample_binary=None)
+    ecoc_clf = ecoc.ECOC(preprocessing=None)
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert X.shape == X_oversampled.shape
@@ -75,7 +75,7 @@ def test_no_oversampling():
 @pytest.mark.parametrize(&#34;encoding_strategy&#34;, [&#39;dense&#39;, &#39;sparse&#39;, &#39;OVO&#39;, &#39;OVA&#39;, &#39;complete&#39;])
 @pytest.mark.parametrize(&#34;oversampling&#34;, [None, &#39;globalCS&#39;, &#39;SMOTE&#39;])
 def test_encoding(encoding_strategy, oversampling):
-    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, oversample_binary=oversampling)
+    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, preprocessing=oversampling)
     ecoc_clf.fit(X, y)
     matrix = ecoc_clf._code_matrix
 
@@ -101,7 +101,7 @@ def test_hamming_distance():
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="multi_imbalance.ensemble.test.test_ecoc.test_encoding"><code class="name flex">
+<dt id="multi_imbalance.ensemble.tests.test_ecoc.test_encoding"><code class="name flex">
 <span>def <span class="ident">test_encoding</span></span>(<span>encoding_strategy, oversampling)</span>
 </code></dt>
 <dd>
@@ -113,7 +113,7 @@ def test_hamming_distance():
 <pre><code class="python">@pytest.mark.parametrize(&#34;encoding_strategy&#34;, [&#39;dense&#39;, &#39;sparse&#39;, &#39;OVO&#39;, &#39;OVA&#39;, &#39;complete&#39;])
 @pytest.mark.parametrize(&#34;oversampling&#34;, [None, &#39;globalCS&#39;, &#39;SMOTE&#39;])
 def test_encoding(encoding_strategy, oversampling):
-    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, oversample_binary=oversampling)
+    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, preprocessing=oversampling)
     ecoc_clf.fit(X, y)
     matrix = ecoc_clf._code_matrix
 
@@ -124,7 +124,7 @@ def test_encoding(encoding_strategy, oversampling):
     assert bool((~matrix.any(axis=0)).any()) is False</code></pre>
 </details>
 </dd>
-<dt id="multi_imbalance.ensemble.test.test_ecoc.test_hamming_distance"><code class="name flex">
+<dt id="multi_imbalance.ensemble.tests.test_ecoc.test_hamming_distance"><code class="name flex">
 <span>def <span class="ident">test_hamming_distance</span></span>(<span>)</span>
 </code></dt>
 <dd>
@@ -141,7 +141,7 @@ def test_encoding(encoding_strategy, oversampling):
     assert distance == 5</code></pre>
 </details>
 </dd>
-<dt id="multi_imbalance.ensemble.test.test_ecoc.test_no_oversampling"><code class="name flex">
+<dt id="multi_imbalance.ensemble.tests.test_ecoc.test_no_oversampling"><code class="name flex">
 <span>def <span class="ident">test_no_oversampling</span></span>(<span>)</span>
 </code></dt>
 <dd>
@@ -151,14 +151,14 @@ def test_encoding(encoding_strategy, oversampling):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_no_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample_binary=None)
+    ecoc_clf = ecoc.ECOC(preprocessing=None)
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert X.shape == X_oversampled.shape
     assert y.shape == y_oversampled.shape</code></pre>
 </details>
 </dd>
-<dt id="multi_imbalance.ensemble.test.test_ecoc.test_random_oversampling"><code class="name flex">
+<dt id="multi_imbalance.ensemble.tests.test_ecoc.test_random_oversampling"><code class="name flex">
 <span>def <span class="ident">test_random_oversampling</span></span>(<span>)</span>
 </code></dt>
 <dd>
@@ -168,7 +168,7 @@ def test_encoding(encoding_strategy, oversampling):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def test_random_oversampling():
-    ecoc_clf = ecoc.ECOC(oversample_binary=&#39;globalCS&#39;)
+    ecoc_clf = ecoc.ECOC(preprocessing=&#39;globalCS&#39;)
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
 
     assert len(X_oversampled) == len(y_oversampled)
@@ -189,15 +189,15 @@ def test_encoding(encoding_strategy, oversampling):
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="multi_imbalance.ensemble.test" href="index.html">multi_imbalance.ensemble.test</a></code></li>
+<li><code><a title="multi_imbalance.ensemble.tests" href="index.html">multi_imbalance.ensemble.tests</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="multi_imbalance.ensemble.test.test_ecoc.test_encoding" href="#multi_imbalance.ensemble.test.test_ecoc.test_encoding">test_encoding</a></code></li>
-<li><code><a title="multi_imbalance.ensemble.test.test_ecoc.test_hamming_distance" href="#multi_imbalance.ensemble.test.test_ecoc.test_hamming_distance">test_hamming_distance</a></code></li>
-<li><code><a title="multi_imbalance.ensemble.test.test_ecoc.test_no_oversampling" href="#multi_imbalance.ensemble.test.test_ecoc.test_no_oversampling">test_no_oversampling</a></code></li>
-<li><code><a title="multi_imbalance.ensemble.test.test_ecoc.test_random_oversampling" href="#multi_imbalance.ensemble.test.test_ecoc.test_random_oversampling">test_random_oversampling</a></code></li>
+<li><code><a title="multi_imbalance.ensemble.tests.test_ecoc.test_encoding" href="#multi_imbalance.ensemble.tests.test_ecoc.test_encoding">test_encoding</a></code></li>
+<li><code><a title="multi_imbalance.ensemble.tests.test_ecoc.test_hamming_distance" href="#multi_imbalance.ensemble.tests.test_ecoc.test_hamming_distance">test_hamming_distance</a></code></li>
+<li><code><a title="multi_imbalance.ensemble.tests.test_ecoc.test_no_oversampling" href="#multi_imbalance.ensemble.tests.test_ecoc.test_no_oversampling">test_no_oversampling</a></code></li>
+<li><code><a title="multi_imbalance.ensemble.tests.test_ecoc.test_random_oversampling" href="#multi_imbalance.ensemble.tests.test_ecoc.test_random_oversampling">test_random_oversampling</a></code></li>
 </ul>
 </li>
 </ul>

@@ -26,15 +26,15 @@
 </summary>
 <pre><code class="python">import numpy as np
 from imblearn.over_sampling import SMOTE
-from sklearn.base import BaseEstimator
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from multi_imbalance.resampling.global_cs import GlobalCS
+from multi_imbalance.resampling.soup import SOUP
 
 
-class OVO(BaseEstimator):
+class OVO:
     &#34;&#34;&#34;
 
     OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -45,38 +45,38 @@ class OVO(BaseEstimator):
 
     &#34;&#34;&#34;
 
-    _allowed_classifiers = [&#39;CART&#39;, &#39;NB&#39;, &#39;KNN&#39;]
-    _allowed_voting_strategies = [&#39;max&#39;]
-    _allowed_oversampling = [None, &#39;globalCS&#39;, &#39;SMOTE&#39;]
-    _allowed_oversample_between = [&#39;all&#39;, &#39;maj-min&#39;]
+    _allowed_classifiers = [&#39;tree&#39;, &#39;NB&#39;, &#39;KNN&#39;]
+    _allowed_preprocessing = [None, &#39;globalCS&#39;, &#39;SMOTE&#39;, &#39;SOUP&#39;]
+    _allowed_preprocessing_between = [&#39;all&#39;, &#39;maj-min&#39;]
 
-    def __init__(self, voting_strategy=&#39;max&#39;, binary_classifier=&#39;CART&#39;, n_neighbors=5, oversample_binary=None,
-                 oversample_between=&#39;all&#39;):
+    def __init__(self, binary_classifier=&#39;tree&#39;, n_neighbors=3, preprocessing=&#39;SOUP&#39;, preprocessing_between=&#39;all&#39;):
         &#34;&#34;&#34;
         Parameters
         ----------
-        voting_strategy: aggregation model for deriving final output. Possible strategies:
-
-        * &#39;max&#39;: class with largest number of votes is chosen,
-
         binary_classifier: binary classifier. Possible classifiers:
 
-        * &#39;CART&#39;: Decision Tree Classifier,
+        * &#39;tree&#39;: Decision Tree Classifier,
         * &#39;KNN&#39;: K-Nearest Neighbors
         * &#39;NB&#39; : Naive Bayes
 
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier==&#39;KNN&#39;
 
-        oversample_between: types of classes between which oversampling should be applied. Possible values:
+        preprocessing: method for preprocessing of pairs of classes in the learning phase of ensemble.
+        Possible values:
+        * None: no preprocessing applied
+        * &#39;globalCS&#39;: oversampling with globalCS algorithm
+        * &#39;SMOTE&#39;: oversampling with SMOTE algorithm
+        * &#39;SOUP&#39;: oversampling and undersampling with SOUP algorithm
+
+        preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * &#39;all&#39; - oversampling between each pair of classes
         * &#39;maj-min&#39; - oversampling only between majority ad minority classes
 
         &#34;&#34;&#34;
-        self.voting_strategy = voting_strategy
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
-        self.oversample_binary = oversample_binary
-        self.oversample_between = oversample_between
+        self.preprocessing = preprocessing
+        self.oversample_between = preprocessing_between
         self._binary_classifiers = []
         self._labels = np.array([])
         self._minority_classes = list()
@@ -119,7 +119,7 @@ class OVO(BaseEstimator):
         predicted = list()
         for instance in X:
             binary_outputs_matrix = self._construct_binary_outputs_matrix(instance, num_of_classes)
-            predicted.append(self._perform_voting(binary_outputs_matrix))
+            predicted.append(self._perform_max_voting(binary_outputs_matrix))
 
         return np.array(predicted)
 
@@ -138,15 +138,15 @@ class OVO(BaseEstimator):
                 filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
                 X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
                 if self.should_perform_oversampling(first_class, second_class):
-                    X_filtered, y_filtered = self._oversample(X_filtered, y_filtered, strategy=self.oversample_binary)
+                    X_filtered, y_filtered = self._oversample(X_filtered, y_filtered)
                 self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
     def _get_classifier(self):
         if self.binary_classifier not in OVO._allowed_classifiers:
             raise ValueError(&#34;Unknown binary classifier: %s, expected to be one of %s.&#34;
                              % (self.binary_classifier, OVO._allowed_classifiers))
-        elif self.binary_classifier == &#39;CART&#39;:
-            decision_tree_classifier = DecisionTreeClassifier()
+        elif self.binary_classifier == &#39;tree&#39;:
+            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
             return decision_tree_classifier
         elif self.binary_classifier == &#39;NB&#39;:
             gnb = GaussianNB()
@@ -155,13 +155,6 @@ class OVO(BaseEstimator):
             knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
             return knn
 
-    def _perform_voting(self, binary_outputs_matrix):
-        if self.voting_strategy not in OVO._allowed_voting_strategies:
-            raise ValueError(&#34;Unknown voting strategy: %s, expected to be one of %s.&#34;
-                             % (self.voting_strategy, OVO._allowed_voting_strategies))
-        elif self.voting_strategy == &#39;max&#39;:
-            return self._perform_max_voting(binary_outputs_matrix)
-
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
         for clf_1 in range(len(binary_outputs_matrix)):
@@ -169,31 +162,33 @@ class OVO(BaseEstimator):
                 scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
         return self._labels[np.argmax(scores)]
 
-    def _oversample(self, X, y, strategy=None):
-        if strategy not in OVO._allowed_oversampling:
+    def _oversample(self, X, y):
+        if self.preprocessing not in OVO._allowed_preprocessing:
             raise ValueError(&#34;Unknown matrix generation encoding: %s, expected to be one of %s.&#34;
-                             % (strategy, OVO._allowed_oversampling))
-        elif strategy is None:
+                             % (self.preprocessing, OVO._allowed_preprocessing))
+        elif self.preprocessing is None:
             return X, y
-        elif strategy == &#39;globalCS&#39;:
+        elif self.preprocessing == &#39;globalCS&#39;:
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
-        elif strategy == &#39;SMOTE&#39;:
+        elif self.preprocessing == &#39;SMOTE&#39;:
             return self._smote_oversample_if_possible_random_otherwise(X, y)
+        elif self.preprocessing == &#39;SOUP&#39;:
+            soup = SOUP()
+            return soup.fit_transform(X, y)
 
     def _smote_oversample_if_possible_random_otherwise(self, X, y):
-        if min(np.unique(y, return_counts=True)[1]) &lt; 2:
-            return GlobalCS().fit_transform(X, y)
-
-        n_neighbors = 3 if min(np.unique(y, return_counts=True)[1]) &gt; 3 else 1
-        smote = SMOTE(k_neighbors=n_neighbors)
-        smote.fit(X, y)
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
+        if n_neighbors == 0:
+            raise ValueError(
+                &#39;In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class&#39;)
+        smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
     def should_perform_oversampling(self, first_class, second_class):
-        if self.oversample_between not in OVO._allowed_oversample_between:
+        if self.oversample_between not in OVO._allowed_preprocessing_between:
             raise ValueError(&#34;Unknown strategy for oversampling: %s, expected to be one of %s.&#34;
-                             % (self.oversample_between, OVO._allowed_oversample_between))
+                             % (self.oversample_between, OVO._allowed_preprocessing_between))
         elif self.oversample_between == &#39;all&#39;:
             return True
         elif self.oversample_between == &#39;maj-min&#39;:
@@ -212,7 +207,7 @@ class OVO(BaseEstimator):
 <dl>
 <dt id="multi_imbalance.ensemble.ovo.OVO"><code class="flex name class">
 <span>class <span class="ident">OVO</span></span>
-<span>(</span><span>voting_strategy='max', binary_classifier='CART', n_neighbors=5, oversample_binary=None, oversample_between='all')</span>
+<span>(</span><span>binary_classifier='tree', n_neighbors=3, preprocessing='SOUP', preprocessing_between='all')</span>
 </code></dt>
 <dd>
 <section class="desc"><p>OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -222,25 +217,26 @@ prediction phase each classifier decides between these two classes. Results are 
 derived depending on chosen aggregation model.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>voting_strategy</code></strong> :&ensp;<code>aggregation</code> <code>model</code> <code>for</code> <code>deriving</code> <code>final</code> <code>output.</code> <code>Possible</code> <code>strategies</code>:</dt>
-<dd>&nbsp;</dd>
-</dl>
-<ul>
-<li>'max': class with largest number of votes is chosen,</li>
-</ul>
-<dl>
 <dt><strong><code>binary_classifier</code></strong> :&ensp;<code>binary</code> <code>classifier.</code> <code>Possible</code> <code>classifiers</code>:</dt>
 <dd>&nbsp;</dd>
 </dl>
 <ul>
-<li>'CART': Decision Tree Classifier,</li>
+<li>'tree': Decision Tree Classifier,</li>
 <li>'KNN': K-Nearest Neighbors</li>
 <li>'NB' : Naive Bayes</li>
 </ul>
 <dl>
 <dt><strong><code>n_neighbors</code></strong> :&ensp;<code>number</code> of <code>nearest</code> <code>neighbors</code> <code>in</code> <code>KNN</code>, <code>works</code> <code>only</code> <code>if</code> <code>binary_classifier</code>==<code>'KNN'</code></dt>
 <dd>&nbsp;</dd>
-<dt><strong><code>oversample_between</code></strong> :&ensp;<code>types</code> of <code>classes</code> <code>between</code> <code>which</code> <code>oversampling</code> <code>should</code> <code>be</code> <code>applied.</code> <code>Possible</code> <code>values</code>:</dt>
+</dl>
+<p>preprocessing: method for preprocessing of pairs of classes in the learning phase of ensemble.
+Possible values:
+* None: no preprocessing applied
+* 'globalCS': oversampling with globalCS algorithm
+* 'SMOTE': oversampling with SMOTE algorithm
+* 'SOUP': oversampling and undersampling with SOUP algorithm</p>
+<dl>
+<dt><strong><code>preprocessing_between</code></strong> :&ensp;<code>types</code> of <code>classes</code> <code>between</code> <code>which</code> <code>resampling</code> <code>should</code> <code>be</code> <code>applied.</code> <code>Possible</code> <code>values</code>:</dt>
 <dd>&nbsp;</dd>
 </dl>
 <ul>
@@ -251,7 +247,7 @@ derived depending on chosen aggregation model.</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class OVO(BaseEstimator):
+<pre><code class="python">class OVO:
     &#34;&#34;&#34;
 
     OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -262,38 +258,38 @@ derived depending on chosen aggregation model.</p>
 
     &#34;&#34;&#34;
 
-    _allowed_classifiers = [&#39;CART&#39;, &#39;NB&#39;, &#39;KNN&#39;]
-    _allowed_voting_strategies = [&#39;max&#39;]
-    _allowed_oversampling = [None, &#39;globalCS&#39;, &#39;SMOTE&#39;]
-    _allowed_oversample_between = [&#39;all&#39;, &#39;maj-min&#39;]
+    _allowed_classifiers = [&#39;tree&#39;, &#39;NB&#39;, &#39;KNN&#39;]
+    _allowed_preprocessing = [None, &#39;globalCS&#39;, &#39;SMOTE&#39;, &#39;SOUP&#39;]
+    _allowed_preprocessing_between = [&#39;all&#39;, &#39;maj-min&#39;]
 
-    def __init__(self, voting_strategy=&#39;max&#39;, binary_classifier=&#39;CART&#39;, n_neighbors=5, oversample_binary=None,
-                 oversample_between=&#39;all&#39;):
+    def __init__(self, binary_classifier=&#39;tree&#39;, n_neighbors=3, preprocessing=&#39;SOUP&#39;, preprocessing_between=&#39;all&#39;):
         &#34;&#34;&#34;
         Parameters
         ----------
-        voting_strategy: aggregation model for deriving final output. Possible strategies:
-
-        * &#39;max&#39;: class with largest number of votes is chosen,
-
         binary_classifier: binary classifier. Possible classifiers:
 
-        * &#39;CART&#39;: Decision Tree Classifier,
+        * &#39;tree&#39;: Decision Tree Classifier,
         * &#39;KNN&#39;: K-Nearest Neighbors
         * &#39;NB&#39; : Naive Bayes
 
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier==&#39;KNN&#39;
 
-        oversample_between: types of classes between which oversampling should be applied. Possible values:
+        preprocessing: method for preprocessing of pairs of classes in the learning phase of ensemble.
+        Possible values:
+        * None: no preprocessing applied
+        * &#39;globalCS&#39;: oversampling with globalCS algorithm
+        * &#39;SMOTE&#39;: oversampling with SMOTE algorithm
+        * &#39;SOUP&#39;: oversampling and undersampling with SOUP algorithm
+
+        preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * &#39;all&#39; - oversampling between each pair of classes
         * &#39;maj-min&#39; - oversampling only between majority ad minority classes
 
         &#34;&#34;&#34;
-        self.voting_strategy = voting_strategy
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
-        self.oversample_binary = oversample_binary
-        self.oversample_between = oversample_between
+        self.preprocessing = preprocessing
+        self.oversample_between = preprocessing_between
         self._binary_classifiers = []
         self._labels = np.array([])
         self._minority_classes = list()
@@ -336,7 +332,7 @@ derived depending on chosen aggregation model.</p>
         predicted = list()
         for instance in X:
             binary_outputs_matrix = self._construct_binary_outputs_matrix(instance, num_of_classes)
-            predicted.append(self._perform_voting(binary_outputs_matrix))
+            predicted.append(self._perform_max_voting(binary_outputs_matrix))
 
         return np.array(predicted)
 
@@ -355,15 +351,15 @@ derived depending on chosen aggregation model.</p>
                 filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
                 X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
                 if self.should_perform_oversampling(first_class, second_class):
-                    X_filtered, y_filtered = self._oversample(X_filtered, y_filtered, strategy=self.oversample_binary)
+                    X_filtered, y_filtered = self._oversample(X_filtered, y_filtered)
                 self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
     def _get_classifier(self):
         if self.binary_classifier not in OVO._allowed_classifiers:
             raise ValueError(&#34;Unknown binary classifier: %s, expected to be one of %s.&#34;
                              % (self.binary_classifier, OVO._allowed_classifiers))
-        elif self.binary_classifier == &#39;CART&#39;:
-            decision_tree_classifier = DecisionTreeClassifier()
+        elif self.binary_classifier == &#39;tree&#39;:
+            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
             return decision_tree_classifier
         elif self.binary_classifier == &#39;NB&#39;:
             gnb = GaussianNB()
@@ -372,13 +368,6 @@ derived depending on chosen aggregation model.</p>
             knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
             return knn
 
-    def _perform_voting(self, binary_outputs_matrix):
-        if self.voting_strategy not in OVO._allowed_voting_strategies:
-            raise ValueError(&#34;Unknown voting strategy: %s, expected to be one of %s.&#34;
-                             % (self.voting_strategy, OVO._allowed_voting_strategies))
-        elif self.voting_strategy == &#39;max&#39;:
-            return self._perform_max_voting(binary_outputs_matrix)
-
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
         for clf_1 in range(len(binary_outputs_matrix)):
@@ -386,41 +375,39 @@ derived depending on chosen aggregation model.</p>
                 scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
         return self._labels[np.argmax(scores)]
 
-    def _oversample(self, X, y, strategy=None):
-        if strategy not in OVO._allowed_oversampling:
+    def _oversample(self, X, y):
+        if self.preprocessing not in OVO._allowed_preprocessing:
             raise ValueError(&#34;Unknown matrix generation encoding: %s, expected to be one of %s.&#34;
-                             % (strategy, OVO._allowed_oversampling))
-        elif strategy is None:
+                             % (self.preprocessing, OVO._allowed_preprocessing))
+        elif self.preprocessing is None:
             return X, y
-        elif strategy == &#39;globalCS&#39;:
+        elif self.preprocessing == &#39;globalCS&#39;:
             gcs = GlobalCS()
             return gcs.fit_transform(X, y)
-        elif strategy == &#39;SMOTE&#39;:
+        elif self.preprocessing == &#39;SMOTE&#39;:
             return self._smote_oversample_if_possible_random_otherwise(X, y)
+        elif self.preprocessing == &#39;SOUP&#39;:
+            soup = SOUP()
+            return soup.fit_transform(X, y)
 
     def _smote_oversample_if_possible_random_otherwise(self, X, y):
-        if min(np.unique(y, return_counts=True)[1]) &lt; 2:
-            return GlobalCS().fit_transform(X, y)
-
-        n_neighbors = 3 if min(np.unique(y, return_counts=True)[1]) &gt; 3 else 1
-        smote = SMOTE(k_neighbors=n_neighbors)
-        smote.fit(X, y)
+        n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
+        if n_neighbors == 0:
+            raise ValueError(
+                &#39;In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class&#39;)
+        smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
     def should_perform_oversampling(self, first_class, second_class):
-        if self.oversample_between not in OVO._allowed_oversample_between:
+        if self.oversample_between not in OVO._allowed_preprocessing_between:
             raise ValueError(&#34;Unknown strategy for oversampling: %s, expected to be one of %s.&#34;
-                             % (self.oversample_between, OVO._allowed_oversample_between))
+                             % (self.oversample_between, OVO._allowed_preprocessing_between))
         elif self.oversample_between == &#39;all&#39;:
             return True
         elif self.oversample_between == &#39;maj-min&#39;:
             return (first_class in self._minority_classes and second_class not in self._minority_classes) or \
                    (second_class in self._minority_classes and first_class not in self._minority_classes)</code></pre>
 </details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li>sklearn.base.BaseEstimator</li>
-</ul>
 <h3>Methods</h3>
 <dl>
 <dt id="multi_imbalance.ensemble.ovo.OVO.fit"><code class="name flex">
@@ -502,7 +489,7 @@ derived depending on chosen aggregation model.</p>
     predicted = list()
     for instance in X:
         binary_outputs_matrix = self._construct_binary_outputs_matrix(instance, num_of_classes)
-        predicted.append(self._perform_voting(binary_outputs_matrix))
+        predicted.append(self._perform_max_voting(binary_outputs_matrix))
 
     return np.array(predicted)</code></pre>
 </details>
@@ -517,9 +504,9 @@ derived depending on chosen aggregation model.</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def should_perform_oversampling(self, first_class, second_class):
-    if self.oversample_between not in OVO._allowed_oversample_between:
+    if self.oversample_between not in OVO._allowed_preprocessing_between:
         raise ValueError(&#34;Unknown strategy for oversampling: %s, expected to be one of %s.&#34;
-                         % (self.oversample_between, OVO._allowed_oversample_between))
+                         % (self.oversample_between, OVO._allowed_preprocessing_between))
     elif self.oversample_between == &#39;all&#39;:
         return True
     elif self.oversample_between == &#39;maj-min&#39;:
