@@ -9,7 +9,6 @@ from sklearn.utils import check_random_state
 from sklearn.model_selection import train_test_split
 from collections import Counter
 from collections import defaultdict
-
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
 
