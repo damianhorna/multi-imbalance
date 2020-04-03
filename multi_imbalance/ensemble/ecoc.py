@@ -19,7 +19,8 @@ class ECOC:
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
     of binary classifier). Then in the learning phase each binary classifier is learned. In the decoding phase the class
     which is closest to test instance in the sense of Hamming distance is chosen.
-    """
+    """ggl
+
 
     _allowed_encodings = ['dense', 'sparse', 'complete', 'OVA', 'OVO']
     _allowed_oversampling = [None, 'globalCS', 'SMOTE', 'SOUP']
