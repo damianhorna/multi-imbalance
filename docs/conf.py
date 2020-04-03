@@ -16,7 +16,7 @@
 
 
 # -- Project information -----------------------------------------------------
-
+master_doc = 'index'
 project = 'multi-imbalance'
 copyright = '2020, Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński'
 author = 'Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński'
