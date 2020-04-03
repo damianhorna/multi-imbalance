@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/damian-horna/multi-imbalance.svg?branch=master)](https://travis-ci.org/damian-horna/multi-imbalance)
 [![Documentation Status](https://readthedocs.org/projects/multi-imbalance/badge/?version=latest)](https://multi-imbalance.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/multi-imbalance.svg)](https://badge.fury.io/py/multi-imbalance)
-[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/multi-imbalance)
 [![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
 
 # multi-imbalance
