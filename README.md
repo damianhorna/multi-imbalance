@@ -1,9 +1,8 @@
 [![Build Status](https://travis-ci.org/damian-horna/multi-imbalance.svg?branch=master)](https://travis-ci.org/damian-horna/multi-imbalance)
 [![Documentation Status](https://readthedocs.org/projects/multi-imbalance/badge/?version=latest)](https://multi-imbalance.readthedocs.io/en/latest/?badge=latest)
 # multi-imbalance
-
+Multi-class imbalance is a common problem occurring in real-world supervised classifications tasks. While there has already been some research on the specialized methods aiming to tackle that challenging problem, most of them still lack coherent Python implementation that is simple, intuitive and easy to use.
 multi-imbalance is a python package tackling the problem of multi-class imbalanced datasets in machine learning.
-
 ## Requirements
 Tha package has been tested under python 3.7. Relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
 
@@ -14,15 +13,15 @@ pip install multi-imbalance
 ```
 
 ## Implemented algorithms
-    
-1. SOUP, MDO
-2. ECOC
-3. Roughly Balanced Bagging
-4. SPIDER3 algorithm implementation for selective preprocessing of multi-class imbalanced data sets, according to article:
-
-    Wojciechowski, S., Wilk, S., Stefanowski, J.: An Algorithm for Selective Preprocessing
-    of Multi-class Imbalanced Data. Proceedings of the 10th International Conference
-    on Computer Recognition Systems CORES 2017
+Our package includes implementation of such algorithms, as: 
+* ECOC, 
+* OVO, 
+* MDO, 
+* GlobalCS, 
+* SOUP, 
+* SOUP Bagging, 
+* Multi-class Roughly Balanced Bagging
+* SPIDER3.
 
 ## Example usage
 ```python
@@ -43,5 +42,6 @@ clf_tree.fit(X_train_resampled, y_train_resampled)
 
 # make predictions
 y_pred = clf_tree.predict(X_test)
-
 ```
+
+For more examples please refer to https://multi-imbalance.readthedocs.io/en/latest/
