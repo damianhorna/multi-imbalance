@@ -8,7 +8,14 @@
 Multi-class imbalance is a common problem occurring in real-world supervised classifications tasks. While there has already been some research on the specialized methods aiming to tackle that challenging problem, most of them still lack coherent Python implementation that is simple, intuitive and easy to use.
 multi-imbalance is a python package tackling the problem of multi-class imbalanced datasets in machine learning.
 ## Requirements
-Tha package has been tested under python 3.7. Relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
+Tha package has been tested under python 3.6, 3.7 and 3.8. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
+Requirements include:
+* numpy>=1.17.0,
+* scikit-learn>=0.21.3,
+* pandas>=0.25.1,
+* seaborn>=0.9.0,
+* pytest>=5.1.2,
+* imbalanced-learn
 
 ## Installation
 Just type in
