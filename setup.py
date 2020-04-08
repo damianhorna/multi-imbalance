@@ -14,7 +14,6 @@ setuptools.setup(
     url="https://github.com/damian-horna/multi-imbalance",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Programming Language :: Python :: 3",
         'Intended Audience :: Developers',
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -28,9 +27,7 @@ setuptools.setup(
         "numpy>=1.17.0",
         "scikit-learn>=0.21.3",
         "pandas>=0.25.1",
-        "seaborn>=0.9.0",
         "pytest>=5.1.2",
-        "sklearn>=0.0",
-        "imbalanced-learn",
+        "imbalanced-learn>=0.6.1",
     ]
 )
