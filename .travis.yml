@@ -7,4 +7,5 @@ install:
 script:
   - pytest --cov=./
 after_success:
-  - codecov
+  - coverage
+  - bash <(curl -s https://codecov.io/bash)
