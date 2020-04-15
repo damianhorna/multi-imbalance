@@ -2,7 +2,6 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import sklearn
-from sklearn.neighbors import NearestNeighbors
 
 
 class GlobalCS(object):
