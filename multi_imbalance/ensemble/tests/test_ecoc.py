@@ -66,3 +66,30 @@ def test_hamming_distance():
     distance = ecoc.ECOC()._hamming_distance(v1, v2)
 
     assert distance == 5
+
+
+def test_with_own_classifier():
+    class DummyClassifier:
+        def fit(self, X, y):
+            pass
+
+        def predict(self, X):
+            return np.zeros(len(X))
+
+    dummy_clf = DummyClassifier()
+    ecoc_clf = ecoc.ECOC(binary_classifier=dummy_clf, preprocessing=None)
+    ecoc_clf.fit(X, y)
+    predicted = ecoc_clf.predict(np.array([[1.0, 2.0], [4.0, 5.5], [6.7, 8.8]]))
+    assert np.all(predicted == 0)
+
+
+def test_with_own_preprocessing():
+    class DummyResampler:
+        def fit_transform(self, X, y):
+            return np.concatenate((X, X), axis=0), np.concatenate((y, y), axis=None)
+
+    dummy_resampler = DummyResampler()
+    ecoc_clf = ecoc.ECOC(preprocessing=dummy_resampler)
+    X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
+    assert len(X_oversampled) == 2 * len(X)
+    assert len(y_oversampled) == 2 * len(y)
