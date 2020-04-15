@@ -48,3 +48,30 @@ def test_max_voting():
     clf._labels = labels
     voting_winner = clf._perform_max_voting(binary_outputs)
     assert voting_winner == 7
+
+
+def test_with_own_classifier():
+    class DummyClassifier:
+        def fit(self, X, y):
+            pass
+
+        def predict(self, X):
+            return np.ones(len(X))
+
+    dummy_clf = DummyClassifier()
+    ovo_clf = ovo.OVO(binary_classifier=dummy_clf, preprocessing=None)
+    ovo_clf.fit(X, y)
+    predicted = ovo_clf.predict(np.array([[1.0, 2.0], [4.0, 5.5], [6.7, 8.8]]))
+    assert np.all(predicted == 1)
+
+
+def test_with_own_preprocessing():
+    class DummyResampler:
+        def fit_transform(self, X, y):
+            return np.concatenate((X, X), axis=0), np.concatenate((y, y), axis=None)
+
+    dummy_resampler = DummyResampler()
+    ovo_clf = ovo.OVO(preprocessing=dummy_resampler)
+    X_oversampled, y_oversampled = ovo_clf._oversample(X, y)
+    assert len(X_oversampled) == 2 * len(X)
+    assert len(y_oversampled) == 2 * len(y)
