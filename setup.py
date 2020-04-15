@@ -29,5 +29,7 @@ setuptools.setup(
         "pandas>=0.25.1",
         "pytest>=5.1.2",
         "imbalanced-learn>=0.6.1",
+        "coverage-5.1",
+        "pytest-cov-2.8.1",
     ]
 )
