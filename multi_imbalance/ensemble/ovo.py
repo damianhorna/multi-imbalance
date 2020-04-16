@@ -148,7 +148,7 @@ class OVO:
 
         if isinstance(self.preprocessing, str):
             if self.preprocessing not in OVO._allowed_preprocessing:
-                raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
+                raise ValueError("Unknown preprocessing: %s, expected to be one of %s."
                                  % (self.preprocessing, OVO._allowed_preprocessing))
             elif np.unique(y).size == 1:
                 return X, y
