@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -35,12 +36,14 @@ class ECOC:
         * 'tree': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
+        * An instance of a class that implements ClassifierMixin
 
         preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
         * 'globalCS' : random oversampling - randomly chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
         * 'SOUP' : Similarity Oversampling Undersampling Preprocessing
+        * An instance of a class that implements TransformerMixin
 
         encoding : algorithm for encoding classes. Possible encodings:
         * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
@@ -315,7 +318,7 @@ class ECOC:
         else:
             if not hasattr(self.binary_classifier, 'fit') or not hasattr(self.binary_classifier, 'predict'):
                 raise ValueError("Your classifier must implement fit and predict methods")
-            return self.binary_classifier
+            return deepcopy(self.binary_classifier)
 
     def _smote_oversample(self, X, y):
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)

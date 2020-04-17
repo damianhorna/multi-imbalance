@@ -34,6 +34,7 @@ class OVO:
         * 'tree': Decision Tree Classifier,
         * 'KNN': K-Nearest Neighbors
         * 'NB' : Naive Bayes
+        * An instance of a class that implements ClassifierMixin
 
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
 
