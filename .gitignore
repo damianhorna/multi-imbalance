@@ -75,7 +75,4 @@ venv
 
 # Datasets
 data/extracted/
-
-# Docs
-docs/_build
-docs/source
+multi_imbalance/data/
