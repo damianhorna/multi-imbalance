@@ -41,6 +41,7 @@ class OVO:
         * 'globalCS': oversampling with globalCS algorithm
         * 'SMOTE': oversampling with SMOTE algorithm
         * 'SOUP': oversampling and undersampling with SOUP algorithm
+        * An instance of a class that implements TransformerMixin
 
         preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * 'all' - oversampling between each pair of classes
