@@ -23,10 +23,20 @@ X = np.array([
     [0.9063995770780813, 1.0248369545634513, 1.36911505163145],
     [0.3861789635773656, 0.5758917834278445, 0.910187724154228],
     [0.7165380621896438, 1.494299618627891, 0.521854931610239],
-    [1.6764775993219296, 0.15364096535456317, 1.371925603935502]
+    [1.3621939213912113, 0.387219837127391, 1.321376123618781],
+    [1.6764775993219296, 0.15364096535456317, 1.3219739817389],
+    [3.6764775993219296, 0.15364096535456317, 1.3789731273891],
+    [4.6764775993219296, 2.15364096535456317, 1.9830281123211],
+    [5.6764775993219296, 3.15364096535456317, 1.3213121322321],
+    [6.321312, 11.15364096535456317, 1.0998908320132],
+    [8.414132131, 2.15364096535456317, 5.0998908320132],
+    [10.6764775993219296, -2.15364096535456317, 3.0998908320132],
+    [4.6764775993219296, 0.15364096535456317, 2.0998908320132],
+    [-4.6764775993219296, -1.15364096535456317, 9.0998908320132],
+    [-6.6764775993219296, 11.15364096535456317, 5.0998908320132],
 ])
 
-y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0])
+y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0, 0, 1, 2, 3, 0, 1, 2, 3, 1, 2])
 
 
 def test_random_oversampling():
@@ -47,13 +57,29 @@ def test_no_oversampling():
 
 
 @pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse', 'OVO', 'OVA', 'complete'])
-@pytest.mark.parametrize("oversampling", [None, 'globalCS', 'SMOTE'])
+@pytest.mark.parametrize("oversampling", [None, 'globalCS', 'SMOTE', 'SOUP'])
 def test_encoding(encoding_strategy, oversampling):
     ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, preprocessing=oversampling)
     ecoc_clf.fit(X, y)
     matrix = ecoc_clf._code_matrix
 
     number_of_classes = len(np.unique(y))
+
+    assert matrix.shape[0] == number_of_classes
+    assert len(np.unique(matrix, axis=0)) == number_of_classes
+    assert bool((~matrix.any(axis=0)).any()) is False
+
+
+@pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse'])
+def test_dense_and_sparse_with_not_cached_matrices(encoding_strategy):
+    X1 = np.concatenate((X, 2 * X, 3 * X, 4 * X, 5 * X), axis=0)
+    y1 = np.concatenate((y + 4, y + 8, y + 12, y + 16, y + 20))
+
+    ecoc_clf = ecoc.ECOC(encoding=encoding_strategy)
+    ecoc_clf.fit(X1, y1)
+    matrix = ecoc_clf._code_matrix
+
+    number_of_classes = len(np.unique(y1))
 
     assert matrix.shape[0] == number_of_classes
     assert len(np.unique(matrix, axis=0)) == number_of_classes
@@ -93,3 +119,57 @@ def test_with_own_preprocessing():
     X_oversampled, y_oversampled = ecoc_clf._oversample(X, y)
     assert len(X_oversampled) == 2 * len(X)
     assert len(y_oversampled) == 2 * len(y)
+
+
+def test_unknown_classifier():
+    ecoc_clf = ecoc.ECOC(binary_classifier='DUMMY_CLASSIFIER', preprocessing=None)
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert 'DUMMY_CLASSIFIER' in str(e.value)
+
+
+def test_own_classifier_without_predict_and_fit():
+    class DummyClassifier:
+        def foo(self, X, y):
+            pass
+
+        def bar(self, X):
+            return np.zeros(len(X))
+
+    dummy_clf = DummyClassifier()
+    ecoc_clf = ecoc.ECOC(binary_classifier=dummy_clf, preprocessing=None)
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert 'predict' in str(e.value)
+    assert 'fit' in str(e.value)
+
+
+@pytest.mark.parametrize("classifier", ['tree', 'NB', 'KNN'])
+@pytest.mark.parametrize("weights", [None, 'acc', 'avg_tpr_min'])
+def test_predefined_classifiers_and_weighting_without_exceptions(classifier, weights):
+    ecoc_clf = ecoc.ECOC(binary_classifier=classifier, weights=weights)
+    ecoc_clf.fit(X, y)
+    predicted = ecoc_clf.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]]))
+    assert len(predicted) == 3
+
+
+def test_unknown_preprocessing():
+    ecoc_clf = ecoc.ECOC(preprocessing='DUMMY_OVERSAMPLING')
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert 'DUMMY_OVERSAMPLING' in str(e.value)
+
+
+def test_own_preprocessing_without_fit_transform():
+    class DummyOversampler:
+        def foo(self, X, y):
+            pass
+
+        def bar(self, X):
+            return np.zeros(len(X))
+
+    dummy_oversampler = DummyOversampler()
+    ecoc_clf = ecoc.ECOC(preprocessing=dummy_oversampler)
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert 'fit_transform' in str(e.value)

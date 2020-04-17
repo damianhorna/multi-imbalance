@@ -41,6 +41,7 @@ class OVO:
         * 'globalCS': oversampling with globalCS algorithm
         * 'SMOTE': oversampling with SMOTE algorithm
         * 'SOUP': oversampling and undersampling with SOUP algorithm
+        * An instance of a class that implements TransformerMixin
 
         preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * 'all' - oversampling between each pair of classes
@@ -148,7 +149,7 @@ class OVO:
 
         if isinstance(self.preprocessing, str):
             if self.preprocessing not in OVO._allowed_preprocessing:
-                raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
+                raise ValueError("Unknown preprocessing: %s, expected to be one of %s."
                                  % (self.preprocessing, OVO._allowed_preprocessing))
             elif np.unique(y).size == 1:
                 return X, y
