@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 from imblearn.over_sampling import SMOTE
 from sklearn.naive_bayes import GaussianNB
@@ -134,7 +136,7 @@ class OVO:
         else:
             if not hasattr(self.binary_classifier, 'fit') or not hasattr(self.binary_classifier, 'predict'):
                 raise ValueError("Your classifier must implement fit and predict methods")
-            return self.binary_classifier
+            return deepcopy(self.binary_classifier)
 
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
