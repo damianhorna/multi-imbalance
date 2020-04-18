@@ -35,7 +35,6 @@ release = '0.0.4'
 extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
-    "rinoh.frontend.sphinx",
 ]
 
 html_theme = "sphinx_rtd_theme"
