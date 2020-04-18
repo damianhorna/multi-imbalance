@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>multi_imbalance.utils package &mdash; multi-imbalance 0.0.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="License" href="../../license.html" />
+    <link rel="prev" title="multi_imbalance.resampling.tests package" href="multi_imbalance.resampling.tests.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> multi-imbalance
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Docstring</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">multi_imbalance</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="multi_imbalance.html">multi_imbalance package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="multi_imbalance.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.datasets.html">multi_imbalance.datasets package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.ensemble.html">multi_imbalance.ensemble package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.resampling.html">multi_imbalance.resampling package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">multi_imbalance.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="multi_imbalance.html#module-multi_imbalance">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">License</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html#contact">Contact</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">multi-imbalance</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">multi_imbalance</a> &raquo;</li>
+        
+          <li><a href="multi_imbalance.html">multi_imbalance package</a> &raquo;</li>
+        
+      <li>multi_imbalance.utils package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/source/docstring/multi_imbalance.utils.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="multi-imbalance-utils-package">
+<h1>multi_imbalance.utils package<a class="headerlink" href="#multi-imbalance-utils-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-multi_imbalance.utils.array_util">
+<span id="multi-imbalance-utils-array-util-module"></span><h2>multi_imbalance.utils.array_util module<a class="headerlink" href="#module-multi_imbalance.utils.array_util" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="multi_imbalance.utils.array_util.contains">
+<code class="sig-prename descclassname">multi_imbalance.utils.array_util.</code><code class="sig-name descname">contains</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dataset</span></em>, <em class="sig-param"><span class="n">example</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.array_util.contains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns if dataset contains the example.
+:param dataset:
+:param example:
+:return: True or False depending on whether dataset contains the example.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.array_util.index_of">
+<code class="sig-prename descclassname">multi_imbalance.utils.array_util.</code><code class="sig-name descname">index_of</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr</span></em>, <em class="sig-param"><span class="n">example</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.array_util.index_of" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> – </p></li>
+<li><p><strong>example</strong> – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Index of learning exmaple in arr.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.array_util.intersect">
+<code class="sig-prename descclassname">multi_imbalance.utils.array_util.</code><code class="sig-name descname">intersect</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr1</span></em>, <em class="sig-param"><span class="n">arr2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.array_util.intersect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the intersection operation over two numpy arrays (not removing duplicates).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr1</strong> – Numpy array number 1.</p></li>
+<li><p><strong>arr2</strong> – Numpy array number 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The intersection of arr1 and arr2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.array_util.setdiff">
+<code class="sig-prename descclassname">multi_imbalance.utils.array_util.</code><code class="sig-name descname">setdiff</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr1</span></em>, <em class="sig-param"><span class="n">arr2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.array_util.setdiff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the difference over two numpy arrays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr1</strong> – Numpy array number 1.</p></li>
+<li><p><strong>arr2</strong> – Numpy array number 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result of the difference of arr1 and arr2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.array_util.union">
+<code class="sig-prename descclassname">multi_imbalance.utils.array_util.</code><code class="sig-name descname">union</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arr1</span></em>, <em class="sig-param"><span class="n">arr2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.array_util.union" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs the union over two numpy arrays
+(not removing duplicates, as it’s how the algorithm SPIDER3 actually works).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr1</strong> – Numpy array number 1.</p></li>
+<li><p><strong>arr2</strong> – Numpy array number 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The union of arr1 and arr2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.utils.data">
+<span id="multi-imbalance-utils-data-module"></span><h2>multi_imbalance.utils.data module<a class="headerlink" href="#module-multi_imbalance.utils.data" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="multi_imbalance.utils.data.construct_flat_2pc_df">
+<code class="sig-prename descclassname">multi_imbalance.utils.data.</code><code class="sig-name descname">construct_flat_2pc_df</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span> &#x2192; pandas.core.frame.DataFrame<a class="headerlink" href="#multi_imbalance.utils.data.construct_flat_2pc_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function takes two dimensional X and one dimensional y arrays, concatenates and returns them as data frame
+Parameters
+———-
+X two dimensional numpy array
+y one dimensional numpy array with labels
+——-
+Data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.data.get_project_root">
+<code class="sig-prename descclassname">multi_imbalance.utils.data.</code><code class="sig-name descname">get_project_root</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; pathlib.Path<a class="headerlink" href="#multi_imbalance.utils.data.get_project_root" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns project root folder.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.data.load_arff_datasets">
+<code class="sig-prename descclassname">multi_imbalance.utils.data.</code><code class="sig-name descname">load_arff_datasets</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">return_cat_length</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.data.load_arff_datasets" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.utils.data.preprocess_dataset">
+<code class="sig-prename descclassname">multi_imbalance.utils.data.</code><code class="sig-name descname">preprocess_dataset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em>, <em class="sig-param"><span class="n">return_cat_length</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.utils.data.preprocess_dataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.utils.min_int_maj">
+<span id="multi-imbalance-utils-min-int-maj-module"></span><h2>multi_imbalance.utils.min_int_maj module<a class="headerlink" href="#module-multi_imbalance.utils.min_int_maj" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-multi_imbalance.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-multi_imbalance.utils" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../license.html" class="btn btn-neutral float-right" title="License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="multi_imbalance.resampling.tests.html" class="btn btn-neutral float-left" title="multi_imbalance.resampling.tests package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

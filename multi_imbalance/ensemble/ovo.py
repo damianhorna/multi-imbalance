@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 from imblearn.over_sampling import SMOTE
 from sklearn.naive_bayes import GaussianNB
@@ -32,6 +34,7 @@ class OVO:
         * 'tree': Decision Tree Classifier,
         * 'KNN': K-Nearest Neighbors
         * 'NB' : Naive Bayes
+        * An instance of a class that implements ClassifierMixin
 
         n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
 
@@ -41,6 +44,7 @@ class OVO:
         * 'globalCS': oversampling with globalCS algorithm
         * 'SMOTE': oversampling with SMOTE algorithm
         * 'SOUP': oversampling and undersampling with SOUP algorithm
+        * An instance of a class that implements TransformerMixin
 
         preprocessing_between: types of classes between which resampling should be applied. Possible values:
         * 'all' - oversampling between each pair of classes
@@ -116,18 +120,24 @@ class OVO:
                 self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
     def _get_classifier(self):
-        if self.binary_classifier not in OVO._allowed_classifiers:
-            raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
-                             % (self.binary_classifier, OVO._allowed_classifiers))
-        elif self.binary_classifier == 'tree':
-            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
-            return decision_tree_classifier
-        elif self.binary_classifier == 'NB':
-            gnb = GaussianNB()
-            return gnb
-        elif self.binary_classifier == 'KNN':
-            knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
-            return knn
+        if isinstance(self.binary_classifier, str):
+            if self.binary_classifier not in OVO._allowed_classifiers:
+                raise ValueError(
+                    "Unknown binary classifier: %s, expected to be one of %s."
+                    % (self.binary_classifier, OVO._allowed_classifiers))
+            elif self.binary_classifier == 'tree':
+                decision_tree_classifier = DecisionTreeClassifier(random_state=42)
+                return decision_tree_classifier
+            elif self.binary_classifier == 'NB':
+                gnb = GaussianNB()
+                return gnb
+            elif self.binary_classifier == 'KNN':
+                knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
+                return knn
+        else:
+            if not hasattr(self.binary_classifier, 'fit') or not hasattr(self.binary_classifier, 'predict'):
+                raise ValueError("Your classifier must implement fit and predict methods")
+            return deepcopy(self.binary_classifier)
 
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
@@ -137,21 +147,29 @@ class OVO:
         return self._labels[np.argmax(scores)]
 
     def _oversample(self, X, y):
-        if self.preprocessing not in OVO._allowed_preprocessing:
-            raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (self.preprocessing, OVO._allowed_preprocessing))
-        elif self.preprocessing is None:
+        if self.preprocessing is None:
             return X, y
-        elif self.preprocessing == 'globalCS':
-            gcs = GlobalCS()
-            return gcs.fit_transform(X, y)
-        elif self.preprocessing == 'SMOTE':
-            return self._smote_oversample_if_possible_random_otherwise(X, y)
-        elif self.preprocessing == 'SOUP':
-            soup = SOUP()
-            return soup.fit_transform(X, y)
 
-    def _smote_oversample_if_possible_random_otherwise(self, X, y):
+        if isinstance(self.preprocessing, str):
+            if self.preprocessing not in OVO._allowed_preprocessing:
+                raise ValueError("Unknown preprocessing: %s, expected to be one of %s."
+                                 % (self.preprocessing, OVO._allowed_preprocessing))
+            elif np.unique(y).size == 1:
+                return X, y
+            elif self.preprocessing == 'globalCS':
+                gcs = GlobalCS()
+                return gcs.fit_transform(X, y)
+            elif self.preprocessing == 'SMOTE':
+                return self._smote_oversample(X, y)
+            elif self.preprocessing == 'SOUP':
+                soup = SOUP()
+                return soup.fit_transform(X, y)
+        else:
+            if not hasattr(self.preprocessing, 'fit_transform'):
+                raise ValueError("Your resampler must implement fit_transform method")
+            return self.preprocessing.fit_transform(X, y)
+
+    def _smote_oversample(self, X, y):
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         if n_neighbors == 0:
             raise ValueError(

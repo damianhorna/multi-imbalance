@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>multi_imbalance.ensemble package &mdash; multi-imbalance 0.0.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="multi_imbalance.ensemble.tests package" href="multi_imbalance.ensemble.tests.html" />
+    <link rel="prev" title="multi_imbalance.datasets.tests package" href="multi_imbalance.datasets.tests.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> multi-imbalance
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Docstring</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">multi_imbalance</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="multi_imbalance.html">multi_imbalance package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="multi_imbalance.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.datasets.html">multi_imbalance.datasets package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">multi_imbalance.ensemble package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.resampling.html">multi_imbalance.resampling package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="multi_imbalance.utils.html">multi_imbalance.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="multi_imbalance.html#module-multi_imbalance">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">License</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html#contact">Contact</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">multi-imbalance</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">multi_imbalance</a> &raquo;</li>
+        
+          <li><a href="multi_imbalance.html">multi_imbalance package</a> &raquo;</li>
+        
+      <li>multi_imbalance.ensemble package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/source/docstring/multi_imbalance.ensemble.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="multi-imbalance-ensemble-package">
+<h1>multi_imbalance.ensemble package<a class="headerlink" href="#multi-imbalance-ensemble-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="multi_imbalance.ensemble.tests.html">multi_imbalance.ensemble.tests package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="multi_imbalance.ensemble.tests.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multi_imbalance.ensemble.tests.html#module-multi_imbalance.ensemble.tests.test_ecoc">multi_imbalance.ensemble.tests.test_ecoc module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multi_imbalance.ensemble.tests.html#module-multi_imbalance.ensemble.tests.test_mrbbagging">multi_imbalance.ensemble.tests.test_mrbbagging module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multi_imbalance.ensemble.tests.html#module-multi_imbalance.ensemble.tests.test_ovo">multi_imbalance.ensemble.tests.test_ovo module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multi_imbalance.ensemble.tests.html#module-multi_imbalance.ensemble.tests">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-multi_imbalance.ensemble.ecoc">
+<span id="multi-imbalance-ensemble-ecoc-module"></span><h2>multi_imbalance.ensemble.ecoc module<a class="headerlink" href="#module-multi_imbalance.ensemble.ecoc" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="multi_imbalance.ensemble.ecoc.ECOC">
+<em class="property">class </em><code class="sig-prename descclassname">multi_imbalance.ensemble.ecoc.</code><code class="sig-name descname">ECOC</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">binary_classifier</span><span class="o">=</span><span class="default_value">'KNN'</span></em>, <em class="sig-param"><span class="n">preprocessing</span><span class="o">=</span><span class="default_value">'SOUP'</span></em>, <em class="sig-param"><span class="n">encoding</span><span class="o">=</span><span class="default_value">'OVO'</span></em>, <em class="sig-param"><span class="n">n_neighbors</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">weights</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ecoc.ECOC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
+Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
+of binary classifier). Then in the learning phase each binary classifier is learned. In the decoding phase the class
+which is closest to test instance in the sense of Hamming distance is chosen.</p>
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.ecoc.ECOC.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">minority_classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ecoc.ECOC.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>X: two dimensional numpy array (number of samples x number of features) with float numbers
+y: one dimensional numpy array with labels for rows in X
+minority_classes: list of classes considered to be minority classes
+Returns
+——-
+self: object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.ecoc.ECOC.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ecoc.ECOC.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>X: two dimensional numpy array (number of samples x number of features) with float numbers
+Returns
+——-
+y : numpy array, shape = [number of samples]</p>
+<blockquote>
+<div><p>Predicted target values for X.</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.ensemble.mrbbagging">
+<span id="multi-imbalance-ensemble-mrbbagging-module"></span><h2>multi_imbalance.ensemble.mrbbagging module<a class="headerlink" href="#module-multi_imbalance.ensemble.mrbbagging" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="multi_imbalance.ensemble.mrbbagging.MRBBagging">
+<em class="property">class </em><code class="sig-prename descclassname">multi_imbalance.ensemble.mrbbagging.</code><code class="sig-name descname">MRBBagging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">k</span></em>, <em class="sig-param"><span class="n">learning_algorithm</span></em>, <em class="sig-param"><span class="n">undersampling</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">feature_selection</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">random_fs</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">half_features</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.mrbbagging.MRBBagging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Multi-class Roughly Balanced Bagging (MRBBagging) is a generalization of MRBBagging for adapting to multiple
+minority classes.</p>
+<p>Reference:
+M. Lango, J. Stefanowski:
+Multi-class and feature selection extensions of RoughlyBalanced Bagging for imbalanced data.
+J. Intell Inf Syst (2018) 50: 97</p>
+<dl class="simple">
+<dt>fit(x, y)</dt><dd><p>Build a MRBBagging ensemble of estimators from the training data.</p>
+</dd>
+<dt>predict(data)</dt><dd><p>Predict classes for examples in data.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.mrbbagging.MRBBagging.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.mrbbagging.MRBBagging.fit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Two dimensional numpy array (number of samples x number of features) with float numbers.</p></li>
+<li><p><strong>y</strong> – One dimensional numpy array with labels for rows in X.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.mrbbagging.MRBBagging.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.mrbbagging.MRBBagging.predict" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> – Two dimensional numpy array (number of samples x number of features) with float numbers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.ensemble.ovo">
+<span id="multi-imbalance-ensemble-ovo-module"></span><h2>multi_imbalance.ensemble.ovo module<a class="headerlink" href="#module-multi_imbalance.ensemble.ovo" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="multi_imbalance.ensemble.ovo.OVO">
+<em class="property">class </em><code class="sig-prename descclassname">multi_imbalance.ensemble.ovo.</code><code class="sig-name descname">OVO</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">binary_classifier</span><span class="o">=</span><span class="default_value">'tree'</span></em>, <em class="sig-param"><span class="n">n_neighbors</span><span class="o">=</span><span class="default_value">3</span></em>, <em class="sig-param"><span class="n">preprocessing</span><span class="o">=</span><span class="default_value">'SOUP'</span></em>, <em class="sig-param"><span class="n">preprocessing_between</span><span class="o">=</span><span class="default_value">'all'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ovo.OVO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
+into m(m-1)/2 binary problems, where m is number of classes. Each of binary classifiers distinguishes between two
+classes. In the learning phase each classifier is learned only with instances from particular two classes. In
+prediction phase each classifier decides between these two classes. Results are aggregated and final output is
+derived depending on chosen aggregation model.</p>
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.ovo.OVO.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">minority_classes</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ovo.OVO.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>X: two dimensional numpy array (number of samples x number of features) with float numbers
+y: one dimensional numpy array with labels for rows in X
+minority_classes: list of classes considered to be minority</p>
+<p>self: object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.ovo.OVO.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ovo.OVO.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>X: two dimensional numpy array (number of samples x number of features) with float numbers</p>
+<dl class="simple">
+<dt>y<span class="classifier">numpy array, shape = [number of samples]</span></dt><dd><p>Predicted target values for X.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.ovo.OVO.should_perform_oversampling">
+<code class="sig-name descname">should_perform_oversampling</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">first_class</span></em>, <em class="sig-param"><span class="n">second_class</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.ovo.OVO.should_perform_oversampling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.ensemble.soup_bagging">
+<span id="multi-imbalance-ensemble-soup-bagging-module"></span><h2>multi_imbalance.ensemble.soup_bagging module<a class="headerlink" href="#module-multi_imbalance.ensemble.soup_bagging" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="multi_imbalance.ensemble.soup_bagging.SOUPBagging">
+<em class="property">class </em><code class="sig-prename descclassname">multi_imbalance.ensemble.soup_bagging.</code><code class="sig-name descname">SOUPBagging</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">classifier</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">maj_int_min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">n_classifiers</span><span class="o">=</span><span class="default_value">5</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.SOUPBagging" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.ensemble._bagging.BaggingClassifier</span></code></p>
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.soup_bagging.SOUPBagging.fit">
+<code class="sig-name descname">fit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">y</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.SOUPBagging.fit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> – {array-like, sparse matrix} of shape = [n_samples, n_features] The training input samples.</p></li>
+<li><p><strong>y</strong> – array-like, shape = [n_samples]. The target values (class labels).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>self object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.soup_bagging.SOUPBagging.fit_classifier">
+<em class="property">static </em><code class="sig-name descname">fit_classifier</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.SOUPBagging.fit_classifier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.soup_bagging.SOUPBagging.predict">
+<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em>, <em class="sig-param"><span class="n">strategy</span><span class="p">:</span> <span class="n">str</span> <span class="o">=</span> <span class="default_value">'average'</span></em>, <em class="sig-param"><span class="n">maj_int_min</span><span class="p">:</span> <span class="n">dict</span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.SOUPBagging.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict class for X. The predicted class of an input sample is computed as the class with the highest
+sum of predicted probability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> – {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.</p></li>
+<li><p><strong>strategy</strong> – ‘average’ - takes max from average values in prediction
+‘optimistic’ - takes always best value of probability
+‘pessimistic’ - takes always the worst value of probability
+‘mixed’ - for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min</p></li>
+<li><p><strong>maj_int_min</strong> – dict. It keeps indices of minority classes under ‘min’ key.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>y : array of shape = [n_samples]. The predicted classes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="multi_imbalance.ensemble.soup_bagging.SOUPBagging.predict_proba">
+<code class="sig-name descname">predict_proba</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.SOUPBagging.predict_proba" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict class probabilities for X.</p>
+<p>:param X:{array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
+:return: array of shape = [n_classifiers, n_samples, n_classes]. The class probabilities of the input samples.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="multi_imbalance.ensemble.soup_bagging.fit_clf">
+<code class="sig-prename descclassname">multi_imbalance.ensemble.soup_bagging.</code><code class="sig-name descname">fit_clf</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#multi_imbalance.ensemble.soup_bagging.fit_clf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-multi_imbalance.ensemble">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-multi_imbalance.ensemble" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="multi_imbalance.ensemble.tests.html" class="btn btn-neutral float-right" title="multi_imbalance.ensemble.tests package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="multi_imbalance.datasets.tests.html" class="btn btn-neutral float-left" title="multi_imbalance.datasets.tests package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

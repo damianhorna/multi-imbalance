@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -35,12 +36,14 @@ class ECOC:
         * 'tree': Decision Tree Classifier,
         * 'NB': Naive Bayes Classifier,
         * 'KNN' : K-Nearest Neighbors
+        * An instance of a class that implements ClassifierMixin
 
         preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
         * None : no oversampling applied,
         * 'globalCS' : random oversampling - randomly chosen instances of minority classes are duplicated
         * 'SMOTE' : Synthetic Minority Oversampling Technique
         * 'SOUP' : Similarity Oversampling Undersampling Preprocessing
+        * An instance of a class that implements TransformerMixin
 
         encoding : algorithm for encoding classes. Possible encodings:
         * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
@@ -275,35 +278,47 @@ class ECOC:
                 np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
     def _oversample(self, X, y):
-        if self.preprocessing not in ECOC._allowed_oversampling:
-            raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s."
-                             % (self.encoding, ECOC._allowed_oversampling))
-        elif np.unique(y).size == 1:
+        if self.preprocessing is None:
             return X, y
-        elif self.preprocessing is None:
-            return X, y
-        elif self.preprocessing == 'globalCS':
-            gcs = GlobalCS()
-            return gcs.fit_transform(X, y)
-        elif self.preprocessing == 'SMOTE':
-            return self._smote_oversample(X, y)
-        elif self.preprocessing == 'SOUP':
-            soup = SOUP()
-            return soup.fit_transform(X, y)
+
+        if isinstance(self.preprocessing, str):
+            if self.preprocessing not in ECOC._allowed_oversampling:
+                raise ValueError("Unknown preprocessing method: %s, expected to be one of %s."
+                                 % (self.preprocessing, ECOC._allowed_oversampling))
+            elif np.unique(y).size == 1:
+                return X, y
+            elif self.preprocessing == 'globalCS':
+                gcs = GlobalCS()
+                return gcs.fit_transform(X, y)
+            elif self.preprocessing == 'SMOTE':
+                return self._smote_oversample(X, y)
+            elif self.preprocessing == 'SOUP':
+                soup = SOUP()
+                return soup.fit_transform(X, y)
+        else:
+            if not hasattr(self.preprocessing, 'fit_transform'):
+                raise ValueError("Your resampler must implement fit_transform method")
+            return self.preprocessing.fit_transform(X, y)
 
     def _get_classifier(self):
-        if self.binary_classifier not in ECOC._allowed_classifiers:
-            raise ValueError("Unknown binary classifier: %s, expected to be one of %s."
-                             % (self.binary_classifier, ECOC._allowed_classifiers))
-        elif self.binary_classifier == 'tree':
-            decision_tree_classifier = DecisionTreeClassifier(random_state=42)
-            return decision_tree_classifier
-        elif self.binary_classifier == 'NB':
-            gnb = GaussianNB()
-            return gnb
-        elif self.binary_classifier == 'KNN':
-            knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
-            return knn
+        if isinstance(self.binary_classifier, str):
+            if self.binary_classifier not in ECOC._allowed_classifiers:
+                raise ValueError(
+                    "Unknown binary classifier: %s, expected to be one of %s."
+                    % (self.binary_classifier, ECOC._allowed_classifiers))
+            elif self.binary_classifier == 'tree':
+                decision_tree_classifier = DecisionTreeClassifier(random_state=42)
+                return decision_tree_classifier
+            elif self.binary_classifier == 'NB':
+                gnb = GaussianNB()
+                return gnb
+            elif self.binary_classifier == 'KNN':
+                knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
+                return knn
+        else:
+            if not hasattr(self.binary_classifier, 'fit') or not hasattr(self.binary_classifier, 'predict'):
+                raise ValueError("Your classifier must implement fit and predict methods")
+            return deepcopy(self.binary_classifier)
 
     def _smote_oversample(self, X, y):
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
@@ -312,7 +327,6 @@ class ECOC:
                 'In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class')
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
-
 
     def _calc_weights(self, X_for_weights, y_for_weights):
         if self.weights not in ECOC._allowed_weights:
