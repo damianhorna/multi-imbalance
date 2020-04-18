@@ -1,6 +1,8 @@
-import pytest
-from multi_imbalance.resampling.spider import SPIDER3
+from collections import Counter
+
 import numpy as np
+
+from multi_imbalance.resampling.spider import SPIDER3
 from multi_imbalance.utils.array_util import (union, intersect, setdiff)
 
 cost = np.ones((3, 3))
@@ -81,3 +83,18 @@ def test_estimate_cost_matrix():
     y = [0, 1, 1, 2, 2, 2, 2, 2, 2]
     cost = SPIDER3._estimate_cost_matrix(y).ravel().tolist()
     assert cost == [0, 1, 1, 2, 0, 1, 6, 3, 0]
+
+
+def test_fit_transform():
+    np.random.seed(7)
+    X = np.vstack([np.random.normal(0, 1, (100, 2)),
+                   np.random.normal(3, 5, (30, 2)),
+                   np.random.normal(-2, 2, (20, 2))])
+
+    y = np.array([1] * 100 + [2] * 30 + [3] * 20)
+    sp = SPIDER3(5, [1], [2], [3])
+    X_resampled, y_resampled = sp.fit_transform(X, y)
+    cnt = Counter(y_resampled)
+    assert cnt[1] == 72
+    assert cnt[2] == 57
+    assert cnt[3] == 30

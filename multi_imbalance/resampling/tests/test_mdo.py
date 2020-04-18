@@ -62,13 +62,13 @@ complete_test_data = [
 
 @pytest.fixture()
 def mdo_mock():
-    def _get_parametrized_soup(X, y):
+    def _get_parametrized_mdo(X, y):
         clf = MDO(k1_frac=.5)
         clf.knn.fit(X)
         clf.X, clf.y = X, y
         return clf
 
-    return _get_parametrized_soup
+    return _get_parametrized_mdo
 
 
 @pytest.mark.parametrize("X, y, sc_minor_expected, weights_expected", complete_test_data)
@@ -112,3 +112,11 @@ def test_zero_variance(mdo_mock):
 
     S_temp = clf._MDO_oversampling(T, V, oversampling_rate, weights)
     assert_array_almost_equal(S_temp, expected_result)
+
+
+def test_mdo_api(mdo_mock):
+    clf = mdo_mock(X, y_imb_hard)
+    maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
+    clf.k1 = 0
+    X_r, y_r = clf.fit_transform(X, y_imb_hard, maj_int_min=maj_int_min)
+    assert X_r.shape == (28,2)
