@@ -61,8 +61,8 @@ class SOUPBagging(BaggingClassifier):
         self.classes = np.unique(y)
 
         pool = multiprocessing.Pool(self.num_core)
-        results = pool.map(fit_clf,
-                           [(clf, X, y, resample(X, y, stratify=y), self.maj_int_min) for clf in self.classifiers])
+        results = pool.map(fit_clf, [(clf, X, y, resample(X, y, stratify=y, random_state=i), self.maj_int_min)
+                                     for i, clf in enumerate(self.classifiers)])
         pool.close()
         pool.join()
         for i, (clf, weights) in enumerate(results):

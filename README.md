@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/damian-horna/multi-imbalance.svg?branch=master)](https://travis-ci.org/damian-horna/multi-imbalance)
+[![codecov](https://codecov.io/gh/damian-horna/multi-imbalance/branch/master/graph/badge.svg)](https://codecov.io/gh/damian-horna/multi-imbalance)
 [![Documentation Status](https://readthedocs.org/projects/multi-imbalance/badge/?version=latest)](https://multi-imbalance.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/multi-imbalance.svg)](https://badge.fury.io/py/multi-imbalance)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/multi-imbalance)
