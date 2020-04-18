@@ -36,6 +36,14 @@ multi\_imbalance.resampling.tests.test\_spider module
    :undoc-members:
    :show-inheritance:
 
+multi\_imbalance.resampling.tests.test\_static\_smote module
+------------------------------------------------------------
+
+.. automodule:: multi_imbalance.resampling.tests.test_static_smote
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

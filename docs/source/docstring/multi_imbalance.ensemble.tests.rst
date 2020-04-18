@@ -28,6 +28,14 @@ multi\_imbalance.ensemble.tests.test\_ovo module
    :undoc-members:
    :show-inheritance:
 
+multi\_imbalance.ensemble.tests.test\_soupbagging module
+--------------------------------------------------------
+
+.. automodule:: multi_imbalance.ensemble.tests.test_soupbagging
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
