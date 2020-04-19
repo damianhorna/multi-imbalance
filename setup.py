@@ -1,9 +1,10 @@
-import setuptools
+import setuptools # pragma no cover
 
-with open("README.md", "r") as fh:
+with open("README.md", "r") as fh:  # pragma no cover
+
     long_description = fh.read()
 
-setuptools.setup(
+setuptools.setup(  # pragma no cover
     name="multi-imbalance",
     version="0.0.8",
     author="Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza",
@@ -29,5 +30,7 @@ setuptools.setup(
         "pandas>=0.25.1",
         "pytest>=5.1.2",
         "imbalanced-learn>=0.6.1",
+        "coverage>=5.1",
+        "pytest-cov>=2.8.1",
     ]
 )

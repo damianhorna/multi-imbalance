@@ -5,4 +5,7 @@ cache: pip
 install:
   - pip install .
 script:
-  - pytest
+  - pytest --cov=./
+after_success:
+  - coverage
+  - bash <(curl -s https://codecov.io/bash)

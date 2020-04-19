@@ -1,4 +1,4 @@
-maj_int_min = {
+maj_int_min = { # pragma no cover
     "1czysty-cut": {'maj': [0], 'int': [2], 'min': [1]},
     "2delikatne-cut": {'maj': [0], 'int': [2], 'min': [1]},
     "3mocniej-cut": {'maj': [0], 'int': [2], 'min': [1]},
