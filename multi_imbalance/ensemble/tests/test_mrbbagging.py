@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from sklearn.tree import tree
 
@@ -31,15 +31,41 @@ X_test = np.array([[0.9287003, 0.97580299],
                    [0.01, 0.87666093],
                    [0.97352367, 0.78807909], ])
 
-y_test = np.array([0, 1, 0, 0])
+y_test = np.array([0, 0, 0, 0])
 
 
 class TestMRBBagging(unittest.TestCase):
-    # def test_api(self):
-    #     mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier())
-    #     mrbbagging.fit(X_train, y_train)
-    #     y_pred = mrbbagging.predict(X_test)
-    #     assert all(y_pred == y_test)
+    def test_api(self):
+        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), random_state=0)
+        mrbbagging.fit(X_train, y_train)
+        y_pred = mrbbagging.predict(X_test)
+        assert all(y_pred == y_test)
+
+    def test_api_multiple_trees(self):
+        mrbbagging = MRBBagging(5, tree.DecisionTreeClassifier(random_state=0), random_state=0)
+        mrbbagging.fit(X_train, y_train)
+        y_pred = mrbbagging.predict(X_test)
+        assert all(y_pred == y_test)
+
+    def test_api_with_feature_selection(self):
+        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True, random_state=0)
+        mrbbagging.fit(X_train, y_train)
+        y_pred = mrbbagging.predict(X_test)
+        assert all(y_pred == y_test)
+
+    def test_api_with_random_feature_selection(self):
+        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True, random_fs=True,
+                                random_state=0)
+        mrbbagging.fit(X_train, y_train)
+        y_pred = mrbbagging.predict(X_test)
+        assert all(y_pred == y_test)
+
+    def test_api_with_feature_selection_sqrt_features(self):
+        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True,
+                                half_features=False, random_state=0)
+        mrbbagging.fit(X_train, y_train)
+        y_pred = mrbbagging.predict(X_test)
+        assert all(y_pred == y_test)
 
     def test__group_data(self):
         mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier())
