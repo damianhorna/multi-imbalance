@@ -83,3 +83,8 @@ def plot_visual_comparision_datasets(X1, y1, X2, y2, dataset_name1='', dataset_n
     axs[2].set_ylabel("cardinality")
     axs[1].set_title(dataset_name1)
     axs[3].set_title(dataset_name2)
+
+    y_lim = axs[1].get_ylim()
+    x_lim = axs[1].get_xlim()
+    axs[3].set_ylim(y_lim)
+    axs[3].set_xlim(x_lim)
