@@ -16,18 +16,25 @@ class SOUP(TransformerMixin):
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 7) -> None:
-        self.k = k
-        self.quantities, self.goal_quantity = [None] * 2
-
-    def fit_transform(self, _X, _y, **fit_params):
+    def __init__(self, k: int = 7, **kwargs) -> None:
         """
 
         Parameters
         ----------
+        k number of neighbors
+        maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
+        """
+        self.k = k
+        self.quantities, self.goal_quantity = [None] * 2
+        self.maj_int_min = kwargs.get('maj_int_min')
+
+    def fit_transform(self, _X, _y, shuffle: bool = False):
+        """
+        Parameters
+        ----------
         X two dimensional numpy array (number of samples x number of features) with float numbers
         y one dimensional numpy array with labels for rows in X
-        maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
+        shuffle: bool - output will be shuffled
 
         Returns
         -------
@@ -41,8 +48,7 @@ class SOUP(TransformerMixin):
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
 
         self.quantities = Counter(y)
-        maj_int_min = fit_params.get('maj_int_min')
-        self.goal_quantity = self._calculate_goal_quantity(maj_int_min)
+        self.goal_quantity = self._calculate_goal_quantity(self.maj_int_min)
         dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity), key=itemgetter(1),
                              reverse=True)
         asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
@@ -54,7 +60,7 @@ class SOUP(TransformerMixin):
         for class_name, class_quantity in asc_min_cls:
             X, y = self._oversample(X, y, class_name)
 
-        if fit_params.get('shuffle'):
+        if shuffle:
             X, y = sklearn.utils.shuffle(X, y)
 
         return np.array(X), np.array(y)
@@ -121,9 +127,16 @@ class SOUP(TransformerMixin):
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))
             min_q = min(list(self.quantities.values()))
+            return np.mean((min_q, maj_q), dtype=int)
         else:
             maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
-            maj_q = min(list(maj_classes.values()))
+            maj_q = list(maj_classes.values())
             min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
-            min_q = max(list(min_classes.values()))
-        return np.mean((min_q, maj_q), dtype=int)
+            min_q = list(min_classes.values())
+
+            if len(maj_q) == 0:
+                return np.mean(min_q, dtype=int)
+            if len(min_q) == 0:
+                return np.mean(maj_q, dtype=int)
+
+            return np.mean((max(min_q), min(maj_q)), dtype=int)

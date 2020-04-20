@@ -16,15 +16,17 @@ class MDO(TransformerMixin):
 
     """
 
-    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, **kwargs):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
         self.prop = prop
+        self.class_balances = kwargs.get('maj_int_min')
 
-    def fit_transform(self, X, y, **fit_params):
+
+    def fit_transform(self, X, y):
         """
 
         Parameters
@@ -44,8 +46,7 @@ class MDO(TransformerMixin):
         quantities = Counter(y)
         goal_quantity = int(max(list(quantities.values())))
         labels = list(set(y))
-        class_balances = fit_params.get('maj_int_min')
-        minority_classes = class_balances['min']
+        minority_classes = self.class_balances['min']
 
         for class_label in labels:
             if minority_classes is not None and class_label not in minority_classes:
