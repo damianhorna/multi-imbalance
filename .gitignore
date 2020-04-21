@@ -71,3 +71,5 @@ venv
 
 # Datasets
 data/extracted/
+
+docs/_build
