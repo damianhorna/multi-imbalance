@@ -20,10 +20,26 @@ multi\_imbalance.utils.data module
    :undoc-members:
    :show-inheritance:
 
+multi\_imbalance.utils.metrics module
+-------------------------------------
+
+.. automodule:: multi_imbalance.utils.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 multi\_imbalance.utils.min\_int\_maj module
 -------------------------------------------
 
 .. automodule:: multi_imbalance.utils.min_int_maj
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+multi\_imbalance.utils.plot module
+----------------------------------
+
+.. automodule:: multi_imbalance.utils.plot
    :members:
    :undoc-members:
    :show-inheritance:
