@@ -25,14 +25,15 @@ pip install multi-imbalance
 
 ## Implemented algorithms
 Our package includes implementation of such algorithms, as: 
-* ECOC [1],
-* OVO [2],
-* MDO [3],
-* GlobalCS [4], 
-* SOUP [5],
+* One-vs-One (OVO) and One-vs-all (OVA) ensembles [2],
+* Error-Correcting Output Codes (ECOC) [1] with dense, sparse and complete encoding [9] ,
+* Global-CS [4],
+* Static-SMOTE [10],
+* Mahalanobis Distance Oversampling [3],
+* Similarity-based Oversampling and Undersampling Preprocessing (SOUP) [5],
+* SPIDER3 cost-sensitive pre-processing [8].
+* Multi-class Roughly Balanced Bagging (MRBB) [7],
 * SOUP Bagging [6],
-* Multi-class Roughly Balanced Bagging [7],
-* SPIDER3 [8].
 
 ## Example usage
 ```python
@@ -72,32 +73,22 @@ year = "2020",}
 
 ## References:
 
-[1] Dietterich, T., and Bakiri, G. Solving multi-class learning problems via error-correcting
-output codes. Journal of Artificial Intelligence Research 2 (02 1995), 263–286.
+[1] Dietterich, T., and Bakiri, G. Solving multi-class learning problems via error-correcting output codes. Journal of Artificial Intelligence Research 2 (02 1995), 263–286.
 
-[2] Fernández, A., López, V., Galar, M., del Jesus, M., and Herrera, F. Analysing
-the classification of imbalanced data-sets with multiple classes: Binarization techniques and
-ad-hoc approaches. Knowledge-Based Systems 42 (2013), 97 – 110.
+[2] Fernández, A., López, V., Galar, M., del Jesus, M., and Herrera, F. Analysing the classification of imbalanced data-sets with multiple classes: Binarization techniques and ad-hoc approaches. Knowledge-Based Systems 42 (2013), 97 – 110.
 
-[3] Abdi, L., and Hashemi, S. To combat multi-class imbalanced problems by means of
-over-sampling techniques. IEEE Transactions on Knowledge and Data Engineering 28
-(January 2016), 238–251.
+[3] Abdi, L., and Hashemi, S. To combat multi-class imbalanced problems by means of over-sampling techniques. IEEE Transactions on Knowledge and Data Engineering 28 (January 2016), 238–251.
 
-[4] Zhou, Z., and Liu, X. On multi-class cost-sensitive learning. In Proceedings of the 21st
-National Conference on Artificial Intelligence - Volume 1 (2006), AAAI’06, AAAI Press,
-pp. 567–572.
+[4] Zhou, Z., and Liu, X. On multi-class cost-sensitive learning. In Proceedings of the 21st National Conference on Artificial Intelligence - Volume 1 (2006), AAAI’06, AAAI Press, pp. 567–572.
 
-[5] Janicka, M., Lango, M., and Stefanowski, J. Using information on class interrelations
-to improve classification of multi-class imbalanced data: A new resampling algorithm.
-International Journal of Applied Mathematics and Computer Science 29 (December 2019).
+[5] Janicka, M., Lango, M., and Stefanowski, J. Using information on class interrelations to improve classification of multi-class imbalanced data: A new resampling algorithm. International Journal of Applied Mathematics and Computer Science 29 (December 2019).
 
-[6] Lango, M., and Stefanowski, J. SOUP-Bagging: a new approach for multi-class
-imbalanced data classification. PP-RAI ’19: Polskie Porozumienie na Rzecz Sztucznej
-Inteligencji (2019).
+[6] Lango, M., and Stefanowski, J. SOUP-Bagging: a new approach for multi-class imbalanced data classification. PP-RAI ’19: Polskie Porozumienie na Rzecz Sztucznej Inteligencji (2019).
 
-[7] Lango, M., and Stefanowski, J. Multi-class and feature selection extensions of roughly
-balanced bagging for imbalanced data. J Intell Inf Syst 50 (2017), 97–127
+[7] Lango, M., and Stefanowski, J. Multi-class and feature selection extensions of roughly balanced bagging for imbalanced data. J Intell Inf Syst 50 (2017), 97–127
 
-[8] Wojciechowski, S., Wilk, S., and Stefanowski, J. An algorithm for selective
-preprocessing of multi-class imbalanced data. In Proceedings of the 10th International
-Conference on Computer Recognition Systems (05 2017), pp. 238–247.
+[8] Wojciechowski, S., Wilk, S., and Stefanowski, J. An algorithm for selective preprocessing of multi-class imbalanced data. In Proceedings of the 10th International Conference on Computer Recognition Systems (05 2017), pp. 238–247.
+
+[9] Kuncheva, L. Combining Pattern Classifiers: Methods and Algorithms. Wiley (2004).
+
+[10] Fernández-Navarro, F., Hervás-Martínez, C., and Antonio Gutiérrez, P. A dynamic over-sampling procedure based on sensitivity for multi-class problems. Pattern Recognition, 44(8), 1821–1833 (2011).
