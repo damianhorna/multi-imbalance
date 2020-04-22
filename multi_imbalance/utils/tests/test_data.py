@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from multi_imbalance.utils.data import construct_flat_2pc_df, preprocess_dataset, load_arff_datasets
+from multi_imbalance.utils.data import construct_flat_2pc_df, load_arff_dataset, load_datasets_arff
 
 
 def test_2pc():
@@ -17,7 +17,7 @@ def test_2pc():
 def test_preprocess():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     ds_path = os.path.join(dir_path,'ds_example.arrf')
-    x, y, non_cat = preprocess_dataset(ds_path, return_non_cat_length=True)
+    x, y, non_cat = load_arff_dataset(ds_path, return_non_cat_length=True)
     assert all(y == np.array([0, 0, 0, 0, 0, 0, 0]))
     assert non_cat == 2
     assert x.shape == (7, 2)
@@ -26,7 +26,7 @@ def test_preprocess():
 def test_load_arff_datasets():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     ds_paths = [os.path.join(dir_path,'ds_example.arrf')]
-    datasets = load_arff_datasets(return_non_cat_length=False, dataset_paths=ds_paths)
+    datasets = load_datasets_arff(return_non_cat_length=False, dataset_paths=ds_paths)
 
     keys = list(datasets.keys())
     assert type(datasets) == OrderedDict
@@ -40,7 +40,7 @@ def test_load_arff_datasets():
 def test_load_arff_datasets_wth_non_cats():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     ds_paths = [os.path.join(dir_path,'ds_example.arrf')]
-    datasets = load_arff_datasets(return_non_cat_length=True, dataset_paths=ds_paths)
+    datasets = load_datasets_arff(return_non_cat_length=True, dataset_paths=ds_paths)
     keys = list(datasets.keys())
     assert type(datasets) == OrderedDict
     assert 'ds_example' in keys

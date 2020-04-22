@@ -34,7 +34,7 @@ def get_project_root() -> Path:  # pragma no cover
     return Path(__file__).parent.parent.parent
 
 
-def preprocess_dataset(path, return_non_cat_length=False):
+def load_arff_dataset(path, return_non_cat_length=False):
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -63,7 +63,7 @@ def preprocess_dataset(path, return_non_cat_length=False):
         return X.to_numpy(), y
 
 
-def load_arff_datasets(return_non_cat_length=False, dataset_paths=None):
+def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
     if dataset_paths is None:
         dataset_paths = glob.glob(f'{get_project_root()}/data/arff/*')
 
@@ -72,10 +72,10 @@ def load_arff_datasets(return_non_cat_length=False, dataset_paths=None):
         dataset_file = path.split('/')[-1]
         dataset_name = dataset_file.split('.')[0]
         if return_non_cat_length:
-            X, y, cat_length = preprocess_dataset(path, return_non_cat_length)
+            X, y, cat_length = load_arff_dataset(path, return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
         else:
-            X, y = preprocess_dataset(path, return_non_cat_length)
+            X, y = load_arff_dataset(path, return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
