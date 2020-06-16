@@ -92,10 +92,10 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
         dataset_file = path.split('/')[-1]
         dataset_name = dataset_file.split('.')[0]
         if return_non_cat_length:
-            X, y, cat_length = load_arff_dataset(path, return_non_cat_length)
+            X, y, cat_length = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
         else:
-            X, y = load_arff_dataset(path, return_non_cat_length)
+            X, y = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
