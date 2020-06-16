@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:  # pragma no cover
 
 setuptools.setup(  # pragma no cover
     name="multi-imbalance",
-    version="0.0.8",
+    version="0.0.9",
     author="Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza",
     author_email="horna.damian@gmail.com",
     description="Python package for tackling multiclass imbalance problems.",

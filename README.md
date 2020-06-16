@@ -16,6 +16,7 @@ Requirements include:
 * pandas>=0.25.1,
 * pytest>=5.1.2,
 * imbalanced-learn>=0.6.1
+* IPython>=7.13.0"
 
 ## Installation
 Just type in
