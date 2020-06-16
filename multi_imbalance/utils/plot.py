@@ -9,16 +9,14 @@ sns.set_style('darkgrid')
 
 def plot_cardinality_and_2d_data(X, y, dataset_name='') -> None:  # pragma no cover
     """
+    Plots cardinality of classes from y as well as scatter plot of X transformed to two dimensions using PCA
 
-    Parameters
-    ----------
-    X two dimensional numpy array
-    y two dimensional numpy array
-    dataset_name : str
-
-    Returns None
-    -------
-
+    :param ndarray X:
+        two dimensional numpy array
+    :param ndarray y:
+        one dimensional numpy array
+    :param str dataset_name:
+        title of chart
     """
     n = len(Counter(y).keys())
     p = sns.color_palette("husl", n)
@@ -43,19 +41,21 @@ def plot_cardinality_and_2d_data(X, y, dataset_name='') -> None:  # pragma no co
 
 def plot_visual_comparision_datasets(X1, y1, X2, y2, dataset_name1='', dataset_name2='') -> None:  # pragma no cover
     """
+    Plots comparision of X1 y1 and X2 y2 using plot_cardinality_and_2d_data, which plots cardinality of classes from
+    y as well as scatter plot of X transformed to two dimensions using PCA
 
-    Parameters
-    ----------
-    X1 two dimensional numpy array
-    X2 two dimensional numpy array
-    y1 two dimensional numpy array
-    y2 two dimensional numpy array
-    dataset_name1 : str
-    dataset_name2 : str
-
-    Returns None
-    -------
-
+    :param ndarray X1:
+        two dimensional numpy array with data from dataset1
+    :param ndarray y1:
+        one dimensional numpy array with target classes from dataset1
+    :param ndarray X2:
+        two dimensional numpy array with data from dataset2
+    :param ndarray y2:
+        one dimensional numpy array with target classes from dataset1
+    :param str dataset_name1:
+        first dataset chart title
+    :param str dataset_name2:
+        second dataset chart title
     """
     n = len(Counter(y1).keys())
     p = sns.color_palette("husl", n)

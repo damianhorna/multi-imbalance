@@ -13,14 +13,14 @@ from sklearn.utils import Bunch
 def construct_flat_2pc_df(X, y) -> pd.DataFrame:
     """
     This function takes two dimensional X and one dimensional y arrays, concatenates and returns them as data frame
-    Parameters
-    ----------
-    X two dimensional numpy array
-    y one dimensional numpy array with labels
-    -------
-    Data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X
-    """
 
+    :param X:
+        two dimensional numpy array
+    :param y:
+        one dimensional numpy array with labels
+    :return:
+        Data frame with 3 columns x1 x2 and y and with number of rows equal to number of rows in X
+    """
     y = pd.DataFrame({'y': y})
     X_df = pd.DataFrame(data=X, columns=['x1', 'x2'])
 
@@ -34,7 +34,21 @@ def get_project_root() -> Path:  # pragma no cover
     return Path(__file__).parent.parent.parent
 
 
-def load_arff_dataset(path, return_non_cat_length=False):
+def load_arff_dataset(path: str, one_hot_encode: bool = True, return_non_cat_length: bool = False):
+    """
+    Load and return the dataset saved in arff type file
+
+    :param str path:
+        location of dataset file
+    :param bool one_hot_encode:
+        flag, if true encodes categorical variables using OneHotEncoder
+    :param bool return_non_cat_length:
+        flag, if true returns the number of non categorical variables
+    :returns:
+        - ndarray X - dimensional numpy array where non categorical variables are stored in first columns followed by categorical variables
+        - ndarray y - one dimensional numpy array with the classification target
+        - bool non_cat_length - number of non categorical variables (only if return_non_cat_length=True)
+    """
     data, meta = arff.loadarff(path)
 
     df = pd.DataFrame(data)
@@ -54,9 +68,15 @@ def load_arff_dataset(path, return_non_cat_length=False):
     mean = df.filter(non_categorical_cols).mean()
 
     df[categorical_cols] = df.filter(categorical_cols).fillna(mode)
+    df[categorical_cols] = df[categorical_cols].astype(int)
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
-    X = pd.get_dummies(df, columns=categorical_cols)
+    if one_hot_encode:
+        X = pd.get_dummies(df, columns=categorical_cols)
+    else:
+        col_list = non_categorical_cols + categorical_cols
+        X = df[col_list]
+
     if return_non_cat_length:
         return X.to_numpy(), y, len(non_categorical_cols)
     else:
@@ -72,10 +92,10 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
         dataset_file = path.split('/')[-1]
         dataset_name = dataset_file.split('.')[0]
         if return_non_cat_length:
-            X, y, cat_length = load_arff_dataset(path, return_non_cat_length)
+            X, y, cat_length = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
         else:
-            X, y = load_arff_dataset(path, return_non_cat_length)
+            X, y = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets

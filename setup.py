@@ -32,5 +32,6 @@ setuptools.setup(  # pragma no cover
         "imbalanced-learn>=0.6.1",
         "coverage>=5.1",
         "pytest-cov>=2.8.1",
+        "IPython>=7.13.0",
     ]
 )
