@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:  # pragma no cover
 
 setuptools.setup(  # pragma no cover
     name="multi-imbalance",
-    version="0.0.10",
+    version="0.0.11",
     author="Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza",
     author_email="horna.damian@gmail.com",
     description="Python package for tackling multiclass imbalance problems.",
@@ -34,5 +34,6 @@ setuptools.setup(  # pragma no cover
         "pytest-cov>=2.8.1",
         "IPython>=7.13.0",
         "seaborn>=0.10.1",
+        "matplotlib>=3.2.1",
     ]
 )
