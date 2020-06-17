@@ -16,7 +16,9 @@ Requirements include:
 * pandas>=0.25.1,
 * pytest>=5.1.2,
 * imbalanced-learn>=0.6.1
-* IPython>=7.13.0"
+* IPython>=7.13.0,
+* seaborn-0.10.1,
+
 
 ## Installation
 Just type in
