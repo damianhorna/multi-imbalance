@@ -68,7 +68,6 @@ def load_arff_dataset(path: str, one_hot_encode: bool = True, return_non_cat_len
     mean = df.filter(non_categorical_cols).mean()
 
     df[categorical_cols] = df.filter(categorical_cols).fillna(mode)
-    df[categorical_cols] = df[categorical_cols].astype(int)
     df[non_categorical_cols] = df.filter(non_categorical_cols).fillna(mean)
 
     if one_hot_encode:
@@ -93,7 +92,7 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
         dataset_name = dataset_file.split('.')[0]
         if return_non_cat_length:
             X, y, cat_length = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
-            datasets[dataset_name] = Bunch(data=X, target=y, cat_length=cat_length, DESCR=dataset_name)
+            datasets[dataset_name] = Bunch(data=X, target=y, non_cat_length=cat_length, DESCR=dataset_name)
         else:
             X, y = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)

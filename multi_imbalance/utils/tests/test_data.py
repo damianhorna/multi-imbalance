@@ -46,5 +46,5 @@ def test_load_arff_datasets_wth_non_cats():
     assert 'ds_example' in keys
     assert len(keys) == 1
 
-    for k in ['data', 'target', 'DESCR', 'cat_length']:
+    for k in ['data', 'target', 'DESCR', 'non_cat_length']:
         assert k in list(datasets['ds_example'].keys())
