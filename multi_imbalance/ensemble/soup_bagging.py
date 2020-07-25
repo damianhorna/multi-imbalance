@@ -81,11 +81,14 @@ class SOUPBagging(BaggingClassifier):
         :param X:
             {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
         :param strategy:
-            WHERE
-            -'average' - takes max from average values in prediction
-            -'optimistic' - takes always best value of probability
-            -'pessimistic' - takes always the worst value of probability
-            -'mixed' - for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
+            * 'average' :
+                takes max from average values in prediction
+            * 'optimistic' :
+                takes always best value of probability
+            * 'pessimistic' :
+                takes always the worst value of probability
+            * 'mixed' :
+                for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
         :param maj_int_min:
             dict. It keeps indices of minority classes under 'min' key.
         :return:
