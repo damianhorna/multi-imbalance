@@ -12,22 +12,15 @@ class SPIDER3:
     Wojciechowski, S., Wilk, S., Stefanowski, J.: An Algorithm for Selective Preprocessing
     of Multi-class Imbalanced Data. Proceedings of the 10th International Conference
     on Computer Recognition Systems CORES 2017
-
-    Methods
-    ----------
-    fit_transform(X, y)
-        Performs resampling of X.
     """
 
     def __init__(self, k, majority_classes, intermediate_classes, minority_classes, cost=None):
         """
-        Parameters
-        ----------
         :param k:
             Number of nearest neighbors considered while resampling.
         :param cost:
-            The cost matrix. An element c[i, j] of this matrix represents the cost
-            associated with misclassifying an example from class i as class one from class j.
+            The cost matrix. An element c[i, j] of this matrix represents the cost associated with
+            misclassifying an example from class i as class one from class j.
         :param majority_classes:
             List of majority classes.
         :param intermediate_classes:
@@ -46,13 +39,14 @@ class SPIDER3:
 
     def fit_transform(self, X, y):
         """
+        Performs resampling
 
         :param X:
             Numpy array of examples that is the subject of resampling.
         :param y:
             Numpy array of labels corresponding to examples from X.
         :return:
-            Resampled X along with accordingly modified labels.
+            Resampled X along with accordingly modified labels, resampled y
         """
         self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
         self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
@@ -82,8 +76,10 @@ class SPIDER3:
         [0 1 1
         2 0 1
         6 3 0]
-        :param y: labels
-        :return: cost matrix
+        :param y:
+            labels
+        :return:
+            cost matrix
         """
         class_cardinality = Counter(y)
         classes = list(class_cardinality.keys())
@@ -129,7 +125,6 @@ class SPIDER3:
     def _restart_perspective(self):
         """
         Performs normalization over resampled dataset.
-        :return:
         """
         for col in range(self._ds_as_rs_union().shape[1] - 1):
             self.stds[col] = self._ds_as_rs_union()[:, col].std()
@@ -146,7 +141,6 @@ class SPIDER3:
     def _restore_perspective(self):
         """
         Denormalizes for further processing.
-        :return:
         """
         for dataset in [self.DS, self.RS, self.AS]:
             if dataset.shape[0] > 0:
@@ -178,7 +172,6 @@ class SPIDER3:
     def _calculate_weak_majority_examples(self):
         """
         Calculates weak majority examples and appends them to the RS set.
-        :return:
         """
 
         for majority_class in self.majority_classes:
@@ -220,7 +213,6 @@ class SPIDER3:
 
         :param x:
             An observation.
-        :return:
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
@@ -236,7 +228,6 @@ class SPIDER3:
 
         :param x:
             Single observation.
-        :return:
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
@@ -287,7 +278,6 @@ class SPIDER3:
 
         :param x:
             Single observation.
-        :return:
         """
 
         while self._class_of(x) not in self._min_cost_classes(x, self._ds_as_rs_union()):

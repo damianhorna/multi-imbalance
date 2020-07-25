@@ -18,11 +18,10 @@ class SOUP(TransformerMixin):
 
     def __init__(self, k: int = 7, **kwargs) -> None:
         """
-
-        Parameters
-        ----------
-        k number of neighbors
-        maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
+        :param k:
+            number of neighbors
+        :param kwargs:
+            maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
         """
         self.k = k
         self.quantities, self.goal_quantity = [None] * 2
@@ -30,15 +29,14 @@ class SOUP(TransformerMixin):
 
     def fit_transform(self, _X, _y, shuffle: bool = False):
         """
-        Parameters
-        ----------
-        X two dimensional numpy array (number of samples x number of features) with float numbers
-        y one dimensional numpy array with labels for rows in X
-        shuffle: bool - output will be shuffled
-
-        Returns
-        -------
-        Resampled X (mean class quantity * number of unique classes), y (number of rows in X) as numpy array
+        :param _X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param _y:
+            one dimensional numpy array with labels for rows in X
+        :param shuffle:
+            bool - output will be shuffled
+        :return:
+            Resampled X (median class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
 
         X = deepcopy(_X)

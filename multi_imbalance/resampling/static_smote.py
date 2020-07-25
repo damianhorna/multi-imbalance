@@ -14,6 +14,7 @@ class StaticSMOTE:
     (2011)
     """
 
+    # TODO add docstring
     def fit_transform(self, X, y):
         cnt = Counter(y)
         min_class = min(cnt, key=cnt.get)

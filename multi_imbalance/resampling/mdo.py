@@ -16,6 +16,7 @@ class MDO(TransformerMixin):
 
     """
 
+    # TODO add docstring
     def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, **kwargs):
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
@@ -28,16 +29,12 @@ class MDO(TransformerMixin):
 
     def fit_transform(self, X, y):
         """
-
-        Parameters
-        ----------
-        X two dimensional numpy array (number of samples x number of features) with float numbers
-        y one dimensional numpy array with labels for rows in X
-        class_balances list with minority class labels, if None every class will be oversampled
-
-        Returns
-        -------
-        Resampled X and y
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
+        :return:
+            resampled X, resampled y
         """
         self.knn.fit(X)
         self.X, self.y = X, y

@@ -42,7 +42,7 @@ doc/samples
 
 examples/cluster/joblib
 reuters/
-benchmarks/bench_covertype_data/
+.archive_benchmarks/bench_covertype_data/
 
 *.prefs
 .pydevproject

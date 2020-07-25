@@ -78,9 +78,9 @@ coverage report -m # or coverage html
 multi-imbalance uses reStructuredText markdown for docstrings. To build the documentation locally run:
 ```bash
 cd docs
-sphinx-build . _build
+make html -B
 ```
-and open `docs/_build/index.html`
+and open `docs/_build/html/index.html`
 
 if you add a new algorithm, we would appreciate if you include references and an example of use in `./examples` or docstrings.
 

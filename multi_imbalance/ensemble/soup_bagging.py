@@ -13,7 +13,7 @@ from multi_imbalance.utils.array_util import setdiff
 def fit_clf(args):
     return SOUPBagging.fit_classifier(args)
 
-
+# TODO add docstring
 class SOUPBagging(BaggingClassifier):
     def __init__(self, classifier=None, maj_int_min=None, n_classifiers=5):
         super().__init__()
@@ -53,10 +53,12 @@ class SOUPBagging(BaggingClassifier):
 
     def fit(self, X, y):
         """
-
-        :param X: {array-like, sparse matrix} of shape = [n_samples, n_features] The training input samples.
-        :param y: array-like, shape = [n_samples]. The target values (class labels).
-        :return: self object
+        :param X:
+            array-like, sparse matrix of shape = [n_samples, n_features] The training input samples.
+        :param y:
+            array-like, shape = [n_samples]. The target values (class labels).
+        :return:
+            self object
         """
         self.classes = np.unique(y)
 
@@ -76,14 +78,18 @@ class SOUPBagging(BaggingClassifier):
         Predict class for X. The predicted class of an input sample is computed as the class with the highest
         sum of predicted probability.
 
-        :param X: {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
+        :param X:
+            {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
         :param strategy:
-            'average' - takes max from average values in prediction
-            'optimistic' - takes always best value of probability
-            'pessimistic' - takes always the worst value of probability
-            'mixed' - for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
-        :param maj_int_min: dict. It keeps indices of minority classes under 'min' key.
-        :return: y : array of shape = [n_samples]. The predicted classes.
+            WHERE
+            -'average' - takes max from average values in prediction
+            -'optimistic' - takes always best value of probability
+            -'pessimistic' - takes always the worst value of probability
+            -'mixed' - for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
+        :param maj_int_min:
+            dict. It keeps indices of minority classes under 'min' key.
+        :return:
+            array of shape = [n_samples]. The predicted classes.
         """
         weights_sum = self.predict_proba(X)
         if strategy == 'average':
@@ -119,8 +125,10 @@ class SOUPBagging(BaggingClassifier):
         """
         Predict class probabilities for X.
 
-        :param X:{array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
-        :return: array of shape = [n_classifiers, n_samples, n_classes]. The class probabilities of the input samples.
+        :param X:
+            {array-like, sparse matrix} of shape = [n_samples, n_features]. The training input samples.
+        :return:
+            array of shape = [n_classifiers, n_samples, n_classes]. The class probabilities of the input samples.
         """
         n_samples = X.shape[0]
         n_classes = self.classes.shape[0]
