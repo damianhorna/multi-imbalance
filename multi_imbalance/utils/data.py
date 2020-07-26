@@ -1,5 +1,5 @@
 import glob
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 import numpy as np
 import pandas as pd
@@ -8,6 +8,7 @@ from pathlib import Path
 from scipy.io import arff
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import Bunch
+from statistics import median
 
 
 def construct_flat_2pc_df(X, y) -> pd.DataFrame:
@@ -98,3 +99,47 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
 
     return datasets
+
+
+def construct_maj_int_min(y: np.ndarray, strategy='median') -> OrderedDict:
+    """
+    This function creates dictionary with information which classes are minority or majority
+    :param y:
+        One dimensional numpy array that contains class labels
+    :param strategy:
+        The principle according to which the division into minority and majority classes will be determined:
+
+        * 'median':
+            A class whose size is equal to the median of the class sizes will be considered "intermediate"
+        * 'average':
+            The average class size will be calculated, all classes that are smaller will be considered as minority and
+            the rest will be considered majority
+    :return:
+        dictionary with keys 'maj', 'int', 'min. The value for each key is a list containing the class labels belonging
+        to the given group
+    """
+    class_sizes = Counter(y)
+
+    if strategy == 'median':
+        middle_size = median(list(class_sizes.values()))
+    elif strategy == 'average':
+        middle_size = np.mean(list(class_sizes.values()))
+    else:
+        raise ValueError(f'Unrecognized {strategy}. Only "median" and "average" are allowed.')
+
+    maj_int_min = OrderedDict({
+        'maj': list(),
+        'int': list(),
+        'min': list()
+    })
+    for class_label, class_size in class_sizes.items():
+        if class_size == middle_size:
+            class_group = 'int'
+        elif class_size < middle_size:
+            class_group = 'min'
+        else:
+            class_group = 'maj'
+
+        maj_int_min[class_group].append(class_label)
+
+    return maj_int_min
