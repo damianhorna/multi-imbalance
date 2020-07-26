@@ -72,3 +72,4 @@ venv
 data/extracted/
 
 docs/_build
+htmlcov

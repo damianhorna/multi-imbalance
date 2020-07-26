@@ -122,7 +122,7 @@ class OVO:
                 X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
                 if self.should_perform_oversampling(first_class, second_class):
                     X_filtered, y_filtered = self._oversample(X_filtered, y_filtered)
-                self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
+                self._binary_classifiers[row][col].fit(X_filtered, y_filtered, )
 
     def _get_classifier(self):
         if isinstance(self.binary_classifier, str):

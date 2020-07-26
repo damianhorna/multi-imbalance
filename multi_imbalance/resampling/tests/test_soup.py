@@ -133,7 +133,7 @@ def test_invalid_input_when_not_enough_labels():
     y = np.array([1])
 
     with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)
+        _, _ = clf.fit(X, y).transform(X)
 
 
 def test_invalid_input_when_one_dimension_X():
@@ -142,4 +142,4 @@ def test_invalid_input_when_one_dimension_X():
     y = np.array([1])
 
     with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)
+        _, _ = clf.fit(X, y).transform(X)

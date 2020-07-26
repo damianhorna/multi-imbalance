@@ -7,6 +7,8 @@ from sklearn.utils import check_random_state
 from collections import Counter
 from sklearn.decomposition import PCA
 
+from multi_imbalance.utils.data import construct_maj_int_min
+
 
 class MDO(TransformerMixin):
     """
@@ -16,33 +18,56 @@ class MDO(TransformerMixin):
 
     """
 
-    # TODO add docstring
-    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, **kwargs):
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, maj_int_dict=None):
+        """
+        :param k:
+            Number of neighbours considered during the neighbourhood analysis
+        :param k1_frac:
+            Ratio of the number of neighbours in the sample class to all neighbours in the neighbourhood.
+            If the ratio is greater, the example will not be considered noise
+        :param seed:
+        :param prop:
+            Oversampling ratio, if equal to one the class size after resampling will be equal to the size of
+            the largest class
+        """
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
         self.prop = prop
-        self.class_balances = kwargs.get('maj_int_min')
+        self.class_balances = maj_int_dict
 
-
-    def fit_transform(self, X, y):
+    def fit(self, X, y, **kwargs):
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
         :param y:
             one dimensional numpy array with labels for rows in X
         :return:
-            resampled X, resampled y
+            self
         """
+        if self.class_balances is None:
+            self.class_balances = construct_maj_int_min(y)
+
         self.knn.fit(X)
         self.X, self.y = X, y
 
-        oversampled_X, oversampled_y = X.copy(), y.copy()
-        quantities = Counter(y)
+        return self
+
+    def transform(self, X, **kwargs):
+        """
+        It applies MDO on data provided in fit method
+
+        :param X:
+        :param kwargs:
+        :return:
+            resampled X, resampled y
+        """
+        oversampled_X, oversampled_y = self.X.copy(), self.y.copy()
+        quantities = Counter(self.y)
         goal_quantity = int(max(list(quantities.values())))
-        labels = list(set(y))
+        labels = list(set(self.y))
         minority_classes = self.class_balances['min']
 
         for class_label in labels:

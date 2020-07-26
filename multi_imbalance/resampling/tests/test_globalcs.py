@@ -69,7 +69,7 @@ def calc_duplicates_quantities(X, y, X_oversampled):
 @pytest.mark.parametrize("X, y", complete_test_data)
 def test_output_length_validate(X, y, global_cs_mock):
     clf = global_cs_mock(X, y)
-    oversampled_X, oversampled_y = clf.fit_transform(X, y)
+    oversampled_X, oversampled_y = clf.fit(X, y).transform(X)
     assert len(oversampled_X) == get_goal_quantity(y)
     assert len(oversampled_y) == get_goal_quantity(y)
 
@@ -77,7 +77,7 @@ def test_output_length_validate(X, y, global_cs_mock):
 @pytest.mark.parametrize("X, y", complete_test_data)
 def test_output_equal_replication(X, y, global_cs_mock):
     clf = global_cs_mock(X, y)
-    oversampled_X, oversampled_y = clf.fit_transform(X, y)
+    oversampled_X, oversampled_y = clf.fit(X, y).transform(X)
     oversampled_class_quantities = calc_duplicates_quantities(X, y, oversampled_X)
 
     for label, duplicates_quantities in oversampled_class_quantities.items():
@@ -93,7 +93,7 @@ def test_invalid_input_when_not_enough_labels():
     y = np.array([1])
 
     with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)
+        _, _ = clf.fit(X, y).transform(X)
 
 
 def test_invalid_input_when_one_dimension_X():
@@ -102,4 +102,4 @@ def test_invalid_input_when_one_dimension_X():
     y = np.array([1])
 
     with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)
+        _, _ = clf.fit(X, y).transform(X)

@@ -54,7 +54,7 @@ X_train_resampled, y_train_resampled = mdo.fit_transform(np.copy(X_train), np.co
 
 # train the classifier on preprocessed data
 clf_tree = DecisionTreeClassifier(random_state=0)
-clf_tree.fit(X_train_resampled, y_train_resampled)
+clf_tree.fit(X_train_resampled,y_train_resampled,)
 
 # make predictions
 y_pred = clf_tree.predict(X_test)

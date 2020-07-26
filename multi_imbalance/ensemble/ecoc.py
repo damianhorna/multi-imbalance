@@ -150,7 +150,7 @@ class ECOC:
             binary_labels = np.array([self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in
                                       y_filtered])
             X_filtered, binary_labels = self._oversample(X_filtered, binary_labels)
-            classifier.fit(X_filtered, binary_labels)
+            classifier.fit(X_filtered, binary_labels, )
 
     def _gen_code_matrix(self):
         if self.encoding == 'dense':

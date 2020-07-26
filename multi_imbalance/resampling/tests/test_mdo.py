@@ -119,5 +119,5 @@ def test_mdo_api(mdo_mock):
     maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
     clf.k1 = 0
     clf.class_balances = maj_int_min
-    X_r, y_r = clf.fit_transform(X, y_imb_hard)
+    X_r, y_r = clf.fit(X, y_imb_hard).transform(X)
     assert X_r.shape == (28,2)

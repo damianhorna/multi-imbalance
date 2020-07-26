@@ -125,7 +125,7 @@ class MRBBagging(object):
             subset_x = np.array(subset_x).astype(np.float)
             subset_y = np.array(subset_y).astype(np.float)
 
-            self.classifiers[i] = la_list[i].fit(subset_x, subset_y)
+            self.classifiers[i] = la_list[i].fit(subset_x, subset_y, )
 
     def _find_random_features(self, labels_no, features_no, subset_x):
         random_features_idx = sample_without_replacement(labels_no, features_no)
@@ -171,9 +171,9 @@ class MRBBagging(object):
             self.feature_selection_methods[i + 1] = subset2_idx
             self.feature_selection_methods[i + 2] = subset3_idx
 
-            self.classifiers[i] = la_list[i].fit(subset1, subset_y)
-            self.classifiers[i + 1] = la_list[i + 1].fit(subset2, subset_y)
-            self.classifiers[i + 2] = la_list[i + 2].fit(subset3, subset_y)
+            self.classifiers[i] = la_list[i].fit(subset1, subset_y, )
+            self.classifiers[i + 1] = la_list[i + 1].fit(subset2, subset_y, )
+            self.classifiers[i + 2] = la_list[i + 2].fit(subset3, subset_y, )
 
     def _set_classes_dict(self, classes):
         self.classifier_classes = dict(enumerate(classes))
