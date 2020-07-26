@@ -15,15 +15,13 @@ class GlobalCS(object):
 
     def fit_transform(self, X, y, shuffle: bool = True):
         """
-
-        Parameters
-        ----------
-        X two dimensional numpy array (number of samples x number of features) with float numbers
-        y one dimensional numpy array with labels for rows in X
-
-        Returns
-        -------
-        Resampled X (max class quantity * number of unique classes), y (number of rows in X) as numpy array
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
+        :param shuffle:
+        :return:
+            Resampled X (max class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
         assert len(X.shape) == 2, 'X should have 2 dimension'
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'

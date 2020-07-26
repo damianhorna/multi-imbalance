@@ -64,3 +64,5 @@ html_static_path = []
 # MOCK_MODULES = ['numpy', 'scipy', 'sklearn', 'matplotlib', 'matplotlib.pyplot', 'scipy.interpolate', 'scipy.special', 'math', '__future__', 'toolboxutilities']
 # for mod_name in MOCK_MODULES:
 #     sys.modules[mod_name] = mock.Mock()
+
+autoclass_content = 'both' # for including __init__ in docs

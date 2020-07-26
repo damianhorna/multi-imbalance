@@ -27,29 +27,39 @@ class OVO:
 
     def __init__(self, binary_classifier='tree', n_neighbors=3, preprocessing='SOUP', preprocessing_between='all'):
         """
-        Parameters
-        ----------
-        binary_classifier: binary classifier. Possible classifiers:
+        :param binary_classifier:
+            binary classifier. Possible classifiers:
 
-        * 'tree': Decision Tree Classifier,
-        * 'KNN': K-Nearest Neighbors
-        * 'NB' : Naive Bayes
-        * An instance of a class that implements ClassifierMixin
+            * 'tree':
+                Decision Tree Classifier,
+            * 'KNN':
+                K-Nearest Neighbors
+            * 'NB' :
+                Naive Bayes
+            * 'ClassifierMixin' :
+                An instance of a class that implements ClassifierMixin
+        :param n_neighbors:
+            number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
+        :param preprocessing:
+            method for preprocessing of pairs of classes in the learning phase of ensemble. Possible values:
 
-        n_neighbors: number of nearest neighbors in KNN, works only if binary_classifier=='KNN'
+            * None:
+                no preprocessing applied
+            * 'globalCS':
+                oversampling with globalCS algorithm
+            * 'SMOTE':
+                oversampling with SMOTE algorithm
+            * 'SOUP':
+                oversampling and undersampling with SOUP algorithm
+            * 'TransformerMixin' :
+                An instance of a class that implements TransformerMixin
+        :param preprocessing_between:
+            types of classes between which resampling should be applied. Possible values:
 
-        preprocessing: method for preprocessing of pairs of classes in the learning phase of ensemble.
-        Possible values:
-        * None: no preprocessing applied
-        * 'globalCS': oversampling with globalCS algorithm
-        * 'SMOTE': oversampling with SMOTE algorithm
-        * 'SOUP': oversampling and undersampling with SOUP algorithm
-        * An instance of a class that implements TransformerMixin
-
-        preprocessing_between: types of classes between which resampling should be applied. Possible values:
-        * 'all' - oversampling between each pair of classes
-        * 'maj-min' - oversampling only between majority ad minority classes
-
+            * 'all' :
+                oversampling between each pair of classes
+            * 'maj-min' :
+                oversampling only between majority ad minority classes
         """
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
@@ -61,15 +71,14 @@ class OVO:
 
     def fit(self, X, y, minority_classes=None):
         """
-        Parameters
-        ----------
-        X: two dimensional numpy array (number of samples x number of features) with float numbers
-        y: one dimensional numpy array with labels for rows in X
-        minority_classes: list of classes considered to be minority
-
-        Returns
-        -------
-        self: object
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
+        :param minority_classes:
+            list of classes considered to be minority
+        :return:
+            self: object
         """
         if minority_classes is None:
             minority_classes = list()
@@ -84,14 +93,10 @@ class OVO:
 
     def predict(self, X):
         """
-        Parameters
-        ----------
-        X: two dimensional numpy array (number of samples x number of features) with float numbers
-
-        Returns
-        -------
-        y : numpy array, shape = [number of samples]
-            Predicted target values for X.
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :return:
+            numpy array, shape = [number of samples]. Predicted target values for X.
         """
         num_of_classes = len(self._labels)
         predicted = list()
