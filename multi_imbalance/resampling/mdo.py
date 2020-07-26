@@ -1,4 +1,4 @@
-from sklearn.base import TransformerMixin
+from imblearn.base import BaseSampler
 from sklearn.neighbors import NearestNeighbors
 
 import numpy as np
@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from multi_imbalance.utils.data import construct_maj_int_min
 
 
-class MDO(TransformerMixin):
+class MDO(BaseSampler):
     """
     Mahalanbois Distance Oversampling is an algorithm that oversamples all classes to a quantity of the major class.
     Samples for oversampling are chosen based on their k neighbours and new samples are created in random place but
@@ -18,7 +18,8 @@ class MDO(TransformerMixin):
 
     """
 
-    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, maj_int_dict=None):
+
+    def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, maj_int_min=None):
         """
         :param k:
             Number of neighbours considered during the neighbourhood analysis
@@ -29,23 +30,27 @@ class MDO(TransformerMixin):
         :param prop:
             Oversampling ratio, if equal to one the class size after resampling will be equal to the size of
             the largest class
+        :param maj_int_min:
+            dict {'maj': majority class labels, 'min': minority class labels}
         """
+        super().__init__()
+        self._sampling_type = 'over-sampling'
         self.knn = NearestNeighbors(n_neighbors=k)
         self.k2 = k
         self.k1 = int(k * k1_frac)
         self.random_state = check_random_state(seed)
         self.X, self.y = None, None
         self.prop = prop
-        self.class_balances = maj_int_dict
+        self.class_balances = maj_int_min
 
-    def fit(self, X, y, **kwargs):
+    def _fit_resample(self, X, y):
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
         :param y:
             one dimensional numpy array with labels for rows in X
         :return:
-            self
+            resampled X, resampled y
         """
         if self.class_balances is None:
             self.class_balances = construct_maj_int_min(y)
@@ -53,17 +58,6 @@ class MDO(TransformerMixin):
         self.knn.fit(X)
         self.X, self.y = X, y
 
-        return self
-
-    def transform(self, X, **kwargs):
-        """
-        It applies MDO on data provided in fit method
-
-        :param X:
-        :param kwargs:
-        :return:
-            resampled X, resampled y
-        """
         oversampled_X, oversampled_y = self.X.copy(), self.y.copy()
         quantities = Counter(self.y)
         goal_quantity = int(max(list(quantities.values())))

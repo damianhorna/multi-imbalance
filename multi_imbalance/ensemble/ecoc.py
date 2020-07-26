@@ -306,12 +306,12 @@ class ECOC:
                 return X, y
             elif self.preprocessing == 'globalCS':
                 gcs = GlobalCS()
-                return gcs.fit_transform(X, y)
+                return gcs.fit_resample(X, y)
             elif self.preprocessing == 'SMOTE':
                 return self._smote_oversample(X, y)
             elif self.preprocessing == 'SOUP':
                 soup = SOUP()
-                return soup.fit_transform(X, y)
+                return soup.fit_resample(X, y)
         else:
             if not hasattr(self.preprocessing, 'fit_transform'):
                 raise ValueError("Your resampler must implement fit_transform method")

@@ -4,13 +4,14 @@ from operator import itemgetter
 
 import numpy as np
 import sklearn
+from imblearn.base import BaseSampler
 from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 from multi_imbalance.utils.data import construct_maj_int_min
 
 
-class SOUP(TransformerMixin):
+class SOUP(BaseSampler):
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
     in each class. It also takes care of the similarity between classes, which means that it removes samples from
@@ -27,6 +28,8 @@ class SOUP(TransformerMixin):
         :param maj_int_min:
             dict {'maj': majority class labels, 'min': minority class labels}
         """
+        super().__init__()
+        self._sampling_type = 'clean-sampling'
         self.k = k
         self.shuffle = shuffle
         self.maj_int_min = maj_int_min
@@ -34,7 +37,7 @@ class SOUP(TransformerMixin):
         self.dsc_maj_cls, self.asc_min_cls = None, None
         self._X, self._y = None, None
 
-    def fit(self, X, y=None, **kwargs):
+    def _fit_resample(self, X, y):
         """
         The method computes the metrics required for resampling based on the given set
 
@@ -43,8 +46,9 @@ class SOUP(TransformerMixin):
         :param y:
             one dimensional numpy array with labels for rows in X
         :return:
-            self
+            Resampled X (median class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
+
         if self.maj_int_min is None:
             self.maj_int_min = construct_maj_int_min(y)
 
@@ -60,15 +64,7 @@ class SOUP(TransformerMixin):
                                   key=itemgetter(1), reverse=True)
         self.asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity),
                                   key=itemgetter(1), reverse=False)
-        return self
 
-    def transform(self, X, **kwargs):
-        """
-        The method applies a resampling algorithm
-
-        :return:
-            Resampled X (median class quantity * number of unique classes), y (number of rows in X) as numpy array
-        """
         for class_name, class_quantity in self.dsc_maj_cls:
             self._X, self._y = self._undersample(self._X, self._y, class_name)
 

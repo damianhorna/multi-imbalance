@@ -54,7 +54,7 @@ class SOUPBagging(BaggingClassifier):
         out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
-        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_transform(x_sampled, y_sampled)
+        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_resample(x_sampled, y_sampled)
         clf.fit(x_resampled, y_resampled)
 
         result = clf.predict_proba(x_out)
