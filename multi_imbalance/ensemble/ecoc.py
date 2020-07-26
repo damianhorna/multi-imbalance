@@ -30,38 +30,57 @@ class ECOC:
     def __init__(self, binary_classifier='KNN', preprocessing='SOUP', encoding='OVO', n_neighbors=3,
                  weights=None):
         """
-        Parameters
-        ----------
-        binary_classifier: binary classifier used by the algorithm. Possible classifiers:
-        * 'tree': Decision Tree Classifier,
-        * 'NB': Naive Bayes Classifier,
-        * 'KNN' : K-Nearest Neighbors
-        * An instance of a class that implements ClassifierMixin
+        :param binary_classifier:
+            binary classifier used by the algorithm. Possible classifiers:
 
-        preprocessing: method for oversampling between aggregated classes in each dichotomy. Possible methods:
-        * None : no oversampling applied,
-        * 'globalCS' : random oversampling - randomly chosen instances of minority classes are duplicated
-        * 'SMOTE' : Synthetic Minority Oversampling Technique
-        * 'SOUP' : Similarity Oversampling Undersampling Preprocessing
-        * An instance of a class that implements TransformerMixin
+            * 'tree':
+                Decision Tree Classifier,
+            * 'NB':
+                Naive Bayes Classifier,
+            * 'KNN' :
+                K-Nearest Neighbors
+            * 'ClassifierMixin' :
+                An instance of a class that implements ClassifierMixin
+        :param preprocessing:
+            method for oversampling between aggregated classes in each dichotomy. Possible methods:
 
-        encoding : algorithm for encoding classes. Possible encodings:
-        * 'dense': ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
-        * 'sparse' : ceil(10log2(num_of_classes)) dichotomies, 0 with probability 0.5, -1 and 1 with probability 0.25 each
-        * 'OVO' : 'one vs one' - n(n-1)/2 dichotomies, where n is number of classes, one for each pair of classes.
-         Each column has one 1 and one -1 for classes included in particular pair, 0s for remaining classes.
-        * 'OVA' : 'one vs all' - number of dichotomies is equal to number of classes. Each column has one 1 and
-            -1 for all remaining rows
-        * 'complete' : 2^(n-1)-1 dichotomies, reference
-            T. G. Dietterich and G. Bakiri.
-            Solving multiclass learning problems via error-correcting output codes.
-            Journal of Artificial Intelligence Research, 2:263–286, 1995.
+            * None :
+                no oversampling applied,
+            * 'globalCS' :
+                random oversampling - randomly chosen instances of minority classes are duplicated
+            * 'SMOTE' :
+                Synthetic Minority Oversampling Technique
+            * 'SOUP' :
+                Similarity Oversampling Undersampling Preprocessing
+            * 'TransformerMixin' :
+                An instance of a class that implements TransformerMixin
+        :param encoding:
+            algorithm for encoding classes. Possible encodings:
 
-        weights: strategy for dichotomies weighting. Possible values:
-        * None : no weighting applied
-        * 'acc' : accuracy-based weights
-        * 'avg_tpr_min' : weights based on average true positive rates of dichotomies
+            * 'dense':
+                ceil(10log2(num_of_classes)) dichotomies, -1 and 1 with probability 0.5 each
+            * 'sparse' :
+                ceil(10log2(num_of_classes)) dichotomies, 0 with probability 0.5, -1 and 1 with probability 0.25 each
+            * 'OVO' :
+                'one vs one' - n(n-1)/2 dichotomies, where n is number of classes, one for each pair of classes.
+                Each column has one 1 and one -1 for classes included in particular pair, 0s for remaining classes.
+            * 'OVA' :
+                'one vs all' - number of dichotomies is equal to number of classes. Each column has one 1 and
+                -1 for all remaining rows
+            * 'complete' : 2^(n-1)-1 dichotomies, reference
+                T. G. Dietterich and G. Bakiri.
+                Solving multiclass learning problems via error-correcting output codes.
+                Journal of Artificial Intelligence Research, 2:263–286, 1995.
+        :param n_neighbors:
+        :param weights:
+            strategy for dichotomies weighting. Possible values:
 
+            * None :
+                no weighting applied
+            * 'acc' :
+                accuracy-based weights
+            * 'avg_tpr_min' :
+                weights based on average true positive rates of dichotomies
         """
         self.binary_classifier = binary_classifier
         self.encoding = encoding
@@ -78,14 +97,15 @@ class ECOC:
 
     def fit(self, X, y, minority_classes=None):
         """
-        Parameters
-        ----------
-        X: two dimensional numpy array (number of samples x number of features) with float numbers
-        y: one dimensional numpy array with labels for rows in X
-        minority_classes: list of classes considered to be minority classes
-        Returns
-        -------
-        self: object
+
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
+        :param minority_classes:
+            list of classes considered to be minority classes
+        :return:
+            self: object
         """
         if minority_classes is not None:
             self.minority_classes = minority_classes
@@ -106,13 +126,10 @@ class ECOC:
 
     def predict(self, X):
         """
-        Parameters
-        ----------
-        X: two dimensional numpy array (number of samples x number of features) with float numbers
-        Returns
-        -------
-        y : numpy array, shape = [number of samples]
-            Predicted target values for X.
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :return:
+            numpy array, shape = [number of samples]. Predicted target values for X.
         """
         output_codes = np.zeros((X.shape[0], self._code_matrix.shape[1]))
         for classifier_idx, classifier in enumerate(self._binary_classifiers):

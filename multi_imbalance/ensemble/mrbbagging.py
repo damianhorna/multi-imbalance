@@ -18,30 +18,27 @@ class MRBBagging(object):
     M. Lango, J. Stefanowski:
     Multi-class and feature selection extensions of RoughlyBalanced Bagging for imbalanced data.
     J. Intell Inf Syst (2018) 50: 97
-
-    Methods:
-    ----------
-    fit(x, y)
-        Build a MRBBagging ensemble of estimators from the training data.
-
-    predict(data)
-        Predict classes for examples in data.
     """
 
     def __init__(self, k, learning_algorithm, undersampling=True, feature_selection=False,
                  random_fs=False, half_features=True, random_state=None):
         """
-        Parameters
-        ----------
-        :param k: number of classifiers (multiplied by 3 when choosing feature selection)
-        :param learning_algorithm: classifier to be used
-        :param undersampling: (optional) boolean value to determine if undersampling or oversampling should be performed
-        :param feature_selection: (optional) boolean value to determine if feature selection should be performed
-        :param random_fs: (optional) boolean value to determine if feature selection should be all random (if False, chi^2, F test
-        and random feature selection are performed)
-        :param half_features: (optional) boolean value to determine if the number of features to be selected should be 50%
-        (if False, it is set to the square root of the base number of features)
-        :param random_state: (optional) the seed of the pseudo random number generator
+        :param k:
+            number of classifiers (multiplied by 3 when choosing feature selection)
+        :param learning_algorithm:
+            classifier to be used
+        :param undersampling:
+            (optional) boolean value to determine if undersampling or oversampling should be performed
+        :param feature_selection:
+            (optional) boolean value to determine if feature selection should be performed
+        :param random_fs:
+            (optional) boolean value to determine if feature selection should be all random (if False, chi^2, F test
+            and random feature selection are performed)
+        :param half_features:
+            (optional) boolean value to determine if the number of features to be selected should be 50%
+            (if False, it is set to the square root of the base number of features)
+        :param random_state:
+            (optional) the seed of the pseudo random number generator
         """
         assert learning_algorithm is not None, "Learning algorithm cannot be None"
         assert k > 0, "Number of classifiers must be > 0"
@@ -55,35 +52,16 @@ class MRBBagging(object):
         self.half_features = half_features
         self.random_state = random_state
 
-    def _group_data(self, x, y):
-        classes = set(y)
-        self.classes = {key: value for (key, value) in enumerate(classes)}
-        data = [[x[i], y[i]] for i in range(len(x))]
-        grouped_data = dict()
-        for cl in classes:
-            assert cl is not None, "Missing class name"
-            grouped_data[cl] = list(filter(lambda d: d[1] == cl, data))
-        return classes, grouped_data
-
-    def _resample(self, n, prob, classes, grouped_data):
-        samples_no = multinomial.rvs(n=n, p=prob, random_state=self.random_state)
-        subset_x, subset_y = [], []
-        for no, j in enumerate(classes):
-            data = grouped_data[j]
-            resample_class = resample(data, replace=True, n_samples=samples_no[no], random_state=self.random_state)
-            for sample in resample_class:
-                subset_x.append(sample[0])
-                subset_y.append(sample[1])
-        return np.array(subset_x), np.array(subset_y)
-
     def fit(self, x, y):
         """
-        Parameters
-        ----------
+        Build a MRBBagging ensemble of estimators from the training data.
+
         :param x:
             Two dimensional numpy array (number of samples x number of features) with float numbers.
         :param y:
             One dimensional numpy array with labels for rows in X.
+        :return:
+            self (object)
         """
         assert len(x) == len(y), "Not enough labels"
 
@@ -109,6 +87,36 @@ class MRBBagging(object):
             self._train(la_list, n, prob, classes, grouped_data)
 
         return self
+
+    def predict(self, data):
+        """
+        Predict classes for examples in data.
+
+        :param data:
+            Two dimensional numpy array (number of samples x number of features) with float numbers.
+        """
+        return self._select_classes(data)
+
+    def _group_data(self, x, y):
+        classes = set(y)
+        self.classes = {key: value for (key, value) in enumerate(classes)}
+        data = [[x[i], y[i]] for i in range(len(x))]
+        grouped_data = dict()
+        for cl in classes:
+            assert cl is not None, "Missing class name"
+            grouped_data[cl] = list(filter(lambda d: d[1] == cl, data))
+        return classes, grouped_data
+
+    def _resample(self, n, prob, classes, grouped_data):
+        samples_no = multinomial.rvs(n=n, p=prob, random_state=self.random_state)
+        subset_x, subset_y = [], []
+        for no, j in enumerate(classes):
+            data = grouped_data[j]
+            resample_class = resample(data, replace=True, n_samples=samples_no[no], random_state=self.random_state)
+            for sample in resample_class:
+                subset_x.append(sample[0])
+                subset_y.append(sample[1])
+        return np.array(subset_x), np.array(subset_y)
 
     def _train(self, la_list, n, prob, classes, grouped_data):
         for i in range(len(la_list)):
@@ -200,12 +208,3 @@ class MRBBagging(object):
         for class_id in selected_classes_ids:
             selected_classes.append(self.classifier_classes[class_id])
         return selected_classes
-
-    def predict(self, data):
-        """
-        Parameters
-        ----------
-        :param data:
-            Two dimensional numpy array (number of samples x number of features) with float numbers.
-        """
-        return self._select_classes(data)

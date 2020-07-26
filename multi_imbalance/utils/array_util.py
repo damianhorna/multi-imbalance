@@ -55,8 +55,6 @@ def contains(dataset, example):
 
 def index_of(arr, example):
     """
-    :param arr:
-    :param example:
     :return: Index of learning exmaple in arr.
     """
     for i, x in enumerate(arr):

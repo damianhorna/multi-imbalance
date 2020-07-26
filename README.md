@@ -61,6 +61,28 @@ y_pred = clf_tree.predict(X_test)
 ```
 
 For more examples please refer to https://multi-imbalance.readthedocs.io/en/latest/
+## For developers:
+multi-imbalance follows sklearn's coding guideline: https://scikit-learn.org/stable/developers/contributing.html
+
+We use pytest as our unit tests framework. To use it, simply run:
+```bash
+pytest
+```
+
+If you would like to check the code coverage:
+```bash
+coverage run -m pytest
+coverage report -m # or coverage html
+```
+
+multi-imbalance uses reStructuredText markdown for docstrings. To build the documentation locally run:
+```bash
+cd docs
+make html -B
+```
+and open `docs/_build/html/index.html`
+
+if you add a new algorithm, we would appreciate if you include references and an example of use in `./examples` or docstrings.
 
 ## About
 If you use multi-imbalance in a scientific publication, please consider including
