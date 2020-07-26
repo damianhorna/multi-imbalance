@@ -55,7 +55,7 @@ class SOUPBagging(BaggingClassifier):
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
         x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_transform(x_sampled, y_sampled)
-        clf.fit(x_resampled, y_resampled, )
+        clf.fit(x_resampled, y_resampled)
 
         result = clf.predict_proba(x_out)
         class_sum_prob = np.sum(result, axis=0) + 0.001

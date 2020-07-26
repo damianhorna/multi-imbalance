@@ -36,7 +36,7 @@ def test_soubagging():
     clf = KNeighborsClassifier()
     maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
     clf = SOUPBagging(clf, n_classifiers=2, maj_int_min=maj_int_min)
-    clf.fit(X_train, y_train, )
+    clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     assert all(y_pred == y_test)
     y_pred = clf.predict(X_test, strategy='mixed')
@@ -53,7 +53,7 @@ def test_exception():
     clf = KNeighborsClassifier()
     maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
     clf = SOUPBagging(clf, n_classifiers=2, maj_int_min=maj_int_min)
-    clf.fit(X_train, y_train, )
+    clf.fit(X_train, y_train)
     with pytest.raises(KeyError):
         clf.predict(X_test, 'incorrect')
 
@@ -61,6 +61,6 @@ def test_exception():
 def test_default_classifier():
     maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
     clf = SOUPBagging(n_classifiers=2, maj_int_min=maj_int_min)
-    clf.fit(X_train, y_train, )
+    clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     assert all(y_pred == y_test)
