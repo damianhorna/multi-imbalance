@@ -2,9 +2,10 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import sklearn
+from sklearn.base import TransformerMixin
 
 
-class GlobalCS(object):
+class GlobalCS(TransformerMixin):
     """
     Global CS is an algorithm that equalizes number of samples in each class. It duplicates all samples equally
     for each class to achieve majority class size
