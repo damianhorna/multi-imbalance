@@ -83,7 +83,7 @@ def test_with_own_classifier():
 
 def test_with_own_preprocessing():
     class DummyResampler:
-        def fit_transform(self, X, y):
+        def fit_resample(self, X, y):
             return np.concatenate((X, X), axis=0), np.concatenate((y, y), axis=None)
 
     dummy_resampler = DummyResampler()
@@ -111,7 +111,7 @@ def test_unknown_preprocessing():
     assert 'DUMMY_OVERSAMPLING' in str(e.value)
 
 
-def test_own_preprocessing_without_fit_transform():
+def test_own_preprocessing_without_fit_resample():
     class DummyOversampler:
         def foo(self, X, y):
             pass
@@ -123,7 +123,7 @@ def test_own_preprocessing_without_fit_transform():
     ovo_clf = ovo.OVO(preprocessing=dummy_oversampler)
     with pytest.raises(ValueError) as e:
         ovo_clf.fit(X, y)
-    assert 'fit_transform' in str(e.value)
+    assert 'fit_resample' in str(e.value)
 
 
 def test_unknown_preprocessing_between_strategy_raises_exception():

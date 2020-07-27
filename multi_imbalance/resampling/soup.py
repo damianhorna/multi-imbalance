@@ -4,11 +4,14 @@ from operator import itemgetter
 
 import numpy as np
 import sklearn
+from imblearn.base import BaseSampler
 from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
+from multi_imbalance.utils.data import construct_maj_int_min
 
-class SOUP(TransformerMixin):
+
+class SOUP(BaseSampler):
     """
     Similarity Oversampling and Undersampling Preprocessing (SOUP) is an algorithm that equalizes number of samples
     in each class. It also takes care of the similarity between classes, which means that it removes samples from
@@ -16,52 +19,62 @@ class SOUP(TransformerMixin):
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 7, **kwargs) -> None:
+    def __init__(self, k: int = 7, shuffle=False, maj_int_min=None) -> None:
         """
         :param k:
             number of neighbors
-        :param kwargs:
-            maj_int_min dict {'maj': majority class labels, 'min': minority class labels}
-        """
-        self.k = k
-        self.quantities, self.goal_quantity = [None] * 2
-        self.maj_int_min = kwargs.get('maj_int_min')
-
-    def fit_transform(self, _X, _y, shuffle: bool = False):
-        """
-        :param _X:
-            two dimensional numpy array (number of samples x number of features) with float numbers
-        :param _y:
-            one dimensional numpy array with labels for rows in X
         :param shuffle:
             bool - output will be shuffled
+        :param maj_int_min:
+            dict {'maj': majority class labels, 'min': minority class labels}
+        """
+        super().__init__()
+        self._sampling_type = 'clean-sampling'
+        self.k = k
+        self.shuffle = shuffle
+        self.maj_int_min = maj_int_min
+        self.quantities, self.goal_quantity = None, None
+        self.dsc_maj_cls, self.asc_min_cls = None, None
+        self._X, self._y = None, None
+
+    def _fit_resample(self, X, y):
+        """
+        The method computes the metrics required for resampling based on the given set
+
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
         :return:
             Resampled X (median class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
 
-        X = deepcopy(_X)
-        y = deepcopy(_y)
+        if self.maj_int_min is None:
+            self.maj_int_min = construct_maj_int_min(y)
 
-        assert len(X.shape) == 2, 'X should have 2 dimension'
-        assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
+        self._X = deepcopy(X)
+        self._y = deepcopy(y)
 
-        self.quantities = Counter(y)
+        assert len(self._X.shape) == 2, 'X should have 2 dimension'
+        assert self._X.shape[0] == self._y.shape[0], 'Number of labels must be equal to number of samples'
+
+        self.quantities = Counter(self._y)
         self.goal_quantity = self._calculate_goal_quantity(self.maj_int_min)
-        dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity), key=itemgetter(1),
-                             reverse=True)
-        asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity), key=itemgetter(1),
-                             reverse=False)
+        self.dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity),
+                                  key=itemgetter(1), reverse=True)
+        self.asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity),
+                                  key=itemgetter(1), reverse=False)
 
-        for class_name, class_quantity in dsc_maj_cls:
-            X, y = self._undersample(X, y, class_name)
+        for class_name, class_quantity in self.dsc_maj_cls:
+            self._X, self._y = self._undersample(self._X, self._y, class_name)
 
-        for class_name, class_quantity in asc_min_cls:
-            X, y = self._oversample(X, y, class_name)
+        for class_name, class_quantity in self.asc_min_cls:
+            self._X, self._y = self._oversample(self._X, self._y, class_name)
 
-        if shuffle:
-            X, y = sklearn.utils.shuffle(X, y)
+        if self.shuffle:
+            self._X, self._y = sklearn.utils.shuffle(self._X, self._y)
 
-        return np.array(X), np.array(y)
+        return np.array(self._X), np.array(self._y)
 
     def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
         self.quantities = Counter(y)

@@ -2,42 +2,47 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import sklearn
+from imblearn.base import BaseSampler
 
 
-class GlobalCS(object):
+class GlobalCS(BaseSampler):
     """
     Global CS is an algorithm that equalizes number of samples in each class. It duplicates all samples equally
     for each class to achieve majority class size
     """
 
-    def __init__(self):
-        self.quantities = None
+    def __init__(self, shuffle: bool = True):
+        super().__init__()
+        self._sampling_type = 'over-sampling'
+        self.shuffle = shuffle
+        self.quantities, self.max_quantity, self.X, self.y = [None] * 4
 
-    def fit_transform(self, X, y, shuffle: bool = True):
+    def _fit_resample(self, X, y):
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
         :param y:
             one dimensional numpy array with labels for rows in X
-        :param shuffle:
         :return:
             Resampled X (max class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
         assert len(X.shape) == 2, 'X should have 2 dimension'
         assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
 
-        result_X, result_y = list(), list()
-
         self.quantities = Counter(y)
         self.max_quantity = int(np.max(list(self.quantities.values())))
+        self.X = X
+        self.y = y
+
+        result_X, result_y = list(), list()
 
         for class_name, class_quantity in self.quantities.items():
-            temp_X, temp_y = self._equal_oversample(X, y, class_name)
+            temp_X, temp_y = self._equal_oversample(self.X, self.y, class_name)
 
             result_X.extend(temp_X)
             result_y.extend(temp_y)
 
-        if shuffle:
+        if self.shuffle:
             result_X, result_y = sklearn.utils.shuffle(result_X, result_y)
 
         return np.array(result_X), np.array(result_y)

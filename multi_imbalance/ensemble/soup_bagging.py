@@ -13,9 +13,26 @@ from multi_imbalance.utils.array_util import setdiff
 def fit_clf(args):
     return SOUPBagging.fit_classifier(args)
 
-# TODO add docstring
+
 class SOUPBagging(BaggingClassifier):
+    """
+    Version of Bagging that applies SOUP in each classifier
+
+    Reference:
+    Lango, M., and Stefanowski, J. SOUP-Bagging: a new approach for multi-class
+    imbalanced data classification. PP-RAI ’19: Polskie Porozumienie na Rzecz Sztucznej
+    Inteligencji (2019).
+    """
+
     def __init__(self, classifier=None, maj_int_min=None, n_classifiers=5):
+        """
+        :param classifier:
+            Instance of classifier
+        :param maj_int_min:
+            dict {'maj': majority class labels, 'min': minority class labels}
+        :param n_classifiers:
+            number of classifiers
+        """
         super().__init__()
         self.classifiers, self.clf_weights = list(), list()
         self.maj_int_min = maj_int_min
@@ -37,7 +54,7 @@ class SOUPBagging(BaggingClassifier):
         out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
-        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_transform(x_sampled, y_sampled)
+        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_resample(x_sampled, y_sampled)
         clf.fit(x_resampled, y_resampled)
 
         result = clf.predict_proba(x_out)
@@ -51,12 +68,13 @@ class SOUPBagging(BaggingClassifier):
             print(f'Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}')
         return clf, global_weights
 
-    def fit(self, X, y):
+    def fit(self, X, y, **kwargs):
         """
         :param X:
             array-like, sparse matrix of shape = [n_samples, n_features] The training input samples.
         :param y:
             array-like, shape = [n_samples]. The target values (class labels).
+        :param **kwargs:
         :return:
             self object
         """
@@ -73,7 +91,7 @@ class SOUPBagging(BaggingClassifier):
 
         self.clf_weights = np.array(self.clf_weights)
 
-    def predict(self, X, strategy: str = 'average', maj_int_min: dict = None):
+    def predict(self, X, strategy: str = 'average'):
         """
         Predict class for X. The predicted class of an input sample is computed as the class with the highest
         sum of predicted probability.
@@ -89,8 +107,6 @@ class SOUPBagging(BaggingClassifier):
                 takes always the worst value of probability
             * 'mixed' :
                 for minority classes takes optimistic strategy, and pessimistic for others. It requires maj_int_min
-        :param maj_int_min:
-            dict. It keeps indices of minority classes under 'min' key.
         :return:
             array of shape = [n_samples]. The predicted classes.
         """
@@ -108,7 +124,7 @@ class SOUPBagging(BaggingClassifier):
 
             for i in range(n_classes):
                 two_dim_class_vector = weights_sum[:, :, i]  # [:,:,1] -> [classifiers x samples]
-                if i in maj_int_min['min']:
+                if i in self.maj_int_min['min']:
                     squeeze_with_strategy = np.max(two_dim_class_vector, axis=0)
                 else:
                     squeeze_with_strategy = np.min(two_dim_class_vector, axis=0)  # [1, n_samples, 1] -> [n_samples]

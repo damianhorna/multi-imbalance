@@ -39,7 +39,7 @@ def test_soubagging():
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     assert all(y_pred == y_test)
-    y_pred = clf.predict(X_test, strategy='mixed', maj_int_min=maj_int_min)
+    y_pred = clf.predict(X_test, strategy='mixed')
     assert all(y_pred == y_test)
     y_pred = clf.predict(X_test, strategy='optimistic')
     assert all(y_pred == y_test)
