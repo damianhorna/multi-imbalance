@@ -6,10 +6,11 @@ from scipy.stats import multinomial
 from sklearn.feature_selection import SelectKBest, chi2, f_classif
 from sklearn.utils import resample
 from sklearn.utils.random import sample_without_replacement
+from sklearn.ensemble import BaggingClassifier
 import numpy as np
 
 
-class MRBBagging(object):
+class MRBBagging(BaggingClassifier):
     """
     Multi-class Roughly Balanced Bagging (MRBBagging) is a generalization of MRBBagging for adapting to multiple
     minority classes.
@@ -20,8 +21,8 @@ class MRBBagging(object):
     J. Intell Inf Syst (2018) 50: 97
     """
 
-    def __init__(self, k, learning_algorithm, undersampling=True, feature_selection=False,
-                 random_fs=False, half_features=True, random_state=None):
+    def __init__(self, k, learning_algorithm, undersampling=True, feature_selection=False, random_fs=False,
+                 half_features=True, random_state=None):
         """
         :param k:
             number of classifiers (multiplied by 3 when choosing feature selection)
@@ -40,6 +41,7 @@ class MRBBagging(object):
         :param random_state:
             (optional) the seed of the pseudo random number generator
         """
+        super().__init__(random_state)
         assert learning_algorithm is not None, "Learning algorithm cannot be None"
         assert k > 0, "Number of classifiers must be > 0"
         self.classifiers, self.classes, self.classifier_classes = dict(), dict(), dict()
@@ -52,7 +54,7 @@ class MRBBagging(object):
         self.half_features = half_features
         self.random_state = random_state
 
-    def fit(self, x, y):
+    def fit(self, x, y, **kwargs):
         """
         Build a MRBBagging ensemble of estimators from the training data.
 
