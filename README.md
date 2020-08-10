@@ -12,7 +12,7 @@ multi-imbalance is a python package tackling the problem of multi-class imbalanc
 Tha package has been tested under python 3.6, 3.7 and 3.8. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
 Requirements include:
 * numpy>=1.17.0,
-* scikit-learn>=0.21.3,
+* scikit-learn==0.21.3,
 * pandas>=0.25.1,
 * pytest>=5.1.2,
 * imbalanced-learn>=0.6.1
