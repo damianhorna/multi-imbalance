@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from sklearn.ensemble import BaggingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -10,7 +11,7 @@ from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
 
 
-class OVO:
+class OVO(BaggingClassifier):
     """
 
     OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -61,6 +62,7 @@ class OVO:
             * 'maj-min' :
                 oversampling only between majority ad minority classes
         """
+        super().__init__()
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
         self.preprocessing = preprocessing

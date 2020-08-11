@@ -1,4 +1,7 @@
 import pytest
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 import multi_imbalance.ensemble.ovo as ovo
 import numpy as np
 
@@ -131,3 +134,17 @@ def test_unknown_preprocessing_between_strategy_raises_exception():
     with pytest.raises(ValueError) as e:
         ovo_clf.fit(X, y)
     assert 'min-intermediate' in str(e.value)
+
+
+@pytest.mark.parametrize("preprocessing_btwn", ['all', 'maj-min'])
+@pytest.mark.parametrize("classifier", ['tree', 'NB', 'KNN'])
+@pytest.mark.parametrize("preprocessing", [None, 'globalCS', 'SMOTE', 'SOUP'])
+def test_ecoc_with_sklearn_pipeline(preprocessing_btwn, classifier, preprocessing):
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('ecoc', ovo.OVO(binary_classifier=classifier, preprocessing=preprocessing,
+                         preprocessing_between=preprocessing_btwn))
+    ])
+    pipeline.fit(X, y)
+    y_hat = pipeline.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.99]]))
+    assert len(y_hat) == 3
