@@ -12,9 +12,10 @@ from collections import Counter
 from collections import defaultdict
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
+from sklearn.ensemble import BaggingClassifier
 
 
-class ECOC:
+class ECOC(BaggingClassifier):
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
@@ -82,6 +83,7 @@ class ECOC:
             * 'avg_tpr_min' :
                 weights based on average true positive rates of dichotomies
         """
+        super().__init__()
         self.binary_classifier = binary_classifier
         self.encoding = encoding
         self.preprocessing = preprocessing
