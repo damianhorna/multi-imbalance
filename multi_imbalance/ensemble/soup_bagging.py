@@ -76,6 +76,7 @@ class SOUPBagging(BaggingClassifier):
         :param y:
             array-like, shape = [n_samples]. The target values (class labels).
         :param **kwargs:
+            dict (optional)
         :return:
             self object
         """

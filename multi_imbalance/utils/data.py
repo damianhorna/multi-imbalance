@@ -103,6 +103,7 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
 def construct_maj_int_min(y: np.ndarray, strategy='median') -> OrderedDict:
     """
     This function creates dictionary with information which classes are minority or majority
+
     :param y:
         One dimensional numpy array that contains class labels
     :param strategy:
