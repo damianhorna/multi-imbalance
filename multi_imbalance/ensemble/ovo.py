@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from sklearn.ensemble import BaggingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -10,7 +11,7 @@ from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
 
 
-class OVO:
+class OVO(BaggingClassifier):
     """
 
     OVO (One vs One) is an ensemble method that makes predictions for multi-class problems. OVO decomposes problem
@@ -61,6 +62,7 @@ class OVO:
             * 'maj-min' :
                 oversampling only between majority ad minority classes
         """
+        super().__init__()
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
         self.preprocessing = preprocessing
@@ -163,16 +165,16 @@ class OVO:
                 return X, y
             elif self.preprocessing == 'globalCS':
                 gcs = GlobalCS()
-                return gcs.fit_transform(X, y)
+                return gcs.fit_resample(X, y)
             elif self.preprocessing == 'SMOTE':
                 return self._smote_oversample(X, y)
             elif self.preprocessing == 'SOUP':
                 soup = SOUP()
-                return soup.fit_transform(X, y)
+                return soup.fit_resample(X, y)
         else:
-            if not hasattr(self.preprocessing, 'fit_transform'):
-                raise ValueError("Your resampler must implement fit_transform method")
-            return self.preprocessing.fit_transform(X, y)
+            if not hasattr(self.preprocessing, 'fit_resample'):
+                raise ValueError("Your resampler must implement fit_resample method")
+            return self.preprocessing.fit_resample(X, y)
 
     def _smote_oversample(self, X, y):
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)

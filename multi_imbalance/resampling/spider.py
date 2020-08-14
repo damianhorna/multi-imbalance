@@ -1,10 +1,14 @@
-import numpy as np
-from sklearn.neighbors import NearestNeighbors
-from multi_imbalance.utils.array_util import (union, setdiff, contains)
 from collections import Counter
 
+import numpy as np
+from imblearn.base import BaseSampler
+from sklearn.neighbors import NearestNeighbors
 
-class SPIDER3:
+from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from multi_imbalance.utils.data import construct_maj_int_min
+
+
+class SPIDER3(BaseSampler):
     """
     SPIDER3 algorithm implementation for selective preprocessing of multi-class imbalanced data sets.
 
@@ -14,30 +18,26 @@ class SPIDER3:
     on Computer Recognition Systems CORES 2017
     """
 
-    def __init__(self, k, majority_classes, intermediate_classes, minority_classes, cost=None):
+    def __init__(self, k, maj_int_min=None, cost=None):
         """
         :param k:
             Number of nearest neighbors considered while resampling.
+        :param maj_int_min:
+            Dict that contains lists of majority, intermediate and minority classes labels.
         :param cost:
             The cost matrix. An element c[i, j] of this matrix represents the cost associated with
             misclassifying an example from class i as class one from class j.
-        :param majority_classes:
-            List of majority classes.
-        :param intermediate_classes:
-            List of intermediate classes.
-        :param minority_classes:
-            List of minority classes.
         """
 
+        super().__init__()
+        self._sampling_type = 'clean-sampling'
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
+        self.maj_int_min = maj_int_min
         self.cost = cost
-        self.majority_classes = majority_classes
-        self.intermediate_classes = intermediate_classes
-        self.minority_classes = minority_classes
         self.AS, self.RS = np.array([]), np.array([])
 
-    def fit_transform(self, X, y):
+    def _fit_resample(self, X, y):
         """
         Performs resampling
 
@@ -48,11 +48,9 @@ class SPIDER3:
         :return:
             Resampled X along with accordingly modified labels, resampled y
         """
-        self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
-        self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
-        if self.cost is None:
-            self.cost = self._estimate_cost_matrix(y)
+        self._initialize_algorithm(X, y)
 
+        self.DS = np.append(X, y.reshape(y.shape[0], 1), axis=1)
         self._restart_perspective()
         self._calculate_weak_majority_examples()
         self._restore_perspective()
@@ -67,6 +65,17 @@ class SPIDER3:
         self.DS = union(self.DS, self.AS)
 
         return self.DS[:, :-1], self.DS[:, -1]
+
+    def _initialize_algorithm(self, X, y):
+        if self.maj_int_min is None:
+            self.maj_int_min = construct_maj_int_min(y)
+        self.majority_classes = self.maj_int_min['maj']
+        self.intermediate_classes = self.maj_int_min['int']
+        self.minority_classes = self.maj_int_min['min']
+
+        self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
+        if self.cost is None:
+            self.cost = self._estimate_cost_matrix(y)
 
     @staticmethod
     def _estimate_cost_matrix(y):

@@ -1,8 +1,11 @@
+import numpy as np
 import pytest
+from numpy.testing import assert_array_almost_equal
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.utils import resample
+from sklearn.utils.validation import check_is_fitted
 
 from multi_imbalance.ensemble.soup_bagging import SOUPBagging
-import numpy as np
 
 X_train = np.array([
     [0.05837771, 0.57543339],
@@ -39,7 +42,7 @@ def test_soubagging():
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     assert all(y_pred == y_test)
-    y_pred = clf.predict(X_test, strategy='mixed', maj_int_min=maj_int_min)
+    y_pred = clf.predict(X_test, strategy='mixed')
     assert all(y_pred == y_test)
     y_pred = clf.predict(X_test, strategy='optimistic')
     assert all(y_pred == y_test)
@@ -64,3 +67,17 @@ def test_default_classifier():
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     assert all(y_pred == y_test)
+
+
+def test_fit_classifier_classifier():
+    maj_int_min = {'maj': [0], 'int': [], 'min': [1]}
+    clf = KNeighborsClassifier()
+    clf, weights = SOUPBagging.fit_classifier([clf, X_train, y_train,
+                                               resample(X_train, y_train, stratify=y_train, random_state=0),
+                                               maj_int_min])
+    y_pred = clf.predict(X_test)
+
+    check_is_fitted(clf)
+    assert all(y_pred == y_test)
+    assert_array_almost_equal(weights, np.array([1.33288904, 0.66644452]))
+

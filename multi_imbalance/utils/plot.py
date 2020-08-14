@@ -1,7 +1,9 @@
 from collections import Counter
-import seaborn as sns
+
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.decomposition import PCA
+
 from multi_imbalance.utils.data import construct_flat_2pc_df
 
 sns.set_style('darkgrid')

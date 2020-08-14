@@ -125,21 +125,3 @@ def test_undersample(X, y, class_name, expected_undersampling, expected_oversamp
     undersampled_X, undersampled_y = clf._undersample(X, y, class_name)
     assert len(undersampled_X) == expected_undersampling
     assert len(undersampled_y) == expected_undersampling
-
-
-def test_invalid_input_when_not_enough_labels():
-    clf = SOUP(k=5)
-    X = np.array([[1, 1], [1, 0]])
-    y = np.array([1])
-
-    with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)
-
-
-def test_invalid_input_when_one_dimension_X():
-    clf = SOUP(k=5)
-    X = np.array([1, 1, 0])
-    y = np.array([1])
-
-    with pytest.raises(AssertionError):
-        _, _ = clf.fit_transform(X, y)

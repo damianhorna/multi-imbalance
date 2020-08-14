@@ -1,5 +1,7 @@
 import pytest
 import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 import multi_imbalance.ensemble.ecoc as ecoc
 
@@ -173,3 +175,15 @@ def test_own_preprocessing_without_fit_transform():
     with pytest.raises(ValueError) as e:
         ecoc_clf.fit(X, y)
     assert 'fit_transform' in str(e.value)
+
+
+@pytest.mark.parametrize("encoding_strategy", ['dense', 'sparse', 'OVO', 'OVA', 'complete'])
+@pytest.mark.parametrize("oversampling", [None, 'globalCS', 'SMOTE', 'SOUP'])
+def test_ecoc_with_sklearn_pipeline(encoding_strategy, oversampling):
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('ecoc', ecoc.ECOC(encoding=encoding_strategy, preprocessing=oversampling))
+    ])
+    pipeline.fit(X, y)
+    y_hat = pipeline.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]]))
+    assert len(y_hat) == 3

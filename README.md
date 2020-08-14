@@ -12,7 +12,7 @@ multi-imbalance is a python package tackling the problem of multi-class imbalanc
 Tha package has been tested under python 3.6, 3.7 and 3.8. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
 Requirements include:
 * numpy>=1.17.0,
-* scikit-learn>=0.21.3,
+* scikit-learn==0.21.3,
 * pandas>=0.25.1,
 * pytest>=5.1.2,
 * imbalanced-learn>=0.6.1
@@ -60,7 +60,29 @@ clf_tree.fit(X_train_resampled, y_train_resampled)
 y_pred = clf_tree.predict(X_test)
 ```
 
-For more examples please refer to https://multi-imbalance.readthedocs.io/en/latest/
+## Example usage with pipeline
+At the moment, due to some sklearn's limitations the only way to use our **resampling** methods is to use the pipelines 
+implemented in **imbalanced-learn**. It doesn't apply to **ensemble** methods.
+```python
+from imblearn.pipeline import Pipeline
+
+X, y = load_arff_dataset('data/arff/new_ecoli.arff')
+X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=42)
+
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('mdo', MDO()),
+    ('knn', KNN())
+])
+
+pipeline.fit(X_train, y_train)
+y_hat = pipeline.predict(X_test)
+
+print(classification_report(y_test, y_hat))
+```
+
+For more examples please refer to https://multi-imbalance.readthedocs.io/en/latest/ or check `examples` directory.
+
 ## For developers:
 multi-imbalance follows sklearn's coding guideline: https://scikit-learn.org/stable/developers/contributing.html
 

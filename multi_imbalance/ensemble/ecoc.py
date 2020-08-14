@@ -1,20 +1,22 @@
 import os
+from collections import Counter
+from collections import defaultdict
 from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from sklearn.ensemble import BaggingClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
-from sklearn.model_selection import train_test_split
-from collections import Counter
-from collections import defaultdict
+
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
 
 
-class ECOC:
+class ECOC(BaggingClassifier):
     """
     ECOC (Error Correcting Output Codes) is ensemble method for multi-class classification problems.
     Each class is encoded with unique binary or ternary code (where 0 means that class is excluded from training set
@@ -82,6 +84,7 @@ class ECOC:
             * 'avg_tpr_min' :
                 weights based on average true positive rates of dichotomies
         """
+        super().__init__()
         self.binary_classifier = binary_classifier
         self.encoding = encoding
         self.preprocessing = preprocessing
@@ -306,12 +309,12 @@ class ECOC:
                 return X, y
             elif self.preprocessing == 'globalCS':
                 gcs = GlobalCS()
-                return gcs.fit_transform(X, y)
+                return gcs.fit_resample(X, y)
             elif self.preprocessing == 'SMOTE':
                 return self._smote_oversample(X, y)
             elif self.preprocessing == 'SOUP':
                 soup = SOUP()
-                return soup.fit_transform(X, y)
+                return soup.fit_resample(X, y)
         else:
             if not hasattr(self.preprocessing, 'fit_transform'):
                 raise ValueError("Your resampler must implement fit_transform method")
