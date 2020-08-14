@@ -1,11 +1,10 @@
-from imblearn.base import BaseSampler
-from sklearn.neighbors import NearestNeighbors
+from collections import Counter
 
 import numpy as np
-from sklearn.utils import check_random_state
-
-from collections import Counter
+from imblearn.base import BaseSampler
 from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
+from sklearn.utils import check_random_state
 
 from multi_imbalance.utils.data import construct_maj_int_min
 
@@ -17,7 +16,6 @@ class MDO(BaseSampler):
     with the same Mahalanbois distance from the centre of class to chosen sample.
 
     """
-
 
     def __init__(self, k=5, k1_frac=.4, seed=0, prop=1, maj_int_min=None):
         """

@@ -1,18 +1,19 @@
 import os
+from collections import Counter
+from collections import defaultdict
 from copy import deepcopy
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from sklearn.ensemble import BaggingClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
-from sklearn.model_selection import train_test_split
-from collections import Counter
-from collections import defaultdict
+
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
-from sklearn.ensemble import BaggingClassifier
 
 
 class ECOC(BaggingClassifier):

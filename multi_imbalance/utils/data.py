@@ -1,14 +1,13 @@
 import glob
 from collections import OrderedDict, Counter
+from pathlib import Path
+from statistics import median
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
 from scipy.io import arff
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import Bunch
-from statistics import median
 
 
 def construct_flat_2pc_df(X, y) -> pd.DataFrame:
