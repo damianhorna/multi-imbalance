@@ -36,7 +36,7 @@ more-itertools==8.2.0
 multi-imbalance==0.0.8
 nbconvert==5.6.1
 nbformat==5.0.4
-notebook==6.0.3
+notebook==6.1.5
 numpy==1.18.2
 packaging==20.3
 pandas==1.0.3
