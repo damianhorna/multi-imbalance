@@ -5,7 +5,6 @@ from operator import itemgetter
 import numpy as np
 import sklearn
 from imblearn.base import BaseSampler
-from sklearn.base import TransformerMixin
 from sklearn.neighbors import NearestNeighbors
 
 from multi_imbalance.utils.data import construct_maj_int_min

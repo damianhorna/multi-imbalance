@@ -1,9 +1,10 @@
-import numpy as np
-from sklearn.neighbors import NearestNeighbors
-from multi_imbalance.utils.array_util import (union, setdiff, contains)
 from collections import Counter
-from imblearn.base import BaseSampler
 
+import numpy as np
+from imblearn.base import BaseSampler
+from sklearn.neighbors import NearestNeighbors
+
+from multi_imbalance.utils.array_util import (union, setdiff, contains)
 from multi_imbalance.utils.data import construct_maj_int_min
 
 

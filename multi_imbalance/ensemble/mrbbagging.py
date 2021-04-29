@@ -2,12 +2,12 @@ from collections import Counter
 from copy import deepcopy
 from math import sqrt
 
+import numpy as np
 from scipy.stats import multinomial
+from sklearn.ensemble import BaggingClassifier
 from sklearn.feature_selection import SelectKBest, chi2, f_classif
 from sklearn.utils import resample
 from sklearn.utils.random import sample_without_replacement
-from sklearn.ensemble import BaggingClassifier
-import numpy as np
 
 
 class MRBBagging(BaggingClassifier):

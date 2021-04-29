@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:  # pragma no cover
 
 setuptools.setup(  # pragma no cover
     name="multi-imbalance",
-    version="0.0.12",
+    version="0.0.13",
     author="Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza",
     author_email="horna.damian@gmail.com",
     description="Python package for tackling multiclass imbalance problems.",
@@ -26,7 +26,7 @@ setuptools.setup(  # pragma no cover
     ],
     install_requires=[
         "numpy>=1.17.0",
-        "scikit-learn>=0.22.1",
+        "scikit-learn>=0.22",
         "pandas>=0.25.1",
         "pytest>=5.1.2",
         "imbalanced-learn>=0.6.1",
