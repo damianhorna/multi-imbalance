@@ -29,7 +29,7 @@ setuptools.setup(  # pragma no cover
         "scikit-learn>=0.22.1",
         "pandas>=0.25.1",
         "pytest>=5.1.2",
-        "imbalanced-learn==0.6.1",
+        "imbalanced-learn>=0.6.1",
         "coverage>=5.1",
         "pytest-cov>=2.8.1",
         "IPython>=7.13.0",
