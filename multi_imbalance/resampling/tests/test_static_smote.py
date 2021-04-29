@@ -12,7 +12,7 @@ def test_static_smote():
 
     y = np.array([1] * 100 + [2] * 30 + [3] * 20)
     ssm = StaticSMOTE()
-    X_resampled, y_resampled = ssm.fit_transform(X, y)
+    X_resampled, y_resampled = ssm.fit_resample(X, y)
     cnt = Counter(y_resampled)
     assert cnt[1] == 100
     assert cnt[2] == 60

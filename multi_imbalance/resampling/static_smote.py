@@ -2,9 +2,10 @@ from collections import Counter
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
+from imblearn.base import BaseSampler
 
 
-class StaticSMOTE:
+class StaticSMOTE(BaseSampler):
     """
     Static SMOTE implementation:
 
@@ -13,9 +14,21 @@ class StaticSMOTE:
     procedure based on sensitivity for multi-class problems. Pattern Recognit. 44, 1821–1833
     (2011)
     """
+    def __init__(self):
+        super().__init__()
+        self._sampling_type = 'over-sampling'
 
-    # TODO add docstring
-    def fit_transform(self, X, y):
+    def _fit_resample(self, X, y):
+        """
+        Performs resampling
+
+        :param X:
+            two dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one dimensional numpy array with labels for rows in X
+        :return:
+            Resampled X and y as numpy arrays
+        """
         cnt = Counter(y)
         min_class = min(cnt, key=cnt.get)
         X_original, y_original = X.copy(), y.copy()
