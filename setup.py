@@ -26,7 +26,7 @@ setuptools.setup(  # pragma no cover
     ],
     install_requires=[
         "numpy>=1.17.0",
-        "scikit-learn==0.21.3",
+        "scikit-learn>=0.21.3",
         "pandas>=0.25.1",
         "pytest>=5.1.2",
         "imbalanced-learn>=0.6.1",
