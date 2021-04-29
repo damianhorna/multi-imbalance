@@ -24,7 +24,7 @@ from os.path import join, isfile
 
 import numpy as np
 
-from sklearn.datasets.base import Bunch
+from sklearn.datasets._base import Bunch
 
 PRE_FILENAME = 'x'
 POST_FILENAME = 'data.npz'
