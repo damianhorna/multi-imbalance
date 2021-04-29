@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from sklearn.tree import tree
+from sklearn.tree import DecisionTreeClassifier
 
 from multi_imbalance.ensemble.mrbbagging import MRBBagging
 import numpy as np
@@ -36,39 +36,39 @@ y_test = np.array([0, 0, 0, 0])
 
 class TestMRBBagging(unittest.TestCase):
     def test_api(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), random_state=0)
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier(random_state=0), random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test_api_multiple_trees(self):
-        mrbbagging = MRBBagging(5, tree.DecisionTreeClassifier(random_state=0), random_state=0)
+        mrbbagging = MRBBagging(5, DecisionTreeClassifier(random_state=0), random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test_api_with_feature_selection(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True, random_state=0)
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier(random_state=0), feature_selection=True, random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test_api_with_random_feature_selection(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True, random_fs=True,
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier(random_state=0), feature_selection=True, random_fs=True,
                                 random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test_api_with_feature_selection_sqrt_features(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier(random_state=0), feature_selection=True,
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier(random_state=0), feature_selection=True,
                                 half_features=False, random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test__group_data(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier())
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier())
         x = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
         y = ["A", "B", "C"]
         classes, grouped_data = mrbbagging._group_data(x, y)
@@ -76,7 +76,7 @@ class TestMRBBagging(unittest.TestCase):
         self.assertEqual(grouped_data, {'C': [[[3, 3, 3], 'C']], 'A': [[[1, 1, 1], 'A']], 'B': [[[2, 2, 2], 'B']]})
 
     def test__group_data_with_none(self):
-        mrbbagging = MRBBagging(1, tree.DecisionTreeClassifier())
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier())
         x = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
         y = ["A", None, "C"]
         with self.assertRaises(AssertionError):
@@ -95,7 +95,7 @@ class TestMRBBagging(unittest.TestCase):
 
     def test_with_invalid_k(self):
         with self.assertRaises(AssertionError):
-            MRBBagging(0, tree.DecisionTreeClassifier())
+            MRBBagging(0, DecisionTreeClassifier())
 
 
 if __name__ == '__main__':
