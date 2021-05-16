@@ -1,6 +1,6 @@
 import setuptools # pragma no cover
 
-with open("README.md", "r") as fh:  # pragma no cover
+with open("README.md", "r", encoding='UTF8') as fh:  # pragma no cover
 
     long_description = fh.read()
 
