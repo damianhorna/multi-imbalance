@@ -111,12 +111,16 @@ If you use multi-imbalance in a scientific publication, please consider includin
 citation to the following thesis:
 
 ```
-@bachelorthesis{ MultiImbalance2020,
-author = "Jacek Grycza, Damian Horna, Hanna Klimczak, Kamil Plucínski",
-title = "Multi-imbalance:  Python package for multi-class imbalance learning",
-school = "Poznan University of Technology",
-address = "Poznan, Poland",
-year = "2020",}
+@InProceedings{10.1007/978-3-030-67670-4_36,
+    author="Grycza, Jacek and Horna, Damian and Klimczak, Hanna and Lango, Mateusz and Pluci{\'{n}}ski, Kamil and Stefanowski, Jerzy",
+    title="multi-imbalance: Open Source Python Toolbox for Multi-class Imbalanced Classification",
+    booktitle="Machine Learning and Knowledge Discovery in Databases. Applied Data Science and Demo Track",
+    year="2021",
+    publisher="Springer International Publishing",
+    address="Cham",
+    pages="546--549",
+    isbn="978-3-030-67670-4"
+}
 ```
 
 ## References:
