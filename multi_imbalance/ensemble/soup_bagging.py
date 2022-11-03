@@ -1,6 +1,7 @@
 import multiprocessing
 from collections import Counter
 from copy import deepcopy
+from typing import Any, Tuple, Union
 
 import numpy as np
 from sklearn.ensemble import BaggingClassifier
@@ -11,7 +12,7 @@ from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
 
 
-def fit_clf(args):
+def fit_clf(args: list):
     return SOUPBagging.fit_classifier(args)
 
 
@@ -25,7 +26,12 @@ class SOUPBagging(BaggingClassifier):
     Inteligencji (2019).
     """
 
-    def __init__(self, classifier=None, maj_int_min=None, n_classifiers=5):
+    def __init__(
+        self,
+        classifier: Union[Any, None] = None,
+        maj_int_min: Union[dict, None] = None,
+        n_classifiers: int = 5,
+    ):
         """
         :param classifier:
             Instance of classifier
@@ -48,7 +54,7 @@ class SOUPBagging(BaggingClassifier):
                 self.classifiers.append(KNeighborsClassifier())
 
     @staticmethod
-    def fit_classifier(args):
+    def fit_classifier(args: list) -> Tuple[Any, np.ndarray]:
         clf, X, y, resampled, maj_int_min = args
         x_sampled, y_sampled = resampled
 
@@ -78,7 +84,7 @@ class SOUPBagging(BaggingClassifier):
             )
         return clf, global_weights
 
-    def fit(self, X, y, **kwargs):
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """
         :param X:
             array-like, sparse matrix of shape = [n_samples, n_features] The training input samples.
@@ -113,7 +119,7 @@ class SOUPBagging(BaggingClassifier):
 
         self.clf_weights = np.array(self.clf_weights)
 
-    def predict(self, X, strategy: str = "average"):
+    def predict(self, X: np.ndarray, strategy: str = "average") -> np.ndarray:
         """
         Predict class for X. The predicted class of an input sample is computed as the class with the highest
         sum of predicted probability.
@@ -166,7 +172,7 @@ class SOUPBagging(BaggingClassifier):
         y_result = np.argmax(p, axis=1)
         return y_result
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class probabilities for X.
 

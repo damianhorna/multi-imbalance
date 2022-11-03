@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def setdiff(arr1, arr2):
+def setdiff(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:
     """
     Performs the difference over two numpy arrays.
 
@@ -19,7 +19,7 @@ def setdiff(arr1, arr2):
     return arr1
 
 
-def union(arr1, arr2):
+def union(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:
     """
     Performs the union over two numpy arrays
     (not removing duplicates, as it's how the algorithm SPIDER3 actually works).
@@ -40,7 +40,7 @@ def union(arr1, arr2):
         return np.append(arr1, arr2, axis=0)
 
 
-def contains(dataset, example):
+def contains(dataset: np.ndarray, example: np.ndarray) -> bool:
     """
     Returns if dataset contains the example.
     :param dataset:
@@ -53,7 +53,7 @@ def contains(dataset, example):
     return False
 
 
-def index_of(arr, example):
+def index_of(arr: np.ndarray, example: np.ndarray) -> int:
     """
     :return: Index of learning exmaple in arr.
     """
@@ -63,7 +63,7 @@ def index_of(arr, example):
     return -1
 
 
-def intersect(arr1, arr2):
+def intersect(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:
     """
     Performs the intersection operation over two numpy arrays (not removing duplicates).
 

@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Tuple
 
 import numpy as np
 import sklearn
@@ -17,7 +18,9 @@ class GlobalCS(BaseSampler):
         self.shuffle = shuffle
         self.quantities, self.max_quantity, self.X, self.y = [None] * 4
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
@@ -49,7 +52,9 @@ class GlobalCS(BaseSampler):
 
         return np.array(result_X), np.array(result_y)
 
-    def _equal_oversample(self, X, y, class_name):
+    def _equal_oversample(
+        self, X: np.ndarray, y: np.ndarray, class_name: str
+    ) -> Tuple[list, list]:
         indices_in_class = [
             i for i, class_label in enumerate(y) if class_label == class_name
         ]

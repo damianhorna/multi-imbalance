@@ -57,7 +57,7 @@ for v, k in enumerate(MAP_NAME_ID_KEYS):
     MAP_ID_NAME[v + 1] = k
 
 
-def load_datasets(data_home=DATA_HOME_BASIC):
+def load_datasets(data_home: str = DATA_HOME_BASIC) -> OrderedDict:
     """
     Load the benchmark datasets.
 

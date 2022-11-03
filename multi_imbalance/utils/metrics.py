@@ -1,7 +1,10 @@
 from imblearn.metrics import geometric_mean_score
+import numpy as np
 
 
-def gmean_score(y_test, y_pred, correction: float = 0.001) -> float:  # pragma no cover
+def gmean_score(
+    y_test: np.ndarray, y_pred: np.ndarray, correction: float = 0.001
+) -> float:  # pragma no cover
     """
     Calculate geometric mean score
 

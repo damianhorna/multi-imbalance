@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Tuple, Union
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -17,7 +18,14 @@ class MDO(BaseSampler):
 
     """
 
-    def __init__(self, k=5, k1_frac=0.4, seed=0, prop=1, maj_int_min=None):
+    def __init__(
+        self,
+        k: int = 5,
+        k1_frac: float = 0.4,
+        seed: int = 0,
+        prop: int = 1,
+        maj_int_min: Union[dict, None] = None,
+    ):
         """
         :param k:
             Number of neighbours considered during the neighbourhood analysis
@@ -41,7 +49,9 @@ class MDO(BaseSampler):
         self.prop = prop
         self.class_balances = maj_int_min
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
@@ -117,7 +127,7 @@ class MDO(BaseSampler):
 
         return oversampled_X, oversampled_y
 
-    def _choose_samples(self, class_label):
+    def _choose_samples(self, class_label: str) -> Tuple[np.ndarray, np.ndarray]:
         minor_class_indices = [
             i for i, value in enumerate(self.y) if value == class_label
         ]
@@ -144,7 +154,9 @@ class MDO(BaseSampler):
 
         return chosen_minor_class_samples_to_oversample, weights
 
-    def _MDO_oversampling(self, T, v, oversampling_rate, weights):
+    def _MDO_oversampling(
+        self, T: np.ndarray, v: np.ndarray, oversampling_rate: int, weights: np.ndarray
+    ) -> np.ndarray:
         oversampled_set = list()
         V = np.clip(np.copy(v), a_min=0.001, a_max=None)
         for _ in range(oversampling_rate):
@@ -173,7 +185,9 @@ class MDO(BaseSampler):
 
         return np.array(oversampled_set)
 
-    def calculate_same_class_neighbour_quantities(self, S_minor, S_minor_label):
+    def calculate_same_class_neighbour_quantities(
+        self, S_minor: np.ndarray, S_minor_label: str
+    ) -> np.ndarray:
         minority_class_neighbours_indices = self.knn.kneighbors(
             S_minor, return_distance=False
         )

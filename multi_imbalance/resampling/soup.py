@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from copy import deepcopy
 from operator import itemgetter
+from typing import Tuple, Union
 
 import numpy as np
 import sklearn
@@ -18,7 +19,9 @@ class SOUP(BaseSampler):
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 7, shuffle=False, maj_int_min=None) -> None:
+    def __init__(
+        self, k: int = 7, shuffle: bool = False, maj_int_min: Union[dict, None] = None
+    ):
         """
         :param k:
             number of neighbors
@@ -36,7 +39,9 @@ class SOUP(BaseSampler):
         self.dsc_maj_cls, self.asc_min_cls = None, None
         self._X, self._y = None, None
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         The method computes the metrics required for resampling based on the given set
 
@@ -83,7 +88,9 @@ class SOUP(BaseSampler):
 
         return np.array(self._X), np.array(self._y)
 
-    def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
+    def _construct_class_safe_levels(
+        self, X: np.ndarray, y: np.ndarray, class_name: str
+    ) -> defaultdict:
         self.quantities = Counter(y)
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
@@ -102,7 +109,9 @@ class SOUP(BaseSampler):
 
         return class_safe_levels
 
-    def _calculate_sample_safe_level(self, class_name, neighbours_quantities: Counter):
+    def _calculate_sample_safe_level(
+        self, class_name: str, neighbours_quantities: Counter
+    ) -> float:
         safe_level = 0
         q: Counter = self.quantities
 
@@ -119,7 +128,9 @@ class SOUP(BaseSampler):
 
         return safe_level
 
-    def _undersample(self, X, y, class_name):
+    def _undersample(
+        self, X: np.ndarray, y: np.ndarray, class_name: str
+    ) -> Tuple[np.ndarray, np.ndarray]:
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(
             X, y, class_name
         )
@@ -138,7 +149,9 @@ class SOUP(BaseSampler):
 
         return X, y
 
-    def _oversample(self, X, y, class_name):
+    def _oversample(
+        self, X: np.ndarray, y: np.ndarray, class_name: str
+    ) -> Tuple[np.ndarray, np.ndarray]:
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(
             X, y, class_name
         )
@@ -161,7 +174,9 @@ class SOUP(BaseSampler):
 
         return X, y
 
-    def _calculate_goal_quantity(self, maj_int_min=None):
+    def _calculate_goal_quantity(
+        self, maj_int_min: Union[dict, None] = None
+    ) -> Union[int, float]:
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))
             min_q = min(list(self.quantities.values()))

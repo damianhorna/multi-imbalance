@@ -2,6 +2,7 @@ import os
 from collections import Counter
 from collections import defaultdict
 from copy import deepcopy
+from typing import Tuple, Union
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -31,13 +32,14 @@ class ECOC(BaggingClassifier):
 
     def __init__(
         self,
-        binary_classifier="KNN",
-        preprocessing="SOUP",
-        encoding="OVO",
-        n_neighbors=3,
-        weights=None,
+        binary_classifier: str = "KNN",
+        preprocessing: str = "SOUP",
+        encoding: str = "OVO",
+        n_neighbors: int = 3,
+        weights: Union[None, str] = None,
     ):
         """
+
         :param binary_classifier:
             binary classifier used by the algorithm. Possible classifiers:
 
@@ -104,7 +106,9 @@ class ECOC(BaggingClassifier):
         self._labels = None
         self._dich_weights = None
 
-    def fit(self, X, y, minority_classes=None):
+    def fit(
+        self, X: np.ndarray, y: np.ndarray, minority_classes: Union[list, None] = None
+    ):
         """
 
         :param X:
@@ -136,7 +140,7 @@ class ECOC(BaggingClassifier):
             self._calc_weights(X_for_weights, y_for_weights)
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
@@ -153,7 +157,7 @@ class ECOC(BaggingClassifier):
 
         return predicted
 
-    def _learn_binary_classifiers(self, X, y):
+    def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray):
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             excluded_classes_indices = [
                 idx
@@ -194,8 +198,11 @@ class ECOC(BaggingClassifier):
             )
 
     def _encode_dense(
-        self, number_of_classes, random_state=0, number_of_code_generations=10000
-    ):
+        self,
+        number_of_classes: int,
+        random_state: int = 0,
+        number_of_code_generations: int = 10000,
+    ) -> np.ndarray:
         try:
             dirname = os.path.dirname(__file__)
             matrix = np.load(
@@ -234,8 +241,11 @@ class ECOC(BaggingClassifier):
         return code_matrix
 
     def _encode_sparse(
-        self, number_of_classes, random_state=0, number_of_code_generations=10000
-    ):
+        self,
+        number_of_classes: int,
+        random_state: int = 0,
+        number_of_code_generations: int = 10000,
+    ) -> np.ndarray:
         try:
             dirname = os.path.dirname(__file__)
             matrix = np.load(
@@ -283,12 +293,12 @@ class ECOC(BaggingClassifier):
 
         return code_matrix
 
-    def _encode_ova(self, number_of_classes):
+    def _encode_ova(self, number_of_classes: int) -> np.ndarray:
         matrix = np.identity(number_of_classes)
         matrix[matrix == 0] = -1
         return matrix
 
-    def _encode_ovo(self, number_of_classes):
+    def _encode_ovo(self, number_of_classes: int) -> np.ndarray:
         number_of_columns = int(number_of_classes * (number_of_classes - 1) / 2)
         matrix = np.zeros((number_of_classes, number_of_columns), dtype=int)
         indices_map = self._map_indices_to_class_pairs(number_of_classes)
@@ -300,7 +310,7 @@ class ECOC(BaggingClassifier):
                     matrix[row, col] = -1
         return matrix
 
-    def _map_indices_to_class_pairs(self, number_of_classes):
+    def _map_indices_to_class_pairs(self, number_of_classes: int) -> dict:
         indices_map = dict()
         idx = 0
         for i in range(number_of_classes):
@@ -309,7 +319,7 @@ class ECOC(BaggingClassifier):
                 idx += 1
         return indices_map
 
-    def _encode_complete(self, number_of_classes):
+    def _encode_complete(self, number_of_classes: int) -> np.ndarray:
         code_length = 2 ** (number_of_classes - 1) - 1
         matrix = np.ones((number_of_classes, code_length))
         for row_idx in range(1, number_of_classes):
@@ -320,13 +330,13 @@ class ECOC(BaggingClassifier):
                 digit *= -1
         return matrix
 
-    def _hamming_distance(self, v1, v2):
+    def _hamming_distance(self, v1: np.ndarray, v2: np.ndarray) -> int:
         return np.count_nonzero(v1 != v2)
 
-    def _has_matrix_all_zeros_column(self, matrix):
+    def _has_matrix_all_zeros_column(self, matrix: np.ndarray) -> bool:
         return (~matrix.any(axis=0)).any()
 
-    def _get_closest_class(self, row):
+    def _get_closest_class(self, row: np.ndarray) -> np.ndarray:
         if self.weights is not None:
             return self._labels[
                 np.argmin(
@@ -346,7 +356,9 @@ class ECOC(BaggingClassifier):
                 )
             ]
 
-    def _oversample(self, X, y):
+    def _oversample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         if self.preprocessing is None:
             return X, y
 
@@ -396,7 +408,9 @@ class ECOC(BaggingClassifier):
                 )
             return deepcopy(self.binary_classifier)
 
-    def _smote_oversample(self, X, y):
+    def _smote_oversample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         if n_neighbors == 0:
             raise ValueError(
@@ -405,7 +419,7 @@ class ECOC(BaggingClassifier):
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
-    def _calc_weights(self, X_for_weights, y_for_weights):
+    def _calc_weights(self, X_for_weights: np.ndarray, y_for_weights: np.ndarray):
         if self.weights not in ECOC._allowed_weights:
             raise ValueError(
                 "Unknown weighting strategy: %s, expected to be one of %s."

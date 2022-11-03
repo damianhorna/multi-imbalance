@@ -2,6 +2,7 @@ import glob
 from collections import OrderedDict, Counter
 from pathlib import Path
 from statistics import median
+from typing import Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +12,7 @@ from sklearn.utils import Bunch
 import os
 
 
-def construct_flat_2pc_df(X, y) -> pd.DataFrame:
+def construct_flat_2pc_df(X: np.ndarray, y: np.ndarray) -> pd.DataFrame:
     """
     This function takes two dimensional X and one dimensional y arrays, concatenates and returns them as data frame
 
@@ -37,7 +38,7 @@ def get_project_root() -> Path:  # pragma no cover
 
 def load_arff_dataset(
     path: str, one_hot_encode: bool = True, return_non_cat_length: bool = False
-):
+) -> Union[Tuple[np.ndarray, np.ndarray, int], Tuple[np.ndarray, np.ndarray]]:
     """
     Load and return the dataset saved in arff type file
 
@@ -85,7 +86,9 @@ def load_arff_dataset(
         return X.to_numpy(), y
 
 
-def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
+def load_datasets_arff(
+    return_non_cat_length: bool = False, dataset_paths: Union[str, None] = None
+) -> OrderedDict:
     if dataset_paths is None:
         dataset_paths = glob.glob(os.path.join(get_project_root(), "data", "arff", "*"))
 
@@ -107,7 +110,7 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
     return datasets
 
 
-def construct_maj_int_min(y: np.ndarray, strategy="median") -> OrderedDict:
+def construct_maj_int_min(y: np.ndarray, strategy: str = "median") -> OrderedDict:
     """
     This function creates dictionary with information which classes are minority or majority
 

@@ -3,13 +3,16 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
+import numpy as np
 
 from multi_imbalance.utils.data import construct_flat_2pc_df
 
 sns.set_style("darkgrid")
 
 
-def plot_cardinality_and_2d_data(X, y, dataset_name="") -> None:  # pragma no cover
+def plot_cardinality_and_2d_data(
+    X: np.ndarray, y: np.ndarray, dataset_name: str = ""
+):  # pragma no cover
     """
     Plots cardinality of classes from y as well as scatter plot of X transformed to two dimensions using PCA
 
@@ -52,8 +55,13 @@ def plot_cardinality_and_2d_data(X, y, dataset_name="") -> None:  # pragma no co
 
 
 def plot_visual_comparision_datasets(
-    X1, y1, X2, y2, dataset_name1="", dataset_name2=""
-) -> None:  # pragma no cover
+    X1: np.ndarray,
+    y1: np.ndarray,
+    X2: np.ndarray,
+    y2: np.ndarray,
+    dataset_name1: str = "",
+    dataset_name2: str = "",
+):  # pragma no cover
     """
     Plots comparision of X1 y1 and X2 y2 using plot_cardinality_and_2d_data, which plots cardinality of classes from
     y as well as scatter plot of X transformed to two dimensions using PCA

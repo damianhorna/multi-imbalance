@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import Tuple
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -19,7 +20,9 @@ class StaticSMOTE(BaseSampler):
         super().__init__()
         self._sampling_type = "over-sampling"
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Performs resampling
 
