@@ -1,6 +1,6 @@
-import setuptools # pragma no cover
+import setuptools  # pragma no cover
 
-with open("README.md", "r", encoding='UTF8') as fh:  # pragma no cover
+with open("README.md", "r", encoding="UTF8") as fh:  # pragma no cover
 
     long_description = fh.read()
 
@@ -18,11 +18,11 @@ setuptools.setup(  # pragma no cover
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        'Topic :: Software Development',
-        'Topic :: Scientific/Engineering',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'
+        "Topic :: Software Development",
+        "Topic :: Scientific/Engineering",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     install_requires=[
         "numpy>=1.17.0",
@@ -35,5 +35,5 @@ setuptools.setup(  # pragma no cover
         "IPython>=7.13.0",
         "seaborn>=0.10.1",
         "matplotlib>=3.2.1",
-    ]
+    ],
 )

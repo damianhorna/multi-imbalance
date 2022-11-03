@@ -4,7 +4,7 @@ import numpy as np
 from imblearn.base import BaseSampler
 from sklearn.neighbors import NearestNeighbors
 
-from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from multi_imbalance.utils.array_util import union, setdiff, contains
 from multi_imbalance.utils.data import construct_maj_int_min
 
 
@@ -30,7 +30,7 @@ class SPIDER3(BaseSampler):
         """
 
         super().__init__()
-        self._sampling_type = 'clean-sampling'
+        self._sampling_type = "clean-sampling"
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.maj_int_min = maj_int_min
@@ -69,9 +69,9 @@ class SPIDER3(BaseSampler):
     def _initialize_algorithm(self, X, y):
         if self.maj_int_min is None:
             self.maj_int_min = construct_maj_int_min(y)
-        self.majority_classes = self.maj_int_min['maj']
-        self.intermediate_classes = self.maj_int_min['int']
-        self.minority_classes = self.maj_int_min['min']
+        self.majority_classes = self.maj_int_min["maj"]
+        self.intermediate_classes = self.maj_int_min["int"]
+        self.minority_classes = self.maj_int_min["min"]
 
         self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
         if self.cost is None:
@@ -105,8 +105,12 @@ class SPIDER3(BaseSampler):
     def _sort_by_cardinality(self, y):
         class_cardinality = Counter(y)
         # to ensure looping over classes with decreasing cardinality.
-        int_classes = sorted(self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz])
-        min_classes = sorted(self.minority_classes, key=lambda clazz: -class_cardinality[clazz])
+        int_classes = sorted(
+            self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz]
+        )
+        min_classes = sorted(
+            self.minority_classes, key=lambda clazz: -class_cardinality[clazz]
+        )
         return int_classes, min_classes
 
     def amplify(self, int_min_class):
@@ -209,7 +213,9 @@ class SPIDER3(BaseSampler):
         for cj in C:
             s = 0
             for ci in C:
-                s += ((kneighbors[:, -1] == ci).astype(int).sum() / self.k) * self.cost[C.index(ci), C.index(cj)]
+                s += ((kneighbors[:, -1] == ci).astype(int).sum() / self.k) * self.cost[
+                    C.index(ci), C.index(cj)
+                ]
             vals.append(s)
         C = np.array(C)
         vals = np.array(vals)
@@ -225,8 +231,12 @@ class SPIDER3(BaseSampler):
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(
-                    neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
+            if (
+                contains(self.RS, neighbor)
+                and self._class_of(neighbor) in self.majority_classes
+                and self._class_of(neighbor)
+                in self._min_cost_classes(x, self._ds_as_rs_union())
+            ):
                 self.RS = setdiff(self.RS, np.array([neighbor]))
                 neighbor[-1] = x[-1]
                 self.AS = union(self.AS, np.array([neighbor]))
@@ -240,8 +250,9 @@ class SPIDER3(BaseSampler):
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if self._class_of(neighbor) in self.majority_classes and \
-                    self._class_of(neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
+            if self._class_of(neighbor) in self.majority_classes and self._class_of(
+                neighbor
+            ) in self._min_cost_classes(x, self._ds_as_rs_union()):
                 self.DS = setdiff(self.DS, np.array([neighbor]))
                 self.RS = setdiff(self.RS, np.array([neighbor]))
 
@@ -267,9 +278,13 @@ class SPIDER3(BaseSampler):
 
         self.neigh_clf.fit(DS[:, :-1])
 
-        within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=
-        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 *
-        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1], return_distance=True)
+        within_radius = self.neigh_clf.radius_neighbors(
+            [x[:-1]],
+            radius=self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1]
+            + 0.0001
+            * self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1],
+            return_distance=True,
+        )
 
         unique_distances = np.unique(sorted(within_radius[0][0]))
         all_distances = within_radius[0][0]
@@ -289,7 +304,9 @@ class SPIDER3(BaseSampler):
             Single observation.
         """
 
-        while self._class_of(x) not in self._min_cost_classes(x, self._ds_as_rs_union()):
+        while self._class_of(x) not in self._min_cost_classes(
+            x, self._ds_as_rs_union()
+        ):
             y = x.copy()
             self.AS = union(self.AS, np.asarray([y]))
 

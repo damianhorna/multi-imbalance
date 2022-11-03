@@ -13,7 +13,7 @@ class GlobalCS(BaseSampler):
 
     def __init__(self, shuffle: bool = True):
         super().__init__()
-        self._sampling_type = 'over-sampling'
+        self._sampling_type = "over-sampling"
         self.shuffle = shuffle
         self.quantities, self.max_quantity, self.X, self.y = [None] * 4
 
@@ -26,8 +26,10 @@ class GlobalCS(BaseSampler):
         :return:
             Resampled X (max class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
-        assert len(X.shape) == 2, 'X should have 2 dimension'
-        assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
+        assert len(X.shape) == 2, "X should have 2 dimension"
+        assert (
+            X.shape[0] == y.shape[0]
+        ), "Number of labels must be equal to number of samples"
 
         self.quantities = Counter(y)
         self.max_quantity = int(np.max(list(self.quantities.values())))
@@ -48,10 +50,14 @@ class GlobalCS(BaseSampler):
         return np.array(result_X), np.array(result_y)
 
     def _equal_oversample(self, X, y, class_name):
-        indices_in_class = [i for i, class_label in enumerate(y) if class_label == class_name]
+        indices_in_class = [
+            i for i, class_label in enumerate(y) if class_label == class_name
+        ]
         desired_quantity = self.max_quantity - len(indices_in_class)
 
-        oversampled_X, oversampled_y = list(X[indices_in_class]), list(y[indices_in_class])
+        oversampled_X, oversampled_y = list(X[indices_in_class]), list(
+            y[indices_in_class]
+        )
 
         for i in range(desired_quantity):
             sample_index_to_duplicate: int = i % self.quantities[class_name]

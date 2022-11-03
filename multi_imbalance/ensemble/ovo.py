@@ -22,11 +22,17 @@ class OVO(BaggingClassifier):
 
     """
 
-    _allowed_classifiers = ['tree', 'NB', 'KNN']
-    _allowed_preprocessing = [None, 'globalCS', 'SMOTE', 'SOUP']
-    _allowed_preprocessing_between = ['all', 'maj-min']
+    _allowed_classifiers = ["tree", "NB", "KNN"]
+    _allowed_preprocessing = [None, "globalCS", "SMOTE", "SOUP"]
+    _allowed_preprocessing_between = ["all", "maj-min"]
 
-    def __init__(self, binary_classifier='tree', n_neighbors=3, preprocessing='SOUP', preprocessing_between='all'):
+    def __init__(
+        self,
+        binary_classifier="tree",
+        n_neighbors=3,
+        preprocessing="SOUP",
+        preprocessing_between="all",
+    ):
         """
         :param binary_classifier:
             binary classifier. Possible classifiers:
@@ -88,8 +94,9 @@ class OVO(BaggingClassifier):
         self._labels = np.unique(y)
         self._minority_classes = minority_classes
         num_of_classes = len(self._labels)
-        self._binary_classifiers = [[self._get_classifier() for _ in range(n)] for n in
-                                    range(0, num_of_classes)]
+        self._binary_classifiers = [
+            [self._get_classifier() for _ in range(n)] for n in range(0, num_of_classes)
+        ]
         self._learn_binary_classifiers(X, y)
         return self
 
@@ -103,7 +110,9 @@ class OVO(BaggingClassifier):
         num_of_classes = len(self._labels)
         predicted = list()
         for instance in X:
-            binary_outputs_matrix = self._construct_binary_outputs_matrix(instance, num_of_classes)
+            binary_outputs_matrix = self._construct_binary_outputs_matrix(
+                instance, num_of_classes
+            )
             predicted.append(self._perform_max_voting(binary_outputs_matrix))
 
         return np.array(predicted)
@@ -112,15 +121,20 @@ class OVO(BaggingClassifier):
         binary_outputs_matrix = np.zeros((num_of_classes, num_of_classes))
         for class_idx1 in range(len(self._labels)):
             for class_idx2 in range(class_idx1):
-                binary_outputs_matrix[class_idx1][class_idx2] = self._binary_classifiers[class_idx1][class_idx2] \
-                    .predict([instance])
+                binary_outputs_matrix[class_idx1][
+                    class_idx2
+                ] = self._binary_classifiers[class_idx1][class_idx2].predict([instance])
         return binary_outputs_matrix
 
     def _learn_binary_classifiers(self, X, y):
         for row in range(len(self._labels)):
             for col in range(row):
                 first_class, second_class = self._labels[row], self._labels[col]
-                filtered_indices = [idx for idx in range(len(y)) if y[idx] in (first_class, second_class)]
+                filtered_indices = [
+                    idx
+                    for idx in range(len(y))
+                    if y[idx] in (first_class, second_class)
+                ]
                 X_filtered, y_filtered = X[filtered_indices], y[filtered_indices]
                 if self.should_perform_oversampling(first_class, second_class):
                     X_filtered, y_filtered = self._oversample(X_filtered, y_filtered)
@@ -131,26 +145,33 @@ class OVO(BaggingClassifier):
             if self.binary_classifier not in OVO._allowed_classifiers:
                 raise ValueError(
                     "Unknown binary classifier: %s, expected to be one of %s."
-                    % (self.binary_classifier, OVO._allowed_classifiers))
-            elif self.binary_classifier == 'tree':
+                    % (self.binary_classifier, OVO._allowed_classifiers)
+                )
+            elif self.binary_classifier == "tree":
                 decision_tree_classifier = DecisionTreeClassifier(random_state=42)
                 return decision_tree_classifier
-            elif self.binary_classifier == 'NB':
+            elif self.binary_classifier == "NB":
                 gnb = GaussianNB()
                 return gnb
-            elif self.binary_classifier == 'KNN':
+            elif self.binary_classifier == "KNN":
                 knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
                 return knn
         else:
-            if not hasattr(self.binary_classifier, 'fit') or not hasattr(self.binary_classifier, 'predict'):
-                raise ValueError("Your classifier must implement fit and predict methods")
+            if not hasattr(self.binary_classifier, "fit") or not hasattr(
+                self.binary_classifier, "predict"
+            ):
+                raise ValueError(
+                    "Your classifier must implement fit and predict methods"
+                )
             return deepcopy(self.binary_classifier)
 
     def _perform_max_voting(self, binary_outputs_matrix):
         scores = np.zeros(len(self._labels))
         for clf_1 in range(len(binary_outputs_matrix)):
             for clf_2 in range(clf_1):
-                scores[self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])] += 1
+                scores[
+                    self._labels.tolist().index(binary_outputs_matrix[clf_1][clf_2])
+                ] += 1
         return self._labels[np.argmax(scores)]
 
     def _oversample(self, X, y):
@@ -159,20 +180,22 @@ class OVO(BaggingClassifier):
 
         if isinstance(self.preprocessing, str):
             if self.preprocessing not in OVO._allowed_preprocessing:
-                raise ValueError("Unknown preprocessing: %s, expected to be one of %s."
-                                 % (self.preprocessing, OVO._allowed_preprocessing))
+                raise ValueError(
+                    "Unknown preprocessing: %s, expected to be one of %s."
+                    % (self.preprocessing, OVO._allowed_preprocessing)
+                )
             elif np.unique(y).size == 1:
                 return X, y
-            elif self.preprocessing == 'globalCS':
+            elif self.preprocessing == "globalCS":
                 gcs = GlobalCS()
                 return gcs.fit_resample(X, y)
-            elif self.preprocessing == 'SMOTE':
+            elif self.preprocessing == "SMOTE":
                 return self._smote_oversample(X, y)
-            elif self.preprocessing == 'SOUP':
+            elif self.preprocessing == "SOUP":
                 soup = SOUP()
                 return soup.fit_resample(X, y)
         else:
-            if not hasattr(self.preprocessing, 'fit_resample'):
+            if not hasattr(self.preprocessing, "fit_resample"):
                 raise ValueError("Your resampler must implement fit_resample method")
             return self.preprocessing.fit_resample(X, y)
 
@@ -180,16 +203,24 @@ class OVO(BaggingClassifier):
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         if n_neighbors == 0:
             raise ValueError(
-                'In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class')
+                "In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class"
+            )
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
     def should_perform_oversampling(self, first_class, second_class):
         if self.oversample_between not in OVO._allowed_preprocessing_between:
-            raise ValueError("Unknown strategy for oversampling: %s, expected to be one of %s."
-                             % (self.oversample_between, OVO._allowed_preprocessing_between))
-        elif self.oversample_between == 'all':
+            raise ValueError(
+                "Unknown strategy for oversampling: %s, expected to be one of %s."
+                % (self.oversample_between, OVO._allowed_preprocessing_between)
+            )
+        elif self.oversample_between == "all":
             return True
-        elif self.oversample_between == 'maj-min':
-            return (first_class in self._minority_classes and second_class not in self._minority_classes) or \
-                   (second_class in self._minority_classes and first_class not in self._minority_classes)
+        elif self.oversample_between == "maj-min":
+            return (
+                first_class in self._minority_classes
+                and second_class not in self._minority_classes
+            ) or (
+                second_class in self._minority_classes
+                and first_class not in self._minority_classes
+            )

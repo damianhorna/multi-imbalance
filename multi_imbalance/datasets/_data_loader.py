@@ -26,14 +26,29 @@ import numpy as np
 
 from sklearn.datasets._base import Bunch
 
-PRE_FILENAME = 'x'
-POST_FILENAME = 'data.npz'
+PRE_FILENAME = "x"
+POST_FILENAME = "data.npz"
 DATA_HOME_BASIC = "./../../data/"
 
-MAP_NAME_ID_KEYS = ['1czysty-cut', '2delikatne-cut', '3mocniej-cut', '4delikatne-bezover-cut',
-                    'balance-scale', 'cleveland', 'cleveland_v2', 'cmc', 'dermatology',
-                    'glass', 'hayes-roth', 'new_ecoli', 'new_led7digit', 'new_vehicle',
-                    'new_winequality-red', 'new_yeast', 'thyroid-newthyroid']
+MAP_NAME_ID_KEYS = [
+    "1czysty-cut",
+    "2delikatne-cut",
+    "3mocniej-cut",
+    "4delikatne-bezover-cut",
+    "balance-scale",
+    "cleveland",
+    "cleveland_v2",
+    "cmc",
+    "dermatology",
+    "glass",
+    "hayes-roth",
+    "new_ecoli",
+    "new_led7digit",
+    "new_vehicle",
+    "new_winequality-red",
+    "new_yeast",
+    "thyroid-newthyroid",
+]
 
 MAP_NAME_ID = OrderedDict()
 MAP_ID_NAME = OrderedDict()
@@ -69,13 +84,13 @@ def load_datasets(data_home=DATA_HOME_BASIC):
 
         if not available:
             makedirs(extracted_dir, exist_ok=True)
-            with open(f'{data_home}data.tar.gz', 'rb') as fin:
+            with open(f"{data_home}data.tar.gz", "rb") as fin:
                 f = BytesIO(fin.read())
             tar = tarfile.open(fileobj=f)
             tar.extractall(path=extracted_dir)
 
         data = np.load(filename)
-        X, y = data['data'], data['label']
+        X, y = data["data"], data["label"]
 
         datasets[it] = Bunch(data=X, target=y, DESCR=it)
 

@@ -3,11 +3,13 @@ from collections import Counter
 import numpy as np
 
 from multi_imbalance.resampling.spider import SPIDER3
-from multi_imbalance.utils.array_util import (union, intersect, setdiff)
+from multi_imbalance.utils.array_util import union, intersect, setdiff
 
 cost = np.ones((3, 3))
 np.fill_diagonal(cost, 0)
-spider = SPIDER3(1, maj_int_min={'maj': ["MAJ"], 'int': ["INT"], 'min': ["MIN"]}, cost=cost)
+spider = SPIDER3(
+    1, maj_int_min={"maj": ["MAJ"], "int": ["INT"], "min": ["MIN"]}, cost=cost
+)
 
 
 def test_union():
@@ -47,13 +49,7 @@ def test_setdiff():
 
 
 def test_knn():
-    X = np.array([
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-        [0, 0]
-    ]).astype(object)
+    X = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1], [0, 0]]).astype(object)
 
     y = np.array(["MIN", "MIN", "MAJ", "MAJ", "MAJ"])
 
@@ -63,13 +59,7 @@ def test_knn():
 
 
 def test_min_cost_classes():
-    X = np.array([
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-        [0, 0]
-    ]).astype(object)
+    X = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1], [0, 0]]).astype(object)
 
     y = np.array(["MIN", "MIN", "MAJ", "MAJ", "MAJ"])
 
@@ -79,7 +69,7 @@ def test_min_cost_classes():
     assert (spider._min_cost_classes(DS[0], DS) == ["MAJ"]).all()
     assert (spider._min_cost_classes(DS[4], DS) == ["MIN", "MAJ"]).all()
 
-    
+
 def test_estimate_cost_matrix():
     y = [0, 1, 1, 2, 2, 2, 2, 2, 2]
     cost = SPIDER3._estimate_cost_matrix(y).ravel().tolist()
@@ -88,9 +78,13 @@ def test_estimate_cost_matrix():
 
 def test_fit_resample():
     np.random.seed(7)
-    X = np.vstack([np.random.normal(0, 1, (100, 2)),
-                   np.random.normal(3, 5, (30, 2)),
-                   np.random.normal(-2, 2, (20, 2))])
+    X = np.vstack(
+        [
+            np.random.normal(0, 1, (100, 2)),
+            np.random.normal(3, 5, (30, 2)),
+            np.random.normal(-2, 2, (20, 2)),
+        ]
+    )
 
     y = np.array([1] * 100 + [2] * 30 + [3] * 20)
     sp = SPIDER3(5)
