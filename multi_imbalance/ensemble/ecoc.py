@@ -450,12 +450,11 @@ class ECOC(BaggingClassifier):
                         ][clf_idx]
                     ):
                         min_correct_pred[sample_label] += 1
-                avg_tpr_min = np.mean(
-                    [
-                        min_correct_pred[clazz] / min_counter[clazz]
-                        for clazz in min_counter.keys()
-                    ]
-                )
+                tpr_min = [
+                    min_correct_pred[clazz] / min_counter[clazz]
+                    for clazz in min_counter.keys()
+                ]
+                avg_tpr_min = np.mean(tpr_min) if tpr_min else np.nan
                 dich_weights[clf_idx] = avg_tpr_min
 
         self.dich_weights = dich_weights

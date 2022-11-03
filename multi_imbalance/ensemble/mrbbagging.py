@@ -137,8 +137,8 @@ class MRBBagging(BaggingClassifier):
         for i in range(len(la_list)):
             subset_x, subset_y = self._resample(n, prob, classes, grouped_data)
 
-            subset_x = np.array(subset_x).astype(np.float)
-            subset_y = np.array(subset_y).astype(np.float)
+            subset_x = np.array(subset_x).astype(np.float64)
+            subset_y = np.array(subset_y).astype(np.float64)
 
             self.classifiers[i] = la_list[i].fit(subset_x, subset_y)
 
@@ -171,8 +171,8 @@ class MRBBagging(BaggingClassifier):
             else:
                 features_no = int(sqrt(labels_no))
 
-            subset_x = np.array(subset_x).astype(np.float)
-            subset_y = np.array(subset_y).astype(np.float)
+            subset_x = np.array(subset_x).astype(np.float64)
+            subset_y = np.array(subset_y).astype(np.float64)
 
             if self.all_random:
                 subset1, subset1_idx = self._find_random_features(

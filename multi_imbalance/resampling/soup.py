@@ -176,9 +176,11 @@ class SOUP(BaseSampler):
             }
             min_q = list(min_classes.values())
 
-            if len(maj_q) == 0:
+            if len(min_q) == 0 and len(maj_q) == 0:
+                return np.nan
+            elif len(maj_q) == 0:
                 return np.mean(min_q, dtype=int)
-            if len(min_q) == 0:
+            elif len(min_q) == 0:
                 return np.mean(maj_q, dtype=int)
 
             return np.mean((max(min_q), min(maj_q)), dtype=int)
