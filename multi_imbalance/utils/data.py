@@ -8,6 +8,7 @@ import pandas as pd
 from scipy.io import arff
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import Bunch
+import os
 
 
 def construct_flat_2pc_df(X, y) -> pd.DataFrame:
@@ -86,12 +87,12 @@ def load_arff_dataset(
 
 def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
     if dataset_paths is None:
-        dataset_paths = glob.glob(f"{get_project_root()}/data/arff/*")
+        dataset_paths = glob.glob(os.path.join(get_project_root(), "data", "arff", "*"))
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
-        dataset_file = path.split("/")[-1]
-        dataset_name = dataset_file.split(".")[0]
+        dataset_file = os.path.basename(path)
+        dataset_name = os.path.splitext(dataset_file)[0]
         if return_non_cat_length:
             X, y, cat_length = load_arff_dataset(
                 path, return_non_cat_length=return_non_cat_length

@@ -28,7 +28,7 @@ from sklearn.datasets._base import Bunch
 
 PRE_FILENAME = "x"
 POST_FILENAME = "data.npz"
-DATA_HOME_BASIC = "./../../data/"
+DATA_HOME_BASIC = join(".", "..", "..", "data")
 
 MAP_NAME_ID_KEYS = [
     "1czysty-cut",
@@ -84,7 +84,7 @@ def load_datasets(data_home=DATA_HOME_BASIC):
 
         if not available:
             makedirs(extracted_dir, exist_ok=True)
-            with open(f"{data_home}data.tar.gz", "rb") as fin:
+            with open(join(data_home, "data.tar.gz"), "rb") as fin:
                 f = BytesIO(fin.read())
             tar = tarfile.open(fileobj=f)
             tar.extractall(path=extracted_dir)

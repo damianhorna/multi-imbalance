@@ -2,6 +2,7 @@
 """
 
 from multi_imbalance.datasets import load_datasets
+from os.path import join
 
 DATASET_SHAPE = {
     "1czysty-cut": (1200, 2),
@@ -26,7 +27,7 @@ DATASET_SHAPE = {
 
 def test_load_datasets():
     print("Testing loading datasets")
-    datasets = load_datasets(data_home="./data/")
+    datasets = load_datasets(data_home=join(".", "data"))
     for k in DATASET_SHAPE.keys():
         X = datasets[k].data
         assert DATASET_SHAPE[k] == X.shape
