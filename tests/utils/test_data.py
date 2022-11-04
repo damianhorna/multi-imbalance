@@ -29,6 +29,17 @@ def test_preprocess():
     assert x.shape == (7, 2)
 
 
+def test_preprocess_without_one_hot_encode():
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    ds_path = os.path.join(dir_path, "ds_example.arrf")
+    x, y, non_cat = load_arff_dataset(
+        ds_path, return_non_cat_length=True, one_hot_encode=False
+    )
+    assert all(y == np.array([0, 0, 0, 0, 0, 0, 0]))
+    assert non_cat == 2
+    assert x.shape == (7, 2)
+
+
 def test_load_arff_datasets():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     ds_paths = [os.path.join(dir_path, "ds_example.arrf")]

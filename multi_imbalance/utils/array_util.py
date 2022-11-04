@@ -55,7 +55,7 @@ def contains(dataset: np.ndarray, example: np.ndarray) -> bool:
 
 def index_of(arr: np.ndarray, example: np.ndarray) -> int:
     """
-    :return: Index of learning exmaple in arr.
+    :return: Index of learning example in arr.
     """
     for i, x in enumerate(arr):
         if all(x == example):

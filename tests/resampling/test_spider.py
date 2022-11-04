@@ -3,49 +3,12 @@ from collections import Counter
 import numpy as np
 
 from multi_imbalance.resampling.spider import SPIDER3
-from multi_imbalance.utils.array_util import union, intersect, setdiff
 
 cost = np.ones((3, 3))
 np.fill_diagonal(cost, 0)
 spider = SPIDER3(
     1, maj_int_min={"maj": ["MAJ"], "int": ["INT"], "min": ["MIN"]}, cost=cost
 )
-
-
-def test_union():
-    arr1 = np.array([[1, 2, 3]])
-    arr2 = np.array([[4, 5, 6]])
-    actual = union(arr1, arr2)
-    expected = np.array([[1, 2, 3], [4, 5, 6]])
-    assert (actual == expected).all()
-
-    arr1 = np.array([[1, 2, 3], [4, 5, 6]])
-    arr2 = np.array([[1, 2, 3]])
-
-    actual = union(arr1, arr2)
-    expected = np.array([[1, 2, 3], [4, 5, 6], [1, 2, 3]])
-
-    assert (actual == expected).all()
-
-
-def test_intersect():
-    arr1 = np.array([[1, 2, 3], [4, 5, 6]])
-    arr2 = np.array([[1, 2, 3]])
-
-    actual = intersect(arr1, arr2)
-    expected = np.array([[1, 2, 3]])
-
-    assert (actual == expected).all()
-
-
-def test_setdiff():
-    arr1 = np.array([[1, 2, 3], [4, 5, 6]])
-    arr2 = np.array([[1, 2, 3]])
-
-    actual = setdiff(arr1, arr2)
-    expected = np.array([[4, 5, 6]])
-
-    assert (actual == expected).all()
 
 
 def test_knn():

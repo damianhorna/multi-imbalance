@@ -1,6 +1,7 @@
 """Test the datasets loader.
 """
 
+import shutil
 from multi_imbalance.datasets import load_datasets
 from os.path import join
 
@@ -27,7 +28,10 @@ DATASET_SHAPE = {
 
 def test_load_datasets():
     print("Testing loading datasets")
-    datasets = load_datasets(data_home=join(".", "data"))
+    data_home = join(".", "data")
+    datasets = load_datasets(data_home=data_home)
     for k in DATASET_SHAPE.keys():
         X = datasets[k].data
         assert DATASET_SHAPE[k] == X.shape
+
+    shutil.rmtree(join(data_home, "extracted"))

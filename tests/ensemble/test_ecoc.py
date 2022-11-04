@@ -96,10 +96,13 @@ def test_no_oversampling():
 @pytest.mark.parametrize(
     "encoding_strategy", ["dense", "sparse", "OVO", "OVA", "complete"]
 )
-@pytest.mark.parametrize("oversampling", [None, "globalCS", "SMOTE", "SOUP"])
-def test_encoding(encoding_strategy, oversampling):
+@pytest.mark.parametrize(
+    "oversampling, minority_classes",
+    [(None, None), ("globalCS", None), ("SMOTE", None), ("SOUP", [0, 2])],
+)
+def test_encoding(encoding_strategy, oversampling, minority_classes):
     ecoc_clf = ecoc.ECOC(encoding=encoding_strategy, preprocessing=oversampling)
-    ecoc_clf.fit(X, y)
+    ecoc_clf.fit(X, y, minority_classes=minority_classes)
     matrix = ecoc_clf._code_matrix
 
     number_of_classes = len(np.unique(y))
@@ -165,6 +168,26 @@ def test_unknown_classifier():
     with pytest.raises(ValueError) as e:
         ecoc_clf.fit(X, y)
     assert "DUMMY_CLASSIFIER" in str(e.value)
+
+
+def test_unknown_encoding():
+    ecoc_clf = ecoc.ECOC(encoding="dummy")
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert (
+        e.value.args[0]
+        == "Unknown matrix generation encoding: dummy, expected to be one of ['dense', 'sparse', 'complete', 'OVA', 'OVO']."
+    )
+
+
+def test_unknown_weighting_strategy():
+    ecoc_clf = ecoc.ECOC(weights="dummy")
+    with pytest.raises(ValueError) as e:
+        ecoc_clf.fit(X, y)
+    assert (
+        e.value.args[0]
+        == "Unknown weighting strategy: dummy, expected to be one of [None, 'acc', 'avg_tpr_min']."
+    )
 
 
 def test_own_classifier_without_predict_and_fit():

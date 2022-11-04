@@ -122,6 +122,26 @@ def test_predefined_classifiers_and_preprocessings_without_errors(
     assert len(predicted) == 3
 
 
+@pytest.mark.parametrize(
+    "clf, expected_exception",
+    [
+        (
+            "dummy",
+            "Unknown binary classifier: dummy, expected to be one of ['tree', 'NB', 'KNN'].",
+        ),
+        (
+            lambda x: x,
+            "Your classifier must implement fit and predict methods",
+        ),
+    ],
+)
+def test_unknown_classifier(clf, expected_exception):
+    ovo_clf = ovo.OVO(binary_classifier=clf)
+    with pytest.raises(ValueError) as e:
+        ovo_clf.fit(X, y)
+    assert e.value.args[0] == expected_exception
+
+
 def test_unknown_preprocessing():
     ovo_clf = ovo.OVO(preprocessing="DUMMY_OVERSAMPLING")
     with pytest.raises(ValueError) as e:
