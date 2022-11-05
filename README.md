@@ -106,8 +106,7 @@ If you would use project for local tests (e.g. run `examples/` with your code ch
 pip install -U -e ".[all]"
 ```
 After that you can use multi-imbalance as normal Python package. Your next changes will be automatically loaded.
-
-Our project uses GitHub actions on push and pull request. The action runs tox with configuration define in tox.ini.
+Our project uses GitHub actions on push and pull request. The actions run tox with configuration define in tox.ini.
 
 multi-imbalance uses reStructuredText markdown for docstrings. To build the documentation locally run:
 ```bash

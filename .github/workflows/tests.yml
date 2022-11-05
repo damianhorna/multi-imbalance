@@ -1,4 +1,4 @@
-name: Tests and code analysis
+name: Tests
 on:
   - push
   - pull_request
