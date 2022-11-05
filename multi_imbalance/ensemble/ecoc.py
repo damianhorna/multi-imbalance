@@ -326,7 +326,8 @@ class ECOC(BaggingClassifier):
             digit = -1
             partial_code_len = 2 ** (number_of_classes - row_idx - 1)
             for idx in range(0, code_length, partial_code_len):
-                matrix[row_idx][idx : idx + partial_code_len] = digit
+                right_idx = idx + partial_code_len
+                matrix[row_idx][idx:right_idx] = digit
                 digit *= -1
         return matrix
 

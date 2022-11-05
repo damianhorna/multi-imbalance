@@ -12,10 +12,6 @@ from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
 
 
-def fit_clf(args: list):
-    return SOUPBagging.fit_classifier(args)
-
-
 class SOUPBagging(BaggingClassifier):
     """
     Version of Bagging that applies SOUP in each classifier
@@ -42,6 +38,7 @@ class SOUPBagging(BaggingClassifier):
         """
         super().__init__()
         self.classifiers, self.clf_weights = list(), list()
+        self.classifier = classifier
         self.maj_int_min = maj_int_min
         self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
@@ -84,6 +81,10 @@ class SOUPBagging(BaggingClassifier):
             )
         return clf, global_weights
 
+    @staticmethod
+    def fit_clf(args: list):
+        return SOUPBagging.fit_classifier(args)
+
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """
         :param X:
@@ -99,7 +100,7 @@ class SOUPBagging(BaggingClassifier):
 
         pool = multiprocessing.Pool(self.num_core)
         results = pool.map(
-            fit_clf,
+            self.fit_clf,
             [
                 (
                     clf,

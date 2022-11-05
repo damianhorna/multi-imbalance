@@ -73,7 +73,7 @@ class OVO(BaggingClassifier):
         self.binary_classifier = binary_classifier
         self.n_neighbors = n_neighbors
         self.preprocessing = preprocessing
-        self.oversample_between = preprocessing_between
+        self.preprocessing_between = preprocessing_between
         self._binary_classifiers = []
         self._labels = np.array([])
         self._minority_classes = list()
@@ -218,14 +218,14 @@ class OVO(BaggingClassifier):
         return smote.fit_resample(X, y)
 
     def should_perform_oversampling(self, first_class: int, second_class: int):
-        if self.oversample_between not in OVO._allowed_preprocessing_between:
+        if self.preprocessing_between not in OVO._allowed_preprocessing_between:
             raise ValueError(
                 "Unknown strategy for oversampling: %s, expected to be one of %s."
-                % (self.oversample_between, OVO._allowed_preprocessing_between)
+                % (self.preprocessing_between, OVO._allowed_preprocessing_between)
             )
-        elif self.oversample_between == "all":
+        elif self.preprocessing_between == "all":
             return True
-        elif self.oversample_between == "maj-min":
+        elif self.preprocessing_between == "maj-min":
             return (
                 first_class in self._minority_classes
                 and second_class not in self._minority_classes

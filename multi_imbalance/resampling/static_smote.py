@@ -42,11 +42,10 @@ class StaticSMOTE(BaseSampler):
         for _ in range(M):
             sm = SMOTE(sampling_strategy={min_class: cnt[min_class] * 2})
             X_smote, y_smote = sm.fit_resample(X_original, y_original)
-            X_added_examples = X_smote[y_smote == min_class][cnt[min_class] :, :]
+            idx = cnt[min_class]
+            X_added_examples = X_smote[y_smote == min_class][idx:, :]
             X_resampled = np.vstack([X_resampled, X_added_examples])
-            y_resampled = np.hstack(
-                [y_resampled, y_smote[y_smote == min_class][cnt[min_class] :]]
-            )
+            y_resampled = np.hstack([y_resampled, y_smote[y_smote == min_class][idx:]])
             cnt = Counter(y_resampled)
             min_class = min(cnt, key=cnt.get)
 

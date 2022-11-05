@@ -59,7 +59,7 @@ class MRBBagging(BaggingClassifier):
         self.learning_algorithm = learning_algorithm
         self.undersampling = undersampling
         self.feature_selection = feature_selection
-        self.all_random = random_fs
+        self.random_fs = random_fs
         self.half_features = half_features
         self.random_state = random_state
 
@@ -191,7 +191,7 @@ class MRBBagging(BaggingClassifier):
             subset_x = np.array(subset_x).astype(np.float64)
             subset_y = np.array(subset_y).astype(np.float64)
 
-            if self.all_random:
+            if self.random_fs:
                 subset1, subset1_idx = self._find_random_features(
                     labels_no, features_no, subset_x
                 )
@@ -226,7 +226,7 @@ class MRBBagging(BaggingClassifier):
 
     def _select_data(self, classifier_id: int, data: np.ndarray) -> np.ndarray:
         if self.feature_selection:
-            if self.all_random:
+            if self.random_fs:
                 new_data = self._get_features_array(
                     data, self.feature_selection_methods[classifier_id]
                 )
