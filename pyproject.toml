@@ -10,7 +10,7 @@ name = "multi-imbalance"
 description = "Python package for tackling multiclass imbalance problems."
 version = "0.1.0"
 maintainers = [
-    {name = "Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza", email = "horna.damian@gmail.com"}
+    {name = "Damian Horna, Kamil Pluciński, Hanna Klimczak, Jacek Grycza, Jan Kozłowski, Maciej Falbogowski, Adam Wojciechowski, Mateusz Woźny", email = "horna.damian@gmail.com"}
 ]
 readme = "README.md"
 classifiers=[

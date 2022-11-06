@@ -2,6 +2,7 @@ import multiprocessing
 from collections import Counter
 from copy import deepcopy
 from typing import Dict, List, Tuple, Union
+from joblib import Parallel, delayed
 
 import numpy as np
 from sklearn.ensemble import BaggingClassifier
@@ -108,11 +109,9 @@ class SOUPBagging(BaggingClassifier):
             self object
         """
         self.classes = np.unique(y)
-
-        pool = multiprocessing.Pool(self.num_core)
-        results = pool.map(
-            fit_clf,
-            [
+        parallel = Parallel(n_jobs=self.num_core)
+        results = parallel(
+            delayed(fit_clf)(
                 (
                     clf,
                     X,
@@ -120,8 +119,8 @@ class SOUPBagging(BaggingClassifier):
                     resample(X, y, stratify=y, random_state=i),
                     self.maj_int_min,
                 )
-                for i, clf in enumerate(self.classifiers)
-            ],
+            )
+            for i, clf in enumerate(self.classifiers)
         )
         for i, (clf, weights) in enumerate(results):
             self.classifiers[i] = clf
