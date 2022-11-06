@@ -1,10 +1,11 @@
 from collections import Counter
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from imblearn.base import BaseSampler
 from sklearn.neighbors import NearestNeighbors
 
-from multi_imbalance.utils.array_util import (union, setdiff, contains)
+from multi_imbalance.utils.array_util import union, setdiff, contains
 from multi_imbalance.utils.data import construct_maj_int_min
 
 
@@ -18,7 +19,12 @@ class SPIDER3(BaseSampler):
     on Computer Recognition Systems CORES 2017
     """
 
-    def __init__(self, k, maj_int_min=None, cost=None):
+    def __init__(
+        self,
+        k: int,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
+        cost: Union[np.ndarray, None] = None,
+    ) -> None:
         """
         :param k:
             Number of nearest neighbors considered while resampling.
@@ -30,14 +36,14 @@ class SPIDER3(BaseSampler):
         """
 
         super().__init__()
-        self._sampling_type = 'clean-sampling'
+        self._sampling_type = "clean-sampling"
         self.k = k
         self.neigh_clf = NearestNeighbors(n_neighbors=self.k)
         self.maj_int_min = maj_int_min
         self.cost = cost
         self.AS, self.RS = np.array([]), np.array([])
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Performs resampling
 
@@ -66,19 +72,19 @@ class SPIDER3(BaseSampler):
 
         return self.DS[:, :-1], self.DS[:, -1]
 
-    def _initialize_algorithm(self, X, y):
+    def _initialize_algorithm(self, X: np.ndarray, y: np.ndarray) -> None:
         if self.maj_int_min is None:
             self.maj_int_min = construct_maj_int_min(y)
-        self.majority_classes = self.maj_int_min['maj']
-        self.intermediate_classes = self.maj_int_min['int']
-        self.minority_classes = self.maj_int_min['min']
+        self.majority_classes = self.maj_int_min["maj"]
+        self.intermediate_classes = self.maj_int_min["int"]
+        self.minority_classes = self.maj_int_min["min"]
 
         self.stds, self.means = [1] * X.shape[1], [0] * X.shape[1]
         if self.cost is None:
             self.cost = self._estimate_cost_matrix(y)
 
     @staticmethod
-    def _estimate_cost_matrix(y):
+    def _estimate_cost_matrix(y: Union[np.ndarray, List[int]]) -> np.ndarray:
         """
         Method that estimates cost matrix automatically. For example given imbalance ratios of 1:2:6, the estimated
         matrix will be:
@@ -102,21 +108,21 @@ class SPIDER3(BaseSampler):
         np.fill_diagonal(cost, 0)
         return cost
 
-    def _sort_by_cardinality(self, y):
+    def _sort_by_cardinality(self, y: Union[List[int], np.ndarray]) -> Tuple[List[int], List[int]]:
         class_cardinality = Counter(y)
         # to ensure looping over classes with decreasing cardinality.
         int_classes = sorted(self.intermediate_classes, key=lambda clazz: -class_cardinality[clazz])
         min_classes = sorted(self.minority_classes, key=lambda clazz: -class_cardinality[clazz])
         return int_classes, min_classes
 
-    def amplify(self, int_min_class):
+    def amplify(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         for x in int_min_ds:
             self._amplify_nn(x)
         self._restore_perspective()
 
-    def clean(self, int_min_class):
+    def clean(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         int_min_as = self._calc_int_min_as(int_min_class)
@@ -124,14 +130,14 @@ class SPIDER3(BaseSampler):
             self._clean_nn(x)
         self._restore_perspective()
 
-    def relabel(self, int_min_class):
+    def relabel(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         for x in int_min_ds:
             self._relabel_nn(x)
         self._restore_perspective()
 
-    def _restart_perspective(self):
+    def _restart_perspective(self) -> None:
         """
         Performs normalization over resampled dataset.
         """
@@ -147,7 +153,7 @@ class SPIDER3(BaseSampler):
             if dataset.shape[0] > 0:
                 self._normalize(dataset)
 
-    def _restore_perspective(self):
+    def _restore_perspective(self) -> None:
         """
         Denormalizes for further processing.
         """
@@ -155,15 +161,15 @@ class SPIDER3(BaseSampler):
             if dataset.shape[0] > 0:
                 self._denormalize(dataset)
 
-    def _normalize(self, dataset):
+    def _normalize(self, dataset: np.ndarray) -> None:
         for col in range(dataset.shape[1] - 1):
             dataset[:, col] = (dataset[:, col] - self.means[col]) / (4 * self.stds[col])
 
-    def _denormalize(self, dataset):
+    def _denormalize(self, dataset: np.ndarray) -> None:
         for col in range(dataset.shape[1] - 1):
             dataset[:, col] = dataset[:, col] * self.stds[col] * 4 + self.means[col]
 
-    def _calc_int_min_as(self, int_min_class):
+    def _calc_int_min_as(self, int_min_class: str) -> np.ndarray:
         """
         Helper method to calculate examples form AS that belong to int_min_class parameter class.
         :param int_min_class:
@@ -178,7 +184,7 @@ class SPIDER3(BaseSampler):
             int_min_as = np.array([])
         return int_min_as
 
-    def _calculate_weak_majority_examples(self):
+    def _calculate_weak_majority_examples(self) -> None:
         """
         Calculates weak majority examples and appends them to the RS set.
         """
@@ -189,7 +195,7 @@ class SPIDER3(BaseSampler):
                 if majority_class not in self._min_cost_classes(x, self.DS):
                     self.RS = union(self.RS, np.array([x]))
 
-    def _min_cost_classes(self, x, DS):
+    def _min_cost_classes(self, x: np.ndarray, DS: np.ndarray) -> np.ndarray:
         """
         Utility function that aims to identify minimum-cost classes, i.e. classes leading
         to the minimum cost after being (mis)classified as classes appearing in the neighborhood of x.
@@ -216,7 +222,7 @@ class SPIDER3(BaseSampler):
         vals = np.round(vals, 6)
         return C[vals == vals[np.argmin(vals)]]
 
-    def _relabel_nn(self, x):
+    def _relabel_nn(self, x: np.ndarray) -> None:
         """
         Performs relabeling in the nearest neighborhood of x.
 
@@ -225,13 +231,16 @@ class SPIDER3(BaseSampler):
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if contains(self.RS, neighbor) and self._class_of(neighbor) in self.majority_classes and self._class_of(
-                    neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
+            if (
+                contains(self.RS, neighbor)
+                and self._class_of(neighbor) in self.majority_classes
+                and self._class_of(neighbor) in self._min_cost_classes(x, self._ds_as_rs_union())
+            ):
                 self.RS = setdiff(self.RS, np.array([neighbor]))
                 neighbor[-1] = x[-1]
                 self.AS = union(self.AS, np.array([neighbor]))
 
-    def _clean_nn(self, x):
+    def _clean_nn(self, x: np.ndarray) -> None:
         """
         Performs cleaning in the nearest neighborhood of x.
 
@@ -240,12 +249,13 @@ class SPIDER3(BaseSampler):
         """
         nearest_neighbors = self._knn(x, self._ds_as_rs_union())
         for neighbor in nearest_neighbors:
-            if self._class_of(neighbor) in self.majority_classes and \
-                    self._class_of(neighbor) in self._min_cost_classes(x, self._ds_as_rs_union()):
+            if self._class_of(neighbor) in self.majority_classes and self._class_of(neighbor) in self._min_cost_classes(
+                x, self._ds_as_rs_union()
+            ):
                 self.DS = setdiff(self.DS, np.array([neighbor]))
                 self.RS = setdiff(self.RS, np.array([neighbor]))
 
-    def _knn(self, x, DS):
+    def _knn(self, x: np.ndarray, DS: np.ndarray) -> np.ndarray:
         """
         Returns k nearest neighbors of x in DS that belong to c class if specified.
 
@@ -267,9 +277,12 @@ class SPIDER3(BaseSampler):
 
         self.neigh_clf.fit(DS[:, :-1])
 
-        within_radius = self.neigh_clf.radius_neighbors([x[:-1]], radius=
-        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1] + 0.0001 *
-        self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1], return_distance=True)
+        within_radius = self.neigh_clf.radius_neighbors(
+            [x[:-1]],
+            radius=self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1]
+            + 0.0001 * self.neigh_clf.kneighbors([x[:-1]], return_distance=True)[0][0][-1],
+            return_distance=True,
+        )
 
         unique_distances = np.unique(sorted(within_radius[0][0]))
         all_distances = within_radius[0][0]
@@ -281,7 +294,7 @@ class SPIDER3(BaseSampler):
 
         return DS[indices]
 
-    def _amplify_nn(self, x):
+    def _amplify_nn(self, x: np.ndarray) -> None:
         """
         Artificially amplifies example x by adding a copy of it to the AS.
 
@@ -294,8 +307,8 @@ class SPIDER3(BaseSampler):
             self.AS = union(self.AS, np.asarray([y]))
 
     @staticmethod
-    def _class_of(example):
+    def _class_of(example: np.ndarray):
         return example[-1]
 
-    def _ds_as_rs_union(self):
+    def _ds_as_rs_union(self) -> np.ndarray:
         return union(self.DS, union(self.AS, self.RS))

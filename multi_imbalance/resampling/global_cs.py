@@ -1,4 +1,5 @@
 from collections import Counter
+from typing import List, Tuple
 
 import numpy as np
 import sklearn
@@ -11,13 +12,13 @@ class GlobalCS(BaseSampler):
     for each class to achieve majority class size
     """
 
-    def __init__(self, shuffle: bool = True):
+    def __init__(self, shuffle: bool = True) -> None:
         super().__init__()
-        self._sampling_type = 'over-sampling'
+        self._sampling_type = "over-sampling"
         self.shuffle = shuffle
         self.quantities, self.max_quantity, self.X, self.y = [None] * 4
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param X:
             two dimensional numpy array (number of samples x number of features) with float numbers
@@ -26,8 +27,8 @@ class GlobalCS(BaseSampler):
         :return:
             Resampled X (max class quantity * number of unique classes), y (number of rows in X) as numpy array
         """
-        assert len(X.shape) == 2, 'X should have 2 dimension'
-        assert X.shape[0] == y.shape[0], 'Number of labels must be equal to number of samples'
+        assert len(X.shape) == 2, "X should have 2 dimension"
+        assert X.shape[0] == y.shape[0], "Number of labels must be equal to number of samples"
 
         self.quantities = Counter(y)
         self.max_quantity = int(np.max(list(self.quantities.values())))
@@ -47,7 +48,7 @@ class GlobalCS(BaseSampler):
 
         return np.array(result_X), np.array(result_y)
 
-    def _equal_oversample(self, X, y, class_name):
+    def _equal_oversample(self, X: np.ndarray, y: np.ndarray, class_name: str) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         indices_in_class = [i for i, class_label in enumerate(y) if class_label == class_name]
         desired_quantity = self.max_quantity - len(indices_in_class)
 
