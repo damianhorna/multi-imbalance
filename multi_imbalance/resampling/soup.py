@@ -42,9 +42,7 @@ class SOUP(BaseSampler):
         self.dsc_maj_cls, self.asc_min_cls = None, None
         self._X, self._y = None, None
 
-    def _fit_resample(
-        self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         The method computes the metrics required for resampling based on the given set
 
@@ -63,9 +61,7 @@ class SOUP(BaseSampler):
         self._y = deepcopy(y)
 
         assert len(self._X.shape) == 2, "X should have 2 dimension"
-        assert (
-            self._X.shape[0] == self._y.shape[0]
-        ), "Number of labels must be equal to number of samples"
+        assert self._X.shape[0] == self._y.shape[0], "Number of labels must be equal to number of samples"
 
         self.quantities = Counter(self._y)
         self.goal_quantity = self._calculate_goal_quantity(self.maj_int_min)
@@ -91,37 +87,27 @@ class SOUP(BaseSampler):
 
         return np.array(self._X), np.array(self._y)
 
-    def _construct_class_safe_levels(
-        self, X: np.ndarray, y: np.ndarray, class_name: str
-    ) -> defaultdict:
+    def _construct_class_safe_levels(self, X: np.ndarray, y: np.ndarray, class_name: str) -> defaultdict:
         self.quantities = Counter(y)
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
         neigh_clf = NearestNeighbors(n_neighbors=self.k + 1).fit(X)
-        neighbour_indices = neigh_clf.kneighbors(
-            X[indices_in_class], return_distance=False
-        )[:, 1:]
+        neighbour_indices = neigh_clf.kneighbors(X[indices_in_class], return_distance=False)[:, 1:]
         neighbour_classes = y[neighbour_indices]
 
         class_safe_levels = defaultdict(float)
         for i, sample_id in enumerate(indices_in_class):
             neighbours_quantities = Counter(neighbour_classes[i])
-            class_safe_levels[sample_id] = self._calculate_sample_safe_level(
-                class_name, neighbours_quantities
-            )
+            class_safe_levels[sample_id] = self._calculate_sample_safe_level(class_name, neighbours_quantities)
 
         return class_safe_levels
 
-    def _calculate_sample_safe_level(
-        self, class_name: str, neighbours_quantities: Counter
-    ) -> float:
+    def _calculate_sample_safe_level(self, class_name: str, neighbours_quantities: Counter) -> float:
         safe_level = 0
         q: Counter = self.quantities
 
         for neigh_label, neigh_q in neighbours_quantities.items():
-            similarity_between_classes = min(q[class_name], q[neigh_label]) / max(
-                q[class_name], q[neigh_label]
-            )
+            similarity_between_classes = min(q[class_name], q[neigh_label]) / max(q[class_name], q[neigh_label])
             safe_level += neigh_q * similarity_between_classes
 
         safe_level /= self.k
@@ -131,67 +117,43 @@ class SOUP(BaseSampler):
 
         return safe_level
 
-    def _undersample(
-        self, X: np.ndarray, y: np.ndarray, class_name: str
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        safe_levels_of_samples_in_class = self._construct_class_safe_levels(
-            X, y, class_name
-        )
+    def _undersample(self, X: np.ndarray, y: np.ndarray, class_name: str) -> Tuple[np.ndarray, np.ndarray]:
+        safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
 
         class_quantity = self.quantities[class_name]
-        safe_levels_list = sorted(
-            safe_levels_of_samples_in_class.items(), key=itemgetter(1)
-        )
+        safe_levels_list = sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1))
         samples_to_remove_quantity = max(0, int(class_quantity - self.goal_quantity))
         if samples_to_remove_quantity > 0:
-            remove_indices = list(
-                map(itemgetter(0), safe_levels_list[:samples_to_remove_quantity])
-            )
+            remove_indices = list(map(itemgetter(0), safe_levels_list[:samples_to_remove_quantity]))
             X = np.delete(X, remove_indices, axis=0)
             y = np.delete(y, remove_indices, axis=0)
 
         return X, y
 
-    def _oversample(
-        self, X: np.ndarray, y: np.ndarray, class_name: str
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        safe_levels_of_samples_in_class = self._construct_class_safe_levels(
-            X, y, class_name
-        )
+    def _oversample(self, X: np.ndarray, y: np.ndarray, class_name: str) -> Tuple[np.ndarray, np.ndarray]:
+        safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
         class_quantity = self.quantities[class_name]
-        safe_levels_list = list(
-            sorted(
-                safe_levels_of_samples_in_class.items(), key=itemgetter(1), reverse=True
-            )
-        )
+        safe_levels_list = list(sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1), reverse=True))
 
         difference = self.goal_quantity - class_quantity
         while difference > 0:
             quantity_items_to_copy = min(difference, class_quantity)
-            indices_to_copy = list(
-                map(itemgetter(0), safe_levels_list[:quantity_items_to_copy])
-            )
+            indices_to_copy = list(map(itemgetter(0), safe_levels_list[:quantity_items_to_copy]))
             X = np.vstack((X, X[indices_to_copy]))
             y = np.hstack((y, y[indices_to_copy]))
             difference -= quantity_items_to_copy
 
         return X, y
 
-    def _calculate_goal_quantity(
-        self, maj_int_min: Union[Dict[str, List[int]], None] = None
-    ) -> Union[int, float]:
+    def _calculate_goal_quantity(self, maj_int_min: Union[Dict[str, List[int]], None] = None) -> Union[int, float]:
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))
             min_q = min(list(self.quantities.values()))
             return np.mean((min_q, maj_q), dtype=int)
         else:
-            maj_classes = {
-                k: v for k, v in self.quantities.items() if k in maj_int_min["maj"]
-            }
+            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min["maj"]}
             maj_q = list(maj_classes.values())
-            min_classes = {
-                k: v for k, v in self.quantities.items() if k in maj_int_min["min"]
-            }
+            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min["min"]}
             min_q = list(min_classes.values())
 
             if len(min_q) == 0 and len(maj_q) == 0:

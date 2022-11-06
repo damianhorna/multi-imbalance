@@ -88,9 +88,7 @@ def mdo_mock():
     return _get_parametrized_mdo
 
 
-@pytest.mark.parametrize(
-    "X, y, sc_minor_expected, weights_expected", complete_test_data
-)
+@pytest.mark.parametrize("X, y, sc_minor_expected, weights_expected", complete_test_data)
 def test_choose_samples(X, y, sc_minor_expected, weights_expected, mdo_mock):
     clf = mdo_mock(X, y)
     SC_minor, weights = clf._choose_samples(1)

@@ -35,9 +35,7 @@ X = np.array(
     ]
 )
 
-y = np.array(
-    [1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 1, 1, 2, 3, 2, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1]
-)
+y = np.array([1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 1, 1, 2, 3, 2, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1])
 
 
 def test_fit_predict():
@@ -107,18 +105,14 @@ def test_with_own_preprocessing():
 @pytest.mark.parametrize("preprocessing_btwn", ["all", "maj-min"])
 @pytest.mark.parametrize("classifier", ["tree", "NB", "KNN"])
 @pytest.mark.parametrize("preprocessing", [None, "globalCS", "SMOTE", "SOUP"])
-def test_predefined_classifiers_and_preprocessings_without_errors(
-    classifier, preprocessing, preprocessing_btwn
-):
+def test_predefined_classifiers_and_preprocessings_without_errors(classifier, preprocessing, preprocessing_btwn):
     ovo_clf = ovo.OVO(
         binary_classifier=classifier,
         preprocessing=preprocessing,
         preprocessing_between=preprocessing_btwn,
     )
     ovo_clf.fit(X, y)
-    predicted = ovo_clf.predict(
-        np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]])
-    )
+    predicted = ovo_clf.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]]))
     assert len(predicted) == 3
 
 
@@ -189,7 +183,5 @@ def test_ecoc_with_sklearn_pipeline(preprocessing_btwn, classifier, preprocessin
         ]
     )
     pipeline.fit(X, y)
-    y_hat = pipeline.predict(
-        np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.99]])
-    )
+    y_hat = pipeline.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.99]]))
     assert len(y_hat) == 3

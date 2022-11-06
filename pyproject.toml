@@ -68,3 +68,6 @@ testpaths = [
 
 [tool.setuptools]
 py-modules = ["multi_imbalance"]
+
+[tool.black]
+line-length = 140

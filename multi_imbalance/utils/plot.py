@@ -10,9 +10,7 @@ from multi_imbalance.utils.data import construct_flat_2pc_df
 sns.set_style("darkgrid")
 
 
-def plot_cardinality_and_2d_data(
-    X: np.ndarray, y: np.ndarray, dataset_name: str = ""
-):  # pragma no cover
+def plot_cardinality_and_2d_data(X: np.ndarray, y: np.ndarray, dataset_name: str = ""):  # pragma no cover
     """
     Plots cardinality of classes from y as well as scatter plot of X transformed to two dimensions using PCA
 

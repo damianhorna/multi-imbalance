@@ -32,9 +32,7 @@ def test_preprocess():
 def test_preprocess_without_one_hot_encode():
     dir_path = os.path.dirname(os.path.realpath(__file__))
     ds_path = os.path.join(dir_path, "ds_example.arrf")
-    x, y, non_cat = load_arff_dataset(
-        ds_path, return_non_cat_length=True, one_hot_encode=False
-    )
+    x, y, non_cat = load_arff_dataset(ds_path, return_non_cat_length=True, one_hot_encode=False)
     assert all(y == np.array([0, 0, 0, 0, 0, 0, 0]))
     assert non_cat == 2
     assert x.shape == (7, 2)
@@ -75,13 +73,7 @@ def test_construct_maj_int_min_when_correct_and_median_strategy():
         5: 10,
         8: 12,
     }
-    y = np.array(
-        [
-            class_label
-            for class_label, class_size in class_sizes.items()
-            for _ in range(class_size)
-        ]
-    )
+    y = np.array([class_label for class_label, class_size in class_sizes.items() for _ in range(class_size)])
     np.random.shuffle(y)
 
     maj_int_dict = construct_maj_int_min(y, strategy="median")
@@ -104,13 +96,7 @@ def test_construct_maj_int_min_when_correct_and_average_strategy():
         5: 10,
         8: 2000,
     }
-    y = np.array(
-        [
-            class_label
-            for class_label, class_size in class_sizes.items()
-            for _ in range(class_size)
-        ]
-    )
+    y = np.array([class_label for class_label, class_size in class_sizes.items() for _ in range(class_size)])
     np.random.shuffle(y)
 
     maj_int_dict = construct_maj_int_min(y, strategy="average")
@@ -132,13 +118,7 @@ def test_construct_maj_int_min_when_wrong_strategy():
         5: 10,
         8: 2000,
     }
-    y = np.array(
-        [
-            class_label
-            for class_label, class_size in class_sizes.items()
-            for _ in range(class_size)
-        ]
-    )
+    y = np.array([class_label for class_label, class_size in class_sizes.items() for _ in range(class_size)])
     np.random.shuffle(y)
 
     with pytest.raises(ValueError):

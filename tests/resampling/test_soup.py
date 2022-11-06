@@ -165,12 +165,8 @@ def soup_mock():
     return _get_parametrized_soup
 
 
-@pytest.mark.parametrize(
-    "X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data
-)
-def test_calculating_safe_levels_for_sample(
-    X, y, zero_safe_levels, one_safe_levels, first_sample_safe, soup_mock
-):
+@pytest.mark.parametrize("X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
+def test_calculating_safe_levels_for_sample(X, y, zero_safe_levels, one_safe_levels, first_sample_safe, soup_mock):
     clf = soup_mock(X, y)
     neighbour_quantities = Counter({0: 3, 1: 1})
 
@@ -178,12 +174,8 @@ def test_calculating_safe_levels_for_sample(
     assert_array_almost_equal(safe_level, first_sample_safe)
 
 
-@pytest.mark.parametrize(
-    "X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data
-)
-def test_calculating_safe_levels_for_class(
-    X, y, zero_safe_levels, one_safe_levels, first_sample_safe, soup_mock
-):
+@pytest.mark.parametrize("X, y, zero_safe_levels, one_safe_levels, first_sample_safe", complete_test_data)
+def test_calculating_safe_levels_for_class(X, y, zero_safe_levels, one_safe_levels, first_sample_safe, soup_mock):
     clf = soup_mock(X, y)
 
     zero_levels = clf._construct_class_safe_levels(X, y, 0)
@@ -197,9 +189,7 @@ def test_calculating_safe_levels_for_class(
     "X, y, class_name, expected_undersampling, expected_oversampling",
     safe_levels_test_data,
 )
-def test_oversample(
-    X, y, class_name, expected_undersampling, expected_oversampling, soup_mock
-):
+def test_oversample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
     oversampled_X, oversampled_y = clf._oversample(X, y, class_name)
     assert len(oversampled_X) == expected_oversampling
@@ -210,9 +200,7 @@ def test_oversample(
     "X, y, class_name, expected_undersampling, expected_oversampling",
     safe_levels_test_data,
 )
-def test_undersample(
-    X, y, class_name, expected_undersampling, expected_oversampling, soup_mock
-):
+def test_undersample(X, y, class_name, expected_undersampling, expected_oversampling, soup_mock):
     clf = soup_mock(X, y)
     undersampled_X, undersampled_y = clf._undersample(X, y, class_name)
     assert len(undersampled_X) == expected_undersampling

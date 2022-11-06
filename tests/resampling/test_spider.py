@@ -6,9 +6,7 @@ from multi_imbalance.resampling.spider import SPIDER3
 
 cost = np.ones((3, 3))
 np.fill_diagonal(cost, 0)
-spider = SPIDER3(
-    1, maj_int_min={"maj": ["MAJ"], "int": ["INT"], "min": ["MIN"]}, cost=cost
-)
+spider = SPIDER3(1, maj_int_min={"maj": ["MAJ"], "int": ["INT"], "min": ["MIN"]}, cost=cost)
 
 
 def test_knn():

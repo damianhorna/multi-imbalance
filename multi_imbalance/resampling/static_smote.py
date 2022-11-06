@@ -20,9 +20,7 @@ class StaticSMOTE(BaseSampler):
         super().__init__()
         self._sampling_type = "over-sampling"
 
-    def _fit_resample(
-        self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Performs resampling
 

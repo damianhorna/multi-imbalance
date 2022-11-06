@@ -128,17 +128,13 @@ class ECOC(BaggingClassifier):
             self.minority_classes = minority_classes
 
         if self.weights is not None:
-            X_train, X_for_weights, y_train, y_for_weights = train_test_split(
-                X, y, test_size=0.2, stratify=y, random_state=0
-            )
+            X_train, X_for_weights, y_train, y_for_weights = train_test_split(X, y, test_size=0.2, stratify=y, random_state=0)
         else:
             X_train, y_train = X, y
 
         self._labels = np.unique(y)
         self._gen_code_matrix()
-        self._binary_classifiers = [
-            self._get_classifier() for _ in range(self._code_matrix.shape[1])
-        ]
+        self._binary_classifiers = [self._get_classifier() for _ in range(self._code_matrix.shape[1])]
         self._learn_binary_classifiers(X_train, y_train)
         if self.weights is not None:
             self._calc_weights(X_for_weights, y_for_weights)
@@ -164,23 +160,11 @@ class ECOC(BaggingClassifier):
     def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray) -> None:
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             excluded_classes_indices = [
-                idx
-                for idx in range(len(y))
-                if self._code_matrix[self._labels.tolist().index(y[idx])][
-                    classifier_idx
-                ]
-                == 0
+                idx for idx in range(len(y)) if self._code_matrix[self._labels.tolist().index(y[idx])][classifier_idx] == 0
             ]
             X_filtered = np.delete(X, excluded_classes_indices, 0)
             y_filtered = np.delete(y, excluded_classes_indices)
-            binary_labels = np.array(
-                [
-                    self._code_matrix[self._labels.tolist().index(clazz)][
-                        classifier_idx
-                    ]
-                    for clazz in y_filtered
-                ]
-            )
+            binary_labels = np.array([self._code_matrix[self._labels.tolist().index(clazz)][classifier_idx] for clazz in y_filtered])
             X_filtered, binary_labels = self._oversample(X_filtered, binary_labels)
             classifier.fit(X_filtered, binary_labels)
 
@@ -196,10 +180,7 @@ class ECOC(BaggingClassifier):
         elif self.encoding == "OVA":
             self._code_matrix = self._encode_ova(self._labels.shape[0])
         else:
-            raise ValueError(
-                "Unknown matrix generation encoding: %s, expected to be one of %s."
-                % (self.encoding, ECOC._allowed_encodings)
-            )
+            raise ValueError("Unknown matrix generation encoding: %s, expected to be one of %s." % (self.encoding, ECOC._allowed_encodings))
 
     def _encode_dense(
         self,
@@ -209,14 +190,10 @@ class ECOC(BaggingClassifier):
     ) -> np.ndarray:
         try:
             dirname = os.path.dirname(__file__)
-            matrix = np.load(
-                dirname + f"/cached_matrices/dense_{number_of_classes}.npy"
-            )
+            matrix = np.load(dirname + f"/cached_matrices/dense_{number_of_classes}.npy")
             return matrix
         except IOError:
-            print(
-                f"Could not find cached matrix for dense code for {number_of_classes} classes, generating matrix..."
-            )
+            print(f"Could not find cached matrix for dense code for {number_of_classes} classes, generating matrix...")
 
         number_of_columns = int(np.ceil(10 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
@@ -233,9 +210,7 @@ class ECOC(BaggingClassifier):
                         tmp_code_matrix[row, col] = -1
 
                 for compared_row in range(0, row):
-                    dist = self._hamming_distance(
-                        tmp_code_matrix[compared_row], tmp_code_matrix[row]
-                    )
+                    dist = self._hamming_distance(tmp_code_matrix[compared_row], tmp_code_matrix[row])
                     if dist < min_dist:
                         min_dist = dist
 
@@ -252,14 +227,10 @@ class ECOC(BaggingClassifier):
     ) -> np.ndarray:
         try:
             dirname = os.path.dirname(__file__)
-            matrix = np.load(
-                dirname + f"/cached_matrices/sparse_{number_of_classes}.npy"
-            )
+            matrix = np.load(dirname + f"/cached_matrices/sparse_{number_of_classes}.npy")
             return matrix
         except IOError:
-            print(
-                f"Could not find cached matrix for sparse code for {number_of_classes} classes, generating matrix..."
-            )
+            print(f"Could not find cached matrix for sparse code for {number_of_classes} classes, generating matrix...")
 
         number_of_columns = int(np.ceil(15 * np.log2(number_of_classes)))
         code_matrix = np.ones((number_of_classes, number_of_columns))
@@ -282,9 +253,7 @@ class ECOC(BaggingClassifier):
                     break
 
                 for compared_row in range(0, row):
-                    dist = self._hamming_distance(
-                        tmp_code_matrix[compared_row], tmp_code_matrix[row]
-                    )
+                    dist = self._hamming_distance(tmp_code_matrix[compared_row], tmp_code_matrix[row])
                     if dist < min_dist:
                         min_dist = dist
 
@@ -314,9 +283,7 @@ class ECOC(BaggingClassifier):
                     matrix[row, col] = -1
         return matrix
 
-    def _map_indices_to_class_pairs(
-        self, number_of_classes: int
-    ) -> Dict[int, Tuple[int, int]]:
+    def _map_indices_to_class_pairs(self, number_of_classes: int) -> Dict[int, Tuple[int, int]]:
         indices_map = dict()
         idx = 0
         for i in range(number_of_classes):
@@ -346,34 +313,19 @@ class ECOC(BaggingClassifier):
     def _get_closest_class(self, row: np.ndarray) -> np.ndarray:
         if self.weights is not None:
             return self._labels[
-                np.argmin(
-                    [
-                        sum(np.multiply(self.dich_weights, (encoded_class - row) ** 2))
-                        for encoded_class in self._code_matrix
-                    ]
-                )
+                np.argmin([sum(np.multiply(self.dich_weights, (encoded_class - row) ** 2)) for encoded_class in self._code_matrix])
             ]
         else:
-            return self._labels[
-                np.argmin(
-                    [
-                        self._hamming_distance(row, encoded_class)
-                        for encoded_class in self._code_matrix
-                    ]
-                )
-            ]
+            return self._labels[np.argmin([self._hamming_distance(row, encoded_class) for encoded_class in self._code_matrix])]
 
-    def _oversample(
-        self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _oversample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if self.preprocessing is None:
             return X, y
 
         if isinstance(self.preprocessing, str):
             if self.preprocessing not in ECOC._allowed_oversampling:
                 raise ValueError(
-                    "Unknown preprocessing method: %s, expected to be one of %s."
-                    % (self.preprocessing, ECOC._allowed_oversampling)
+                    "Unknown preprocessing method: %s, expected to be one of %s." % (self.preprocessing, ECOC._allowed_oversampling)
                 )
             elif np.unique(y).size == 1:
                 return X, y
@@ -394,8 +346,7 @@ class ECOC(BaggingClassifier):
         if isinstance(self.binary_classifier, str):
             if self.binary_classifier not in ECOC._allowed_classifiers:
                 raise ValueError(
-                    "Unknown binary classifier: %s, expected to be one of %s."
-                    % (self.binary_classifier, ECOC._allowed_classifiers)
+                    "Unknown binary classifier: %s, expected to be one of %s." % (self.binary_classifier, ECOC._allowed_classifiers)
                 )
             elif self.binary_classifier == "tree":
                 decision_tree_classifier = DecisionTreeClassifier(random_state=42)
@@ -407,33 +358,20 @@ class ECOC(BaggingClassifier):
                 knn = KNeighborsClassifier(n_neighbors=self.n_neighbors)
                 return knn
         else:
-            if not hasattr(self.binary_classifier, "fit") or not hasattr(
-                self.binary_classifier, "predict"
-            ):
-                raise ValueError(
-                    "Your classifier must implement fit and predict methods"
-                )
+            if not hasattr(self.binary_classifier, "fit") or not hasattr(self.binary_classifier, "predict"):
+                raise ValueError("Your classifier must implement fit and predict methods")
             return deepcopy(self.binary_classifier)
 
-    def _smote_oversample(
-        self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _smote_oversample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         n_neighbors = min(3, min(np.unique(y, return_counts=True)[1]) - 1)
         if n_neighbors == 0:
-            raise ValueError(
-                "In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class"
-            )
+            raise ValueError("In order to use SMOTE preprocessing, the training set should contain at least 2 examples from each class")
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
-    def _calc_weights(
-        self, X_for_weights: np.ndarray, y_for_weights: np.ndarray
-    ) -> None:
+    def _calc_weights(self, X_for_weights: np.ndarray, y_for_weights: np.ndarray) -> None:
         if self.weights not in ECOC._allowed_weights:
-            raise ValueError(
-                "Unknown weighting strategy: %s, expected to be one of %s."
-                % (self.weights, ECOC._allowed_weights)
-            )
+            raise ValueError("Unknown weighting strategy: %s, expected to be one of %s." % (self.weights, ECOC._allowed_weights))
 
         dich_weights = np.ones(self._code_matrix.shape[1])
         if self.weights == "acc":
@@ -441,42 +379,22 @@ class ECOC(BaggingClassifier):
                 samples_no = 0
                 correct_no = 0
                 for sample, sample_label in zip(X_for_weights, y_for_weights):
-                    if (
-                        self._code_matrix[np.where(self._labels == sample_label)[0][0]][
-                            clf_idx
-                        ]
-                        != 0
-                    ):
+                    if self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx] != 0:
                         samples_no += 1
-                        if (
-                            clf.predict([sample])[0]
-                            == self._code_matrix[
-                                np.where(self._labels == sample_label)[0][0]
-                            ][clf_idx]
-                        ):
+                        if clf.predict([sample])[0] == self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
                             correct_no += 1
                 if samples_no != 0:
                     acc = correct_no / samples_no
                     dich_weights[clf_idx] = -1 + 2 * acc
         elif self.weights == "avg_tpr_min":
-            min_counter = Counter(
-                [y for y in y_for_weights if y in self.minority_classes]
-            )
+            min_counter = Counter([y for y in y_for_weights if y in self.minority_classes])
 
             for clf_idx, clf in enumerate(self._binary_classifiers):
                 min_correct_pred = defaultdict(lambda: 0)
                 for sample, sample_label in zip(X_for_weights, y_for_weights):
-                    if (
-                        clf.predict([sample])[0]
-                        == self._code_matrix[
-                            np.where(self._labels == sample_label)[0][0]
-                        ][clf_idx]
-                    ):
+                    if clf.predict([sample])[0] == self._code_matrix[np.where(self._labels == sample_label)[0][0]][clf_idx]:
                         min_correct_pred[sample_label] += 1
-                tpr_min = [
-                    min_correct_pred[clazz] / min_counter[clazz]
-                    for clazz in min_counter.keys()
-                ]
+                tpr_min = [min_correct_pred[clazz] / min_counter[clazz] for clazz in min_counter.keys()]
                 avg_tpr_min = np.mean(tpr_min) if tpr_min else np.nan
                 dich_weights[clf_idx] = avg_tpr_min
 

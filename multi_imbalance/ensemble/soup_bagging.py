@@ -82,24 +82,18 @@ class SOUPBagging(BaggingClassifier):
         )
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
-        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_resample(
-            x_sampled, y_sampled
-        )
+        x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_resample(x_sampled, y_sampled)
         clf.fit(x_resampled, y_resampled)
 
         result = clf.predict_proba(x_out)
         class_sum_prob = np.sum(result, axis=0) + 0.001
         class_quantities = Counter(y_out)
-        expected_sum_prob = np.array(
-            [class_quantities[i] for i in range(len(Counter(y)))]
-        )
+        expected_sum_prob = np.array([class_quantities[i] for i in range(len(Counter(y)))])
         try:
             global_weights = expected_sum_prob / class_sum_prob
         except Exception:
             global_weights = np.ones(shape=len(Counter(y)))
-            print(
-                f"Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}"
-            )
+            print(f"Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}")
         return clf, global_weights
 
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
@@ -129,8 +123,6 @@ class SOUPBagging(BaggingClassifier):
                 for i, clf in enumerate(self.classifiers)
             ],
         )
-        pool.close()
-        pool.join()
         for i, (clf, weights) in enumerate(results):
             self.classifiers[i] = clf
             self.clf_weights[i] = weights
@@ -169,15 +161,11 @@ class SOUPBagging(BaggingClassifier):
             p = np.zeros(shape=(n_samples, n_classes)) - 1
 
             for i in range(n_classes):
-                two_dim_class_vector = weights_sum[
-                    :, :, i
-                ]  # [:,:,1] -> [classifiers x samples]
+                two_dim_class_vector = weights_sum[:, :, i]  # [:,:,1] -> [classifiers x samples]
                 if i in self.maj_int_min["min"]:
                     squeeze_with_strategy = np.max(two_dim_class_vector, axis=0)
                 else:
-                    squeeze_with_strategy = np.min(
-                        two_dim_class_vector, axis=0
-                    )  # [1, n_samples, 1] -> [n_samples]
+                    squeeze_with_strategy = np.min(two_dim_class_vector, axis=0)  # [1, n_samples, 1] -> [n_samples]
                 p[:, i] = squeeze_with_strategy
             assert -1 not in p
         elif strategy == "global":

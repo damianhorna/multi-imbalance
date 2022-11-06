@@ -86,9 +86,7 @@ def load_arff_dataset(
         return X.to_numpy(), y
 
 
-def load_datasets_arff(
-    return_non_cat_length: bool = False, dataset_paths: Union[str, None] = None
-) -> OrderedDict:
+def load_datasets_arff(return_non_cat_length: bool = False, dataset_paths: Union[str, None] = None) -> OrderedDict:
     if dataset_paths is None:
         dataset_paths = glob.glob(os.path.join(get_project_root(), "data", "arff", "*"))
 
@@ -97,12 +95,8 @@ def load_datasets_arff(
         path = Path(path)
         dataset_name = path.stem
         if return_non_cat_length:
-            X, y, cat_length = load_arff_dataset(
-                path, return_non_cat_length=return_non_cat_length
-            )
-            datasets[dataset_name] = Bunch(
-                data=X, target=y, non_cat_length=cat_length, DESCR=dataset_name
-            )
+            X, y, cat_length = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
+            datasets[dataset_name] = Bunch(data=X, target=y, non_cat_length=cat_length, DESCR=dataset_name)
         else:
             X, y = load_arff_dataset(path, return_non_cat_length=return_non_cat_length)
             datasets[dataset_name] = Bunch(data=X, target=y, DESCR=dataset_name)
@@ -135,9 +129,7 @@ def construct_maj_int_min(y: np.ndarray, strategy: str = "median") -> OrderedDic
     elif strategy == "average":
         middle_size = np.mean(list(class_sizes.values()))
     else:
-        raise ValueError(
-            f'Unrecognized {strategy}. Only "median" and "average" are allowed.'
-        )
+        raise ValueError(f'Unrecognized {strategy}. Only "median" and "average" are allowed.')
 
     maj_int_min = OrderedDict({"maj": list(), "int": list(), "min": list()})
     for class_label, class_size in class_sizes.items():

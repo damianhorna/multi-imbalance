@@ -40,40 +40,7 @@ X = np.array(
     ]
 )
 
-y = np.array(
-    [
-        2,
-        0,
-        2,
-        3,
-        0,
-        3,
-        1,
-        0,
-        2,
-        0,
-        2,
-        3,
-        1,
-        2,
-        1,
-        3,
-        0,
-        3,
-        2,
-        0,
-        0,
-        1,
-        2,
-        3,
-        0,
-        1,
-        2,
-        3,
-        1,
-        2,
-    ]
-)
+y = np.array([2, 0, 2, 3, 0, 3, 1, 0, 2, 0, 2, 3, 1, 2, 1, 3, 0, 3, 2, 0, 0, 1, 2, 3, 0, 1, 2, 3, 1, 2])
 
 
 def test_random_oversampling():
@@ -93,9 +60,7 @@ def test_no_oversampling():
     assert y.shape == y_oversampled.shape
 
 
-@pytest.mark.parametrize(
-    "encoding_strategy", ["dense", "sparse", "OVO", "OVA", "complete"]
-)
+@pytest.mark.parametrize("encoding_strategy", ["dense", "sparse", "OVO", "OVA", "complete"])
 @pytest.mark.parametrize(
     "oversampling, minority_classes",
     [(None, None), ("globalCS", None), ("SMOTE", None), ("SOUP", [0, 2])],
@@ -175,8 +140,7 @@ def test_unknown_encoding():
     with pytest.raises(ValueError) as e:
         ecoc_clf.fit(X, y)
     assert (
-        e.value.args[0]
-        == "Unknown matrix generation encoding: dummy, expected to be one of ['dense', 'sparse', 'complete', 'OVA', 'OVO']."
+        e.value.args[0] == "Unknown matrix generation encoding: dummy, expected to be one of ['dense', 'sparse', 'complete', 'OVA', 'OVO']."
     )
 
 
@@ -184,10 +148,7 @@ def test_unknown_weighting_strategy():
     ecoc_clf = ecoc.ECOC(weights="dummy")
     with pytest.raises(ValueError) as e:
         ecoc_clf.fit(X, y)
-    assert (
-        e.value.args[0]
-        == "Unknown weighting strategy: dummy, expected to be one of [None, 'acc', 'avg_tpr_min']."
-    )
+    assert e.value.args[0] == "Unknown weighting strategy: dummy, expected to be one of [None, 'acc', 'avg_tpr_min']."
 
 
 def test_own_classifier_without_predict_and_fit():
@@ -211,9 +172,7 @@ def test_own_classifier_without_predict_and_fit():
 def test_predefined_classifiers_and_weighting_without_exceptions(classifier, weights):
     ecoc_clf = ecoc.ECOC(binary_classifier=classifier, weights=weights)
     ecoc_clf.fit(X, y)
-    predicted = ecoc_clf.predict(
-        np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]])
-    )
+    predicted = ecoc_clf.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]]))
     assert len(predicted) == 3
 
 
@@ -239,9 +198,7 @@ def test_own_preprocessing_without_fit_transform():
     assert "fit_transform" in str(e.value)
 
 
-@pytest.mark.parametrize(
-    "encoding_strategy", ["dense", "sparse", "OVO", "OVA", "complete"]
-)
+@pytest.mark.parametrize("encoding_strategy", ["dense", "sparse", "OVO", "OVA", "complete"])
 @pytest.mark.parametrize("oversampling", [None, "globalCS", "SMOTE", "SOUP"])
 def test_ecoc_with_sklearn_pipeline(encoding_strategy, oversampling):
     pipeline = Pipeline(
@@ -251,7 +208,5 @@ def test_ecoc_with_sklearn_pipeline(encoding_strategy, oversampling):
         ]
     )
     pipeline.fit(X, y)
-    y_hat = pipeline.predict(
-        np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]])
-    )
+    y_hat = pipeline.predict(np.array([[1.1, 2.2, 3.3], [4.4, 5.5, 6.6], [7.7, 8.8, 9.9]]))
     assert len(y_hat) == 3

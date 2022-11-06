@@ -109,9 +109,7 @@ class MRBBagging(BaggingClassifier):
         """
         return self._select_classes(data)
 
-    def _group_data(
-        self, x: np.ndarray, y: np.ndarray
-    ) -> Tuple[Set[int], Dict[int, List[Tuple[np.ndarray, int]]]]:
+    def _group_data(self, x: np.ndarray, y: np.ndarray) -> Tuple[Set[int], Dict[int, List[Tuple[np.ndarray, int]]]]:
         classes = set(y)
         self.classes = {key: value for (key, value) in enumerate(classes)}
         data = [[x[i], y[i]] for i in range(len(x))]
@@ -159,21 +157,15 @@ class MRBBagging(BaggingClassifier):
 
             self.classifiers[i] = la_list[i].fit(subset_x, subset_y)
 
-    def _find_random_features(
-        self, labels_no: int, features_no: int, subset_x: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _find_random_features(self, labels_no: int, features_no: int, subset_x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         random_features_idx = sample_without_replacement(labels_no, features_no)
         random_features = self._get_features_array(subset_x, random_features_idx)
         return random_features, random_features_idx
 
-    def _get_features_array(
-        self, subset_x: np.ndarray, random_features_idx: np.ndarray
-    ) -> np.ndarray:
+    def _get_features_array(self, subset_x: np.ndarray, random_features_idx: np.ndarray) -> np.ndarray:
         random_features = np.array(subset_x[:, random_features_idx[0]])
         for f in range(1, len(random_features_idx)):
-            random_features = np.vstack(
-                (random_features, subset_x[:, random_features_idx[f]])
-            )
+            random_features = np.vstack((random_features, subset_x[:, random_features_idx[f]]))
         if random_features.ndim == 1:
             return random_features[:, np.newaxis]
         return random_features.T
@@ -209,26 +201,14 @@ class MRBBagging(BaggingClassifier):
             subset_y = np.array(subset_y).astype(np.float64)
 
             if self.random_fs:
-                subset1, subset1_idx = self._find_random_features(
-                    labels_no, features_no, subset_x
-                )
-                subset2, subset2_idx = self._find_random_features(
-                    labels_no, features_no, subset_x
-                )
-                subset3, subset3_idx = self._find_random_features(
-                    labels_no, features_no, subset_x
-                )
+                subset1, subset1_idx = self._find_random_features(labels_no, features_no, subset_x)
+                subset2, subset2_idx = self._find_random_features(labels_no, features_no, subset_x)
+                subset3, subset3_idx = self._find_random_features(labels_no, features_no, subset_x)
 
             else:
-                subset1, subset1_idx = self._get_kbest_classifier(
-                    chi2, features_no, subset_x, subset_y
-                )
-                subset2, subset2_idx = self._get_kbest_classifier(
-                    f_classif, features_no, subset_x, subset_y
-                )
-                subset3, subset3_idx = self._find_random_features(
-                    labels_no, features_no, subset_x
-                )
+                subset1, subset1_idx = self._get_kbest_classifier(chi2, features_no, subset_x, subset_y)
+                subset2, subset2_idx = self._get_kbest_classifier(f_classif, features_no, subset_x, subset_y)
+                subset3, subset3_idx = self._find_random_features(labels_no, features_no, subset_x)
 
             self.feature_selection_methods[i] = subset1_idx
             self.feature_selection_methods[i + 1] = subset2_idx
@@ -244,18 +224,12 @@ class MRBBagging(BaggingClassifier):
     def _select_data(self, classifier_id: int, data: np.ndarray) -> np.ndarray:
         if self.feature_selection:
             if self.random_fs:
-                new_data = self._get_features_array(
-                    data, self.feature_selection_methods[classifier_id]
-                )
+                new_data = self._get_features_array(data, self.feature_selection_methods[classifier_id])
             else:
                 if (classifier_id % 3) - 2 == 0:
-                    new_data = self._get_features_array(
-                        data, self.feature_selection_methods[classifier_id]
-                    )
+                    new_data = self._get_features_array(data, self.feature_selection_methods[classifier_id])
                 else:
-                    new_data = self.feature_selection_methods[classifier_id].transform(
-                        data
-                    )
+                    new_data = self.feature_selection_methods[classifier_id].transform(data)
             return new_data
         return data
 
@@ -266,9 +240,7 @@ class MRBBagging(BaggingClassifier):
             classes = self.classifiers[classifier_id].predict(new_data)
             probabilities = self.classifiers[classifier_id].predict_proba(new_data)
             for i, cl in enumerate(classes):
-                idx = list(self.classifier_classes.keys())[
-                    list(self.classifier_classes.values()).index(int(cl))
-                ]
+                idx = list(self.classifier_classes.keys())[list(self.classifier_classes.values()).index(int(cl))]
                 voting_matrix[i][idx] += max(probabilities[i])
         return voting_matrix
 

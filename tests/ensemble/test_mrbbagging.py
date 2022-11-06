@@ -42,17 +42,13 @@ y_test = np.array([0, 0, 0, 0])
 
 class TestMRBBagging(unittest.TestCase):
     def test_api(self):
-        mrbbagging = MRBBagging(
-            1, DecisionTreeClassifier(random_state=0), random_state=0
-        )
+        mrbbagging = MRBBagging(1, DecisionTreeClassifier(random_state=0), random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
 
     def test_api_multiple_trees(self):
-        mrbbagging = MRBBagging(
-            5, DecisionTreeClassifier(random_state=0), random_state=0
-        )
+        mrbbagging = MRBBagging(5, DecisionTreeClassifier(random_state=0), random_state=0)
         mrbbagging.fit(X_train, y_train)
         y_pred = mrbbagging.predict(X_test)
         assert all(y_pred == y_test)
