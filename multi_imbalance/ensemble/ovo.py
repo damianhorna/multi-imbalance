@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Tuple, Union
+from typing import List, Tuple, Union
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -7,6 +7,7 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.base import ClassifierMixin
 
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
@@ -33,7 +34,7 @@ class OVO(BaggingClassifier):
         n_neighbors: int = 3,
         preprocessing: str = "SOUP",
         preprocessing_between: str = "all",
-    ):
+    ) -> None:
         """
         :param binary_classifier:
             binary classifier. Possible classifiers:
@@ -79,7 +80,10 @@ class OVO(BaggingClassifier):
         self._minority_classes = list()
 
     def fit(
-        self, X: np.ndarray, y: np.ndarray, minority_classes: Union[list, None] = None
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        minority_classes: Union[List[int], None] = None,
     ):
         """
         :param X:
@@ -131,7 +135,7 @@ class OVO(BaggingClassifier):
                 ] = self._binary_classifiers[class_idx1][class_idx2].predict([instance])
         return binary_outputs_matrix
 
-    def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray):
+    def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray) -> None:
         for row in range(len(self._labels)):
             for col in range(row):
                 first_class, second_class = self._labels[row], self._labels[col]
@@ -145,7 +149,7 @@ class OVO(BaggingClassifier):
                     X_filtered, y_filtered = self._oversample(X_filtered, y_filtered)
                 self._binary_classifiers[row][col].fit(X_filtered, y_filtered)
 
-    def _get_classifier(self) -> Any:
+    def _get_classifier(self) -> ClassifierMixin:
         if isinstance(self.binary_classifier, str):
             if self.binary_classifier not in OVO._allowed_classifiers:
                 raise ValueError(
@@ -217,7 +221,7 @@ class OVO(BaggingClassifier):
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
-    def should_perform_oversampling(self, first_class: int, second_class: int):
+    def should_perform_oversampling(self, first_class: int, second_class: int) -> None:
         if self.preprocessing_between not in OVO._allowed_preprocessing_between:
             raise ValueError(
                 "Unknown strategy for oversampling: %s, expected to be one of %s."

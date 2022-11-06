@@ -1,15 +1,28 @@
 import multiprocessing
 from collections import Counter
 from copy import deepcopy
-from typing import Any, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
+from sklearn.base import ClassifierMixin
 
 from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
+
+
+def fit_clf(
+    args: Tuple[
+        ClassifierMixin,
+        np.ndarray,
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Union[Dict[str, List[int]], None],
+    ]
+):
+    return SOUPBagging.fit_classifier(args)
 
 
 class SOUPBagging(BaggingClassifier):
@@ -24,8 +37,8 @@ class SOUPBagging(BaggingClassifier):
 
     def __init__(
         self,
-        classifier: Union[Any, None] = None,
-        maj_int_min: Union[dict, None] = None,
+        classifier: Union[ClassifierMixin, None] = None,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
         n_classifiers: int = 5,
     ):
         """
@@ -51,7 +64,15 @@ class SOUPBagging(BaggingClassifier):
                 self.classifiers.append(KNeighborsClassifier())
 
     @staticmethod
-    def fit_classifier(args: list) -> Tuple[Any, np.ndarray]:
+    def fit_classifier(
+        args: Tuple[
+            ClassifierMixin,
+            np.ndarray,
+            np.ndarray,
+            Tuple[np.ndarray, np.ndarray],
+            Union[Dict[str, List[int]], None],
+        ]
+    ) -> Tuple[ClassifierMixin, np.ndarray]:
         clf, X, y, resampled, maj_int_min = args
         x_sampled, y_sampled = resampled
 
@@ -81,10 +102,6 @@ class SOUPBagging(BaggingClassifier):
             )
         return clf, global_weights
 
-    @staticmethod
-    def fit_clf(args: list):
-        return SOUPBagging.fit_classifier(args)
-
     def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """
         :param X:
@@ -100,7 +117,7 @@ class SOUPBagging(BaggingClassifier):
 
         pool = multiprocessing.Pool(self.num_core)
         results = pool.map(
-            self.fit_clf,
+            fit_clf,
             [
                 (
                     clf,

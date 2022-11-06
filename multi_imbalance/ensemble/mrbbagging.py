@@ -1,7 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from math import sqrt
-from typing import Any, Callable, Tuple, Union
+from typing import Callable, Dict, List, Set, Tuple, Union
 
 import numpy as np
 from scipy.stats import multinomial
@@ -9,6 +9,7 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.feature_selection import SelectKBest, chi2, f_classif
 from sklearn.utils import resample
 from sklearn.utils.random import sample_without_replacement
+from sklearn.base import ClassifierMixin
 
 
 class MRBBagging(BaggingClassifier):
@@ -25,13 +26,13 @@ class MRBBagging(BaggingClassifier):
     def __init__(
         self,
         k: int,
-        learning_algorithm: Any,
+        learning_algorithm: ClassifierMixin,
         undersampling: bool = True,
         feature_selection: bool = False,
         random_fs: bool = False,
         half_features: bool = True,
         random_state: Union[int, None] = None,
-    ):
+    ) -> None:
         """
         :param k:
             number of classifiers (multiplied by 3 when choosing feature selection)
@@ -99,7 +100,7 @@ class MRBBagging(BaggingClassifier):
 
         return self
 
-    def predict(self, data: np.ndarray) -> list:
+    def predict(self, data: np.ndarray) -> List[int]:
         """
         Predict classes for examples in data.
 
@@ -108,7 +109,9 @@ class MRBBagging(BaggingClassifier):
         """
         return self._select_classes(data)
 
-    def _group_data(self, x: np.ndarray, y: np.ndarray) -> Tuple[set, dict]:
+    def _group_data(
+        self, x: np.ndarray, y: np.ndarray
+    ) -> Tuple[Set[int], Dict[int, List[Tuple[np.ndarray, int]]]]:
         classes = set(y)
         self.classes = {key: value for (key, value) in enumerate(classes)}
         data = [[x[i], y[i]] for i in range(len(x))]
@@ -119,7 +122,11 @@ class MRBBagging(BaggingClassifier):
         return classes, grouped_data
 
     def _resample(
-        self, n: int, prob: float, classes: set, grouped_data: dict
+        self,
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
     ) -> Tuple[np.ndarray, np.ndarray]:
         samples_no = multinomial.rvs(n=n, p=prob, random_state=self.random_state)
         subset_x, subset_y = [], []
@@ -137,8 +144,13 @@ class MRBBagging(BaggingClassifier):
         return np.array(subset_x), np.array(subset_y)
 
     def _train(
-        self, la_list: list, n: int, prob: float, classes: set, grouped_data: dict
-    ):
+        self,
+        la_list: List[ClassifierMixin],
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
+    ) -> None:
         for i in range(len(la_list)):
             subset_x, subset_y = self._resample(n, prob, classes, grouped_data)
 
@@ -178,8 +190,13 @@ class MRBBagging(BaggingClassifier):
         return subset, kBest_estimator
 
     def _train_with_feature_selection(
-        self, la_list: list, n: int, prob: float, classes: set, grouped_data: dict
-    ):
+        self,
+        la_list: List[ClassifierMixin],
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
+    ) -> None:
         for i in range(0, len(la_list), 3):
             subset_x, subset_y = self._resample(n, prob, classes, grouped_data)
             labels_no = len(subset_x[0])
@@ -221,7 +238,7 @@ class MRBBagging(BaggingClassifier):
             self.classifiers[i + 1] = la_list[i + 1].fit(subset2, subset_y)
             self.classifiers[i + 2] = la_list[i + 2].fit(subset3, subset_y)
 
-    def _set_classes_dict(self, classes: set):
+    def _set_classes_dict(self, classes: Set[int]) -> None:
         self.classifier_classes = dict(enumerate(classes))
 
     def _select_data(self, classifier_id: int, data: np.ndarray) -> np.ndarray:
@@ -255,7 +272,7 @@ class MRBBagging(BaggingClassifier):
                 voting_matrix[i][idx] += max(probabilities[i])
         return voting_matrix
 
-    def _select_classes(self, data: np.ndarray) -> list:
+    def _select_classes(self, data: np.ndarray) -> List[int]:
         voting_matrix = self._count_votes(data)
         selected_classes_ids = voting_matrix.argmax(axis=1)
         selected_classes = []

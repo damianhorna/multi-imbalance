@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 from copy import deepcopy
 from operator import itemgetter
-from typing import Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import sklearn
@@ -20,8 +20,11 @@ class SOUP(BaseSampler):
     """
 
     def __init__(
-        self, k: int = 7, shuffle: bool = False, maj_int_min: Union[dict, None] = None
-    ):
+        self,
+        k: int = 7,
+        shuffle: bool = False,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
+    ) -> None:
         """
         :param k:
             number of neighbors
@@ -175,7 +178,7 @@ class SOUP(BaseSampler):
         return X, y
 
     def _calculate_goal_quantity(
-        self, maj_int_min: Union[dict, None] = None
+        self, maj_int_min: Union[Dict[str, List[int]], None] = None
     ) -> Union[int, float]:
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))

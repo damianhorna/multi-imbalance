@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import sklearn
@@ -12,7 +12,7 @@ class GlobalCS(BaseSampler):
     for each class to achieve majority class size
     """
 
-    def __init__(self, shuffle: bool = True):
+    def __init__(self, shuffle: bool = True) -> None:
         super().__init__()
         self._sampling_type = "over-sampling"
         self.shuffle = shuffle
@@ -54,7 +54,7 @@ class GlobalCS(BaseSampler):
 
     def _equal_oversample(
         self, X: np.ndarray, y: np.ndarray, class_name: str
-    ) -> Tuple[list, list]:
+    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
         indices_in_class = [
             i for i, class_label in enumerate(y) if class_label == class_name
         ]

@@ -2,7 +2,7 @@ import os
 from collections import Counter
 from collections import defaultdict
 from copy import deepcopy
-from typing import Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from imblearn.over_sampling import SMOTE
@@ -12,6 +12,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import check_random_state
+from sklearn.base import ClassifierMixin
 
 from multi_imbalance.resampling.global_cs import GlobalCS
 from multi_imbalance.resampling.soup import SOUP
@@ -37,7 +38,7 @@ class ECOC(BaggingClassifier):
         encoding: str = "OVO",
         n_neighbors: int = 3,
         weights: Union[None, str] = None,
-    ):
+    ) -> None:
         """
 
         :param binary_classifier:
@@ -107,7 +108,10 @@ class ECOC(BaggingClassifier):
         self._dich_weights = None
 
     def fit(
-        self, X: np.ndarray, y: np.ndarray, minority_classes: Union[list, None] = None
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        minority_classes: Union[List[int], None] = None,
     ):
         """
 
@@ -157,7 +161,7 @@ class ECOC(BaggingClassifier):
 
         return predicted
 
-    def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray):
+    def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray) -> None:
         for classifier_idx, classifier in enumerate(self._binary_classifiers):
             excluded_classes_indices = [
                 idx
@@ -180,7 +184,7 @@ class ECOC(BaggingClassifier):
             X_filtered, binary_labels = self._oversample(X_filtered, binary_labels)
             classifier.fit(X_filtered, binary_labels)
 
-    def _gen_code_matrix(self):
+    def _gen_code_matrix(self) -> None:
         if self.encoding == "dense":
             self._code_matrix = self._encode_dense(self._labels.shape[0])
         elif self.encoding == "sparse":
@@ -310,7 +314,9 @@ class ECOC(BaggingClassifier):
                     matrix[row, col] = -1
         return matrix
 
-    def _map_indices_to_class_pairs(self, number_of_classes: int) -> dict:
+    def _map_indices_to_class_pairs(
+        self, number_of_classes: int
+    ) -> Dict[int, Tuple[int, int]]:
         indices_map = dict()
         idx = 0
         for i in range(number_of_classes):
@@ -384,7 +390,7 @@ class ECOC(BaggingClassifier):
                 raise ValueError("Your resampler must implement fit_transform method")
             return self.preprocessing.fit_transform(X, y)
 
-    def _get_classifier(self):
+    def _get_classifier(self) -> ClassifierMixin:
         if isinstance(self.binary_classifier, str):
             if self.binary_classifier not in ECOC._allowed_classifiers:
                 raise ValueError(
@@ -420,7 +426,9 @@ class ECOC(BaggingClassifier):
         smote = SMOTE(k_neighbors=n_neighbors, random_state=42)
         return smote.fit_resample(X, y)
 
-    def _calc_weights(self, X_for_weights: np.ndarray, y_for_weights: np.ndarray):
+    def _calc_weights(
+        self, X_for_weights: np.ndarray, y_for_weights: np.ndarray
+    ) -> None:
         if self.weights not in ECOC._allowed_weights:
             raise ValueError(
                 "Unknown weighting strategy: %s, expected to be one of %s."

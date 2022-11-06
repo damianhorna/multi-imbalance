@@ -16,7 +16,7 @@ class StaticSMOTE(BaseSampler):
     (2011)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._sampling_type = "over-sampling"
 

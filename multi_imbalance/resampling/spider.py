@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -22,9 +22,9 @@ class SPIDER3(BaseSampler):
     def __init__(
         self,
         k: int,
-        maj_int_min: Union[dict, None] = None,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
         cost: Union[np.ndarray, None] = None,
-    ):
+    ) -> None:
         """
         :param k:
             Number of nearest neighbors considered while resampling.
@@ -74,7 +74,7 @@ class SPIDER3(BaseSampler):
 
         return self.DS[:, :-1], self.DS[:, -1]
 
-    def _initialize_algorithm(self, X: np.ndarray, y: np.ndarray):
+    def _initialize_algorithm(self, X: np.ndarray, y: np.ndarray) -> None:
         if self.maj_int_min is None:
             self.maj_int_min = construct_maj_int_min(y)
         self.majority_classes = self.maj_int_min["maj"]
@@ -86,7 +86,7 @@ class SPIDER3(BaseSampler):
             self.cost = self._estimate_cost_matrix(y)
 
     @staticmethod
-    def _estimate_cost_matrix(y: Union[np.ndarray, list]) -> np.ndarray:
+    def _estimate_cost_matrix(y: Union[np.ndarray, List[int]]) -> np.ndarray:
         """
         Method that estimates cost matrix automatically. For example given imbalance ratios of 1:2:6, the estimated
         matrix will be:
@@ -110,7 +110,9 @@ class SPIDER3(BaseSampler):
         np.fill_diagonal(cost, 0)
         return cost
 
-    def _sort_by_cardinality(self, y: Union[list, np.ndarray]) -> Tuple[list, list]:
+    def _sort_by_cardinality(
+        self, y: Union[List[int], np.ndarray]
+    ) -> Tuple[List[int], List[int]]:
         class_cardinality = Counter(y)
         # to ensure looping over classes with decreasing cardinality.
         int_classes = sorted(
@@ -121,14 +123,14 @@ class SPIDER3(BaseSampler):
         )
         return int_classes, min_classes
 
-    def amplify(self, int_min_class: str):
+    def amplify(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         for x in int_min_ds:
             self._amplify_nn(x)
         self._restore_perspective()
 
-    def clean(self, int_min_class: str):
+    def clean(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         int_min_as = self._calc_int_min_as(int_min_class)
@@ -136,14 +138,14 @@ class SPIDER3(BaseSampler):
             self._clean_nn(x)
         self._restore_perspective()
 
-    def relabel(self, int_min_class: str):
+    def relabel(self, int_min_class: str) -> None:
         self._restart_perspective()
         int_min_ds = self.DS[self.DS[:, -1] == int_min_class]
         for x in int_min_ds:
             self._relabel_nn(x)
         self._restore_perspective()
 
-    def _restart_perspective(self):
+    def _restart_perspective(self) -> None:
         """
         Performs normalization over resampled dataset.
         """
@@ -159,7 +161,7 @@ class SPIDER3(BaseSampler):
             if dataset.shape[0] > 0:
                 self._normalize(dataset)
 
-    def _restore_perspective(self):
+    def _restore_perspective(self) -> None:
         """
         Denormalizes for further processing.
         """
@@ -167,11 +169,11 @@ class SPIDER3(BaseSampler):
             if dataset.shape[0] > 0:
                 self._denormalize(dataset)
 
-    def _normalize(self, dataset: np.ndarray):
+    def _normalize(self, dataset: np.ndarray) -> None:
         for col in range(dataset.shape[1] - 1):
             dataset[:, col] = (dataset[:, col] - self.means[col]) / (4 * self.stds[col])
 
-    def _denormalize(self, dataset: np.ndarray):
+    def _denormalize(self, dataset: np.ndarray) -> None:
         for col in range(dataset.shape[1] - 1):
             dataset[:, col] = dataset[:, col] * self.stds[col] * 4 + self.means[col]
 
@@ -190,7 +192,7 @@ class SPIDER3(BaseSampler):
             int_min_as = np.array([])
         return int_min_as
 
-    def _calculate_weak_majority_examples(self):
+    def _calculate_weak_majority_examples(self) -> None:
         """
         Calculates weak majority examples and appends them to the RS set.
         """
@@ -230,7 +232,7 @@ class SPIDER3(BaseSampler):
         vals = np.round(vals, 6)
         return C[vals == vals[np.argmin(vals)]]
 
-    def _relabel_nn(self, x: np.ndarray):
+    def _relabel_nn(self, x: np.ndarray) -> None:
         """
         Performs relabeling in the nearest neighborhood of x.
 
@@ -249,7 +251,7 @@ class SPIDER3(BaseSampler):
                 neighbor[-1] = x[-1]
                 self.AS = union(self.AS, np.array([neighbor]))
 
-    def _clean_nn(self, x: np.ndarray):
+    def _clean_nn(self, x: np.ndarray) -> None:
         """
         Performs cleaning in the nearest neighborhood of x.
 
@@ -304,7 +306,7 @@ class SPIDER3(BaseSampler):
 
         return DS[indices]
 
-    def _amplify_nn(self, x: np.ndarray):
+    def _amplify_nn(self, x: np.ndarray) -> None:
         """
         Artificially amplifies example x by adding a copy of it to the AS.
 

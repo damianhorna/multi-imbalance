@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -24,8 +24,8 @@ class MDO(BaseSampler):
         k1_frac: float = 0.4,
         seed: int = 0,
         prop: int = 1,
-        maj_int_min: Union[dict, None] = None,
-    ):
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
+    ) -> None:
         """
         :param k:
             Number of neighbours considered during the neighbourhood analysis

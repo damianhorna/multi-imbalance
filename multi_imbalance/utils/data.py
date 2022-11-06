@@ -94,8 +94,8 @@ def load_datasets_arff(
 
     datasets = OrderedDict()
     for path in sorted(dataset_paths):
-        dataset_file = os.path.basename(path)
-        dataset_name = os.path.splitext(dataset_file)[0]
+        path = Path(path)
+        dataset_name = path.stem
         if return_non_cat_length:
             X, y, cat_length = load_arff_dataset(
                 path, return_non_cat_length=return_non_cat_length
