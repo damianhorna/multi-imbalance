@@ -64,7 +64,7 @@ class SPIDER3(BaseSampler):
 
         self.DS = union(self.DS, self.AS)
 
-        return self.DS[:, :-1], self.DS[:, -1]
+        return self.DS[:, :-1], self.DS[:, -1].astype(y.dtype)
 
     def _initialize_algorithm(self, X, y):
         if self.maj_int_min is None:
