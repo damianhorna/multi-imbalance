@@ -2,6 +2,7 @@ import glob
 from collections import OrderedDict, Counter
 from pathlib import Path
 from statistics import median
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -100,7 +101,7 @@ def load_datasets_arff(return_non_cat_length=False, dataset_paths=None):
     return datasets
 
 
-def construct_maj_int_min(y: np.ndarray, strategy='median') -> OrderedDict:
+def construct_maj_int_min(y: np.ndarray, strategy='median', threshold: Optional[float] = None) -> OrderedDict:
     """
     This function creates dictionary with information which classes are minority or majority
 
@@ -114,8 +115,13 @@ def construct_maj_int_min(y: np.ndarray, strategy='median') -> OrderedDict:
         * 'average':
             The average class size will be calculated, all classes that are smaller will be considered as minority and
             the rest will be considered majority
+        * 'threshold':
+            All classes that are smaller than given threshold value will be considered as minority and
+            the rest will be considered majority.
+    :param threshold:
+        A mandatory threshold value for the "threshold" strategy
     :return:
-        dictionary with keys 'maj', 'int', 'min. The value for each key is a list containing the class labels belonging
+        dictionary with keys 'maj', 'int', 'min'. The value for each key is a list containing the class labels belonging
         to the given group
     """
     class_sizes = Counter(y)
@@ -124,8 +130,12 @@ def construct_maj_int_min(y: np.ndarray, strategy='median') -> OrderedDict:
         middle_size = median(list(class_sizes.values()))
     elif strategy == 'average':
         middle_size = np.mean(list(class_sizes.values()))
+    elif strategy == 'threshold':
+        if threshold is None:
+            raise ValueError('Missing threshold value for "threshold" strategy')
+        middle_size = threshold
     else:
-        raise ValueError(f'Unrecognized {strategy}. Only "median" and "average" are allowed.')
+        raise ValueError(f'Unrecognized {strategy}. Only "median", "average" or "threshold" are allowed.')
 
     maj_int_min = OrderedDict({
         'maj': list(),
