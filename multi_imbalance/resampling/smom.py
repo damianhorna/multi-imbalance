@@ -86,7 +86,6 @@ def _compute_ss(Fs_i, Fs_d, i, dst):
 
 
 def _normalized_entropy(classes_counts: Sequence[int]):
-    # TODO: compare with the pseudo code in the article (falbogowski)
     if len(classes_counts) <= 1:
         E = 0
     else:
