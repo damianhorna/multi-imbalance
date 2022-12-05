@@ -1,4 +1,4 @@
-"""Implementations of SMOM tqchnique and DBOS clustering algorithm."""
+"""Implementations of SMOM technique and NBDOS clustering algorithm."""
 
 from collections import Counter, defaultdict
 
@@ -211,7 +211,8 @@ class SMOM(BaseSampler):
         nc_nct_union_d = np.concatenate([self.N_c_k3_d[i], self.N_ct_k3_d[i]],
                                         axis=0)
         dist_, ind_ = neighbors.KDTree(X[nc_nct_union_i],
-                                       metric=self._metric).query([X[i]], self.k2)
+                                       metric=self._metric).query([X[i]],
+                                                                  self.k2)
         ind, dist = ind_[0], dist_[0]
         self.N_k2_i[i] = nc_nct_union_i[ind]
         self.N_k2_d[i] = nc_nct_union_d[ind]
@@ -228,8 +229,10 @@ class SMOM(BaseSampler):
             if 'int' not in self.maj_int_min:
                 self.maj_int_min['int'] = []
             y_maj_classes = {cls: cnt[cls] for cls in
-                             self.maj_int_min['maj'] + self.maj_int_min['int']}
-            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min['min']}
+                             self.maj_int_min['maj'] + self.maj_int_min['int']
+                             if cls != self.c}
+            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min['min']
+                             if cls != self.c}
         return y_maj_classes, y_min_classes
 
     def _run_nbdos(self, Sc):
