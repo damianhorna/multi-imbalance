@@ -3,7 +3,7 @@ attrs==19.3.0
 Babel==2.8.0
 backcall==0.1.0
 bleach==3.1.4
-certifi==2020.4.5.1
+certifi==2022.12.7
 chardet==3.0.4
 commonmark==0.9.1
 coverage==5.1
