@@ -19,7 +19,7 @@ def get_dummy_config():
         "resample_methods": {},
         "metrics": {},
         "n_repeats": 2,
-        "train_test_split_kwargs": {},
+        "train_test_split_params": {},
     }
 
 
@@ -51,7 +51,7 @@ def output_file(tmp_path):
             },
             "metrics": {lambda x, y: (x, y): {}},
             "n_repeats": 2,
-            "train_test_split_kwargs": dict(test_size=0.2),
+            "train_test_split_params": dict(test_size=0.2),
         }
     ],
 )
@@ -63,7 +63,7 @@ def test_config_from_dict(config_dict):
     assert config.resample_methods == config_dict["resample_methods"]
     assert config.metrics == config_dict["metrics"]
     assert config.n_repeats == config_dict["n_repeats"]
-    assert config.train_test_split_kwargs == config_dict["train_test_split_kwargs"]
+    assert config.train_test_split_params == config_dict["train_test_split_params"]
 
 
 @pytest.mark.parametrize(
@@ -78,9 +78,10 @@ def test_get_classifier(classifier, expected_name, expected_clf):
 
     pipeline = AnalysisPipeline(config)
 
-    clf_name, clf = next(pipeline._get_classifier())
+    clf_name, clf, params = next(pipeline._get_classifier())
     assert clf_name == expected_name
     assert isinstance(clf, expected_clf)
+    assert params == {}
 
 
 @pytest.mark.parametrize(
@@ -95,7 +96,7 @@ def test_get_resampler(resampler, expected_name, expected_resampler):
 
     pipeline = AnalysisPipeline(config)
 
-    resampler_name, resampler = next(pipeline._get_resampler())
+    resampler_name, resampler = next(pipeline._get_resampler(train_without_resampling=False))
     assert resampler_name == expected_name
     assert isinstance(resampler, expected_resampler)
 
@@ -126,18 +127,18 @@ def test_run_analysis(X_ecoc, y_ecoc, dataset_file, output_file):
         "resample_methods": dict(globalCS={"shuffle": True}),
         "metrics": {geometric_mean_score: {"correction": 0.005}, accuracy_score: {}},
         "n_repeats": 2,
-        "train_test_split_kwargs": dict(test_size=0.2, random_state=42),
+        "train_test_split_params": dict(test_size=0.2, random_state=42),
     }
     config = Config.from_dict(config_dict)
 
     pipeline = AnalysisPipeline(config)
-    pipeline.run_analysis(output_file)
+    pipeline.run_analysis(output_file, train_without_resampling=True)
 
     result_df = pd.read_csv(output_file)
     assert (result_df["dataset_name"] == "dataset").all()
     assert (result_df["classifier"] == "tree").all()
     np.testing.assert_array_equal(result_df["metric_name"].unique(), ["geometric_mean_score", "accuracy_score"])
-    np.testing.assert_array_almost_equal(result_df["metric_value"].unique(), [0.018803, 0.166667])
+    np.testing.assert_array_almost_equal(result_df["metric_value"].unique(), [0.018803, 0.166667, 0.005, 0.0])
 
 
 def test_get_dataset_wrong_path():
@@ -170,7 +171,7 @@ def test_get_resampler_wrong(wrong_resampler, expected_exception):
     pipeline = AnalysisPipeline(config)
 
     with pytest.raises(ValueError) as ex:
-        next(pipeline._get_resampler())
+        next(pipeline._get_resampler(train_without_resampling=False))
 
     assert ex.value.args[0] == expected_exception
 
