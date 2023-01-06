@@ -74,6 +74,8 @@ def load_datasets(data_home: str = DATA_HOME_BASIC, save_to_csv: bool = False) -
     """
     extracted_dir = join(data_home, "extracted")
     csv_dir = join(data_home, "csv")
+    makedirs(csv_dir, exist_ok=True)
+
     datasets = OrderedDict()
 
     filter_data_ = MAP_NAME_ID.keys()

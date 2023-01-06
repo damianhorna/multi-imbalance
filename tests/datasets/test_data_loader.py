@@ -29,9 +29,10 @@ DATASET_SHAPE = {
 def test_load_datasets():
     print("Testing loading datasets")
     data_home = join(".", "data")
-    datasets = load_datasets(data_home=data_home)
+    datasets = load_datasets(data_home=data_home, save_to_csv=True)
     for k in DATASET_SHAPE.keys():
         X = datasets[k].data
         assert DATASET_SHAPE[k] == X.shape
 
     shutil.rmtree(join(data_home, "extracted"))
+    shutil.rmtree(join(data_home, "csv"))
