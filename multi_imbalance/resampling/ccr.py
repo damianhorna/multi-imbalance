@@ -5,13 +5,38 @@ from imblearn.base import BaseSampler
 
 
 class CCR(BaseSampler):
+    """
+    CCR is a combined cleaning and resampling energy-based algorithm.
+
+    Each minority example has an associated energy budget that is used to expand a sphere around it.
+    With each majority example within the sphere, the cost of further expansion increases.
+    When energy is used up, majority examples are pushed out of the spheres and synthetic minority examples are generated inside the spheres.
+    Synthetic examples are generated until the count of minority examples is equal to the count of majority examples.
+    Smaller spheres generate more synthetic examples than big ones to force the classification algorithm to focus on the most difficult examples.
+
+    Reference:
+    Koziarski, M., Wozniak, M.: CCR: A combined cleaning and resampling algorithm for imbalanced data classification.
+    International Journal of Applied Mathematics and Computer Science 2017
+    """
 
     def __init__(self, energy: float):
+        """
+        :param energy:
+            initial energy budget for each minority example to use for sphere expansion
+        """
         super().__init__()
         self.energy = energy
         self._sampling_type = "over-sampling"
 
     def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        :param X:
+            two-dimensional numpy array (number of samples x number of features) with float numbers
+        :param y:
+            one-dimensional numpy array with labels for rows in X, assumes minority class = 1 and majority class = 0
+        :return:
+            resampled X, resampled y
+        """
         oversampled_X, oversampled_y = np.copy(X), np.copy(y)
 
         majority_examples = X[y == 0]
