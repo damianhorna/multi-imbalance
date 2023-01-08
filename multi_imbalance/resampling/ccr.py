@@ -33,14 +33,33 @@ class CCR(BaseSampler):
         :param X:
             two-dimensional numpy array (number of samples x number of features) with float numbers
         :param y:
-            one-dimensional numpy array with labels for rows in X, assumes minority class = 1 and majority class = 0
+            one-dimensional numpy array with labels for rows in X
         :return:
             resampled X, resampled y
         """
-        oversampled_X, oversampled_y = np.copy(X), np.copy(y)
+        minority_class = min(list(Counter(y).items()), key=lambda x: x[1])[0]
 
-        majority_examples = X[y == 0]
-        minority_examples = X[y == 1]
+        minority_examples = X[y == minority_class]
+        majority_examples = X[y != minority_class]
+
+        clean_majority, synthetic_minority = self.clean_and_generate(minority_examples, majority_examples)
+
+        return np.vstack([minority_examples, clean_majority, synthetic_minority]), np.hstack([
+            np.full((minority_examples.shape[0],), minority_class),
+            y[y != minority_class],
+            np.full((synthetic_minority.shape[0],), minority_class)
+        ])
+
+    def clean_and_generate(self, minority_examples: np.ndarray, majority_examples: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        :param minority_examples:
+            two-dimensional numpy array (number of samples x number of features) with float numbers of minority class
+        :param majority_examples:
+            two-dimensional numpy array (number of samples x number of features) with float numbers of majority class
+        :return:
+            clean majority X, synthetic minority X
+        """
+        clean_majority_examples = np.copy(majority_examples)
 
         majority_count = len(majority_examples)
 
@@ -81,7 +100,7 @@ class CCR(BaseSampler):
                 translation = majority_examples[j] - x
                 t[j] += (r[i] - d) / d * translation
 
-        oversampled_X[y == 0] += t
+        clean_majority_examples += t
 
         number_of_synthetic_examples = majority_examples.shape[0] - minority_examples.shape[0]
         inverse_radius_sum = (r ** -1).sum()
@@ -94,8 +113,8 @@ class CCR(BaseSampler):
                 multiplier = random_translation / abs(random_translation).sum()
                 new_point = x + multiplier * r[i] * np.random.rand(1)
                 generated.append(new_point)
-
-        return np.concatenate([oversampled_X, generated]), np.concatenate([oversampled_y, [1 for x in generated]])
+        generated = np.vstack(generated)
+        return clean_majority_examples, generated
 
     def distances(self, minority_example, majority_examples):
         return (abs(minority_example - majority_examples)).sum(1)

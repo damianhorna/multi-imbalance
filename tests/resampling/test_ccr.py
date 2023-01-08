@@ -35,7 +35,7 @@ nop_test_data = [(X, y)]
 
 @pytest.fixture()
 def ccr_mock():
-    def _get_parametrized_ccr(X, y):
+    def _get_parametrized_ccr():
         clf = CCR(energy=0.5)
         return clf
 
