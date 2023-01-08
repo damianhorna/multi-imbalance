@@ -11,7 +11,7 @@ class CCR(BaseSampler):
     Each minority example has an associated energy budget that is used to expand a sphere around it.
     With each majority example within the sphere, the cost of further expansion increases.
     When energy is used up, majority examples are pushed out of the spheres and synthetic minority examples are generated inside the spheres.
-    Synthetic examples are generated until the count of minority examples is equal to the count of majority examples.
+    Synthetic examples are generated until the count of minority examples is approximately equal to the count of majority examples.
     Smaller spheres generate more synthetic examples than big ones to force the classification algorithm to focus on the most difficult examples.
 
     Reference:
@@ -75,19 +75,21 @@ class CCR(BaseSampler):
 
             examples_in_range_index = np.flatnonzero(distances <= r[i])
             for j in examples_in_range_index:
-                translation = majority_examples[j] - x
                 d = distances[j]
+                if d == 0:
+                    continue
+                translation = majority_examples[j] - x
                 t[j] += (r[i] - d) / d * translation
 
         oversampled_X[y == 0] += t
 
-        G = majority_examples.shape[0] - minority_examples.shape[0]
+        number_of_synthetic_examples = majority_examples.shape[0] - minority_examples.shape[0]
         inverse_radius_sum = (r ** -1).sum()
 
         generated = []
         for i, x in enumerate(minority_examples):
-            g = int(np.round(r[i] ** -1 / inverse_radius_sum * G))
-            for j in range(g):
+            synthetic_examples = int(np.round(r[i] ** -1 / inverse_radius_sum * number_of_synthetic_examples))
+            for j in range(synthetic_examples):
                 random_translation = np.random.rand(majority_examples.shape[1]) * 2 - 1
                 multiplier = random_translation / abs(random_translation).sum()
                 new_point = x + multiplier * r[i] * np.random.rand(1)
