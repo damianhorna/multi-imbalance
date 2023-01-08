@@ -44,7 +44,7 @@ def ccr_mock():
 
 @pytest.mark.parametrize("X, y", nop_test_data)
 def test_compare_cleaning_results_to_original_article_implementation(X, y, ccr_mock):
-    clf = ccr_mock(X, y)
-    oversampled_X, oversampled_y = clf.fit_resample(X, y)
-    assert np.array_equiv(np.sort(oversampled_X[:X.shape[0]], axis=0),
+    clf = ccr_mock()
+    resampled_X, resampled_y = clf.fit_resample(X, y)
+    assert np.array_equiv(np.sort(resampled_X[:X.shape[0]], axis=0),
                           np.sort(original_cleaning_results, axis=0)) == True
