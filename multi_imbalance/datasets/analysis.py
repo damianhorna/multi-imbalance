@@ -94,7 +94,7 @@ class AnalysisPipeline:
         :param save_to_csv:
             bool, optional, if `True`, the summary will be saved to a CSV file
         :param save_path:
-            str, optional, the location where the summary csv files should be saved
+            str, optional, the location where the summary csv files should be saved. If None summary csv files will be saved in the same location as csv_path
         :param aggregate_func:
             Optional[List[Callable]], optional, a list of functions that will be applied to the `metric_value` column of the results to generate the summary
         :return:
@@ -140,7 +140,7 @@ class AnalysisPipeline:
         :param save_to_csv:
             bool, optional, if `True`, the posthoc analysis will be saved to a CSV file
         :param save_path:
-            str, optional, the location where the summary csv files should be saved
+            str, optional, the location where the summary csv files should be saved. If None summary csv files will be saved in the same location as csv_path
         :return:
             List[pd.DataFrame], a list of Pandas DataFrames containing the posthoc analysis of the results
         """
