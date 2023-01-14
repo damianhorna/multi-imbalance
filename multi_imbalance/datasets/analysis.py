@@ -24,10 +24,14 @@ logging.basicConfig(
 class AnalysisPipeline:
     """
     This is a class for an analysis pipeline.
-    The __init__() method initializes the object, taking a Config object containing the pipeline configuration and an optional csv_path to the results CSV file.
-    The run_analysis() method runs the analysis on a set of classifiers, datasets, and resamplers, saving the results to the specified output_path.
-    The explode_clf_params() method takes a input_path to a CSV file and explodes the clf_params column into individual columns, saving the result to output_path.
-    Finally, the generate_summary() method takes a query_dict specifying which results to include in the summary and an optional aggregate_func to apply to the metric_value column
+    The __init__() method initializes the object, taking a Config object containing the pipeline configuration
+    and an optional csv_path to the results CSV file.
+    The run_analysis() method runs the analysis on a set of classifiers, datasets, and resamplers,
+    saving the results to the specified output_path.
+    The explode_clf_params() method takes a input_path to a CSV file and explodes the clf_params column
+    into individual columns, saving the result to output_path.
+    Finally, the generate_summary() method takes a query_dict specifying which results to include in the summary
+    and an optional aggregate_func to apply to the metric_value column
     and returns a list of Pandas DataFrames containing the summary of the results.
     """
 
@@ -51,7 +55,8 @@ class AnalysisPipeline:
 
     def run_analysis(self, output_path: str, train_without_resampling: bool) -> None:
         """
-        This function runs a specified analysis on a set of classifiers, datasets, and resamplers. The results of the analysis are saved to the specified output path.
+        This function runs a specified analysis on a set of classifiers, datasets, and resamplers.
+        The results of the analysis are saved to the specified output path.
 
         :param output_path:
             str, the location where the results of the analysis will be saved as a CSV file
@@ -88,15 +93,18 @@ class AnalysisPipeline:
         of the results to generate the summary.
 
         :param query_dict:
-            Dict[str, List[str]], a dictionary that specifies the values of different columns in the results to include in the summary
+            Dict[str, List[str]], a dictionary that specifies the values of
+            different columns in the results to include in the summary
         :param csv_path:
             str, the path to the CSV file containing the results of the analysis
         :param save_to_csv:
             bool, optional, if `True`, the summary will be saved to a CSV file
         :param save_path:
-            str, optional, the location where the summary csv files should be saved. If None summary csv files will be saved in the same location as csv_path
+            str, optional, the location where the summary csv files should be saved.
+            If None summary csv files will be saved in the same location as csv_path
         :param aggregate_func:
-            Optional[List[Callable]], optional, a list of functions that will be applied to the `metric_value` column of the results to generate the summary
+            Optional[List[Callable]], optional, a list of functions that will be applied
+            to the `metric_value` column of the results to generate the summary
         :return:
             List[pd.DataFrame], a list of Pandas DataFrames containing the summary of the results of the analysis
         """
@@ -132,7 +140,8 @@ class AnalysisPipeline:
         `csv_path` should be the path to the CSV file containing the results of the analysis.
 
         :param query_dict:
-            Dict[str, List[str]], a dictionary that specifies the values of different columns in the results to include in the posthoc analysis
+            Dict[str, List[str]], a dictionary that specifies the values of different
+            columns in the results to include in the posthoc analysis
         :param csv_path:
             str, the path to the CSV file containing the results of the analysis
         :param posthoc_func_list:
@@ -140,7 +149,8 @@ class AnalysisPipeline:
         :param save_to_csv:
             bool, optional, if `True`, the posthoc analysis will be saved to a CSV file
         :param save_path:
-            str, optional, the location where the summary csv files should be saved. If None summary csv files will be saved in the same location as csv_path
+            str, optional, the location where the summary csv files should be saved.
+            If None summary csv files will be saved in the same location as csv_path
         :return:
             List[pd.DataFrame], a list of Pandas DataFrames containing the posthoc analysis of the results
         """
@@ -215,7 +225,8 @@ class AnalysisPipeline:
         list_of_errors: List[str],
     ) -> None:
         """
-        This method prepares the results of running a classifier on a dataset which is resampling by resampler. It will compute the specified metrics for each repeat.
+        This method prepares the results of running a classifier on a dataset which is resampling by resampler.
+        It will compute the specified metrics for each repeat.
 
         :param clf_data:
             A tuple containing the name of the classifier, the classifier and a dictionary of classifier parameters
@@ -460,7 +471,8 @@ class AnalysisPipeline:
         """This method retrieves the classifiers specified in the configuration object.
 
         :return:
-            Iterable[Tuple[str, ClassifierMixin, Dict]], An iterable of tuples containing the classifier name, the classifier and a dictionary of classifier parameters"""
+            Iterable[Tuple[str, ClassifierMixin, Dict]], An iterable of tuples containing the classifier name,
+            the classifier and a dictionary of classifier parameters"""
         for classifier, params_list in self._config.classifiers.items():
             if not hasattr(classifier, "fit") or not hasattr(classifier, "predict"):
                 raise ValueError("Your classifier must implement fit and predict methods")
@@ -496,7 +508,8 @@ class AnalysisPipeline:
 )
 @click.option(
     "--posthoc-func-json",
-    help="Path to json file which contain dict with paths to posthoc analysis functions and their params, e.g. {'scikit_posthoc.posthoc_dunn':{}}",
+    help="Path to json file which contain dict with paths to posthoc analysis"
+    "functions and their params, e.g. {'scikit_posthoc.posthoc_dunn':{}}",
 )
 @click.option(
     "--train-without-resampling",
@@ -522,7 +535,8 @@ def main(
     save_to_csv,
 ):
     """
-    This function helps to use pipeline analysis, summary and posthoc tests by CLI. Output path is path to result csv file from analysis pipeline.
+    This function helps to use pipeline analysis, summary and posthoc tests by CLI.
+    Output path is path to result csv file from analysis pipeline.
     """
     print("Start")
     if run_analysis:

@@ -19,8 +19,10 @@ class Config:
     Attributes:
     ----------
         datasets: A list of dataset names to use in the analysis pipeline.
-        classifiers: A dictionary mapping classifier objects to lists of dictionaries containing the hyperparameters to use for each classifier.
-        resampling_methods: A dictionary mapping resampling objects to dictionaries of hyperparameters to use for each resampling method.
+        classifiers: A dictionary mapping classifier objects to lists of dictionaries
+        containing the hyperparameters to use for each classifier.
+        resampling_methods: A dictionary mapping resampling objects to dictionaries
+        of hyperparameters to use for each resampling method.
         metrics: A dictionary mapping metric functions to dictionaries of hyperparameters to use for each metric.
         n_repeats: The number of times to repeat the experiment for datasets.
         split_method: A dictionary mapping split method to dictionaries of additional parameters.
