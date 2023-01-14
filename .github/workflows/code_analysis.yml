@@ -8,7 +8,7 @@ jobs:
   tools:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
@@ -16,6 +16,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install tox tox-gh-actions
+          python -m pip install tox tox-gh-actions
       - name: Run flake8 with tox
         run: tox -e flake8
