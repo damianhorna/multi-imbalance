@@ -82,7 +82,8 @@ class AnalysisPipeline:
         save_to_csv: bool = False,
         save_path: Optional[str] = None,
         aggregate_func: Optional[List[Callable]] = None,
-    ) -> List[pd.DataFrame]:
+        concat_results: bool = False,
+    ) -> Union[List[pd.DataFrame], pd.DataFrame]:
         """
         Generate summary of analysis results based on specified query parameters.
 
@@ -105,6 +106,8 @@ class AnalysisPipeline:
         :param aggregate_func:
             Optional[List[Callable]], optional, a list of functions that will be applied
             to the `metric_value` column of the results to generate the summary
+        :param concat_results:
+            bool, optional, if `True`, the results of summary will be concatenated into one DataFrame
         :return:
             List[pd.DataFrame], a list of Pandas DataFrames containing the summary of the results of the analysis
         """
@@ -125,6 +128,9 @@ class AnalysisPipeline:
                 group_df.reset_index().to_csv(Path(save_path) / ("_".join(i) + ".csv"), index=False)
             df_list.append(group_df)
 
+        if concat_results:
+            df_list = pd.concat(df_list).sort_index()
+
         return df_list
 
     @staticmethod
@@ -134,7 +140,7 @@ class AnalysisPipeline:
         posthoc_func_list: List[Tuple[Callable, Dict]],
         save_to_csv: bool = False,
         save_path: Optional[str] = None,
-    ) -> List[pd.DataFrame]:
+    ) -> Tuple[Dict[str, pd.DataFrame], Dict[str, Dict]]:
         """
         Generates a posthoc analysis of the results of the analysis based on the specified query parameters and posthoc functions.
         `csv_path` should be the path to the CSV file containing the results of the analysis.
@@ -152,7 +158,8 @@ class AnalysisPipeline:
             str, optional, the location where the summary csv files should be saved.
             If None summary csv files will be saved in the same location as csv_path
         :return:
-            List[pd.DataFrame], a list of Pandas DataFrames containing the posthoc analysis of the results
+            Dict[str, pd.DataFrame], a dictionary of Pandas DataFrames containing the posthoc analysis of the results
+            , Dict[str, Dict], a dictionary of params combinations (dicts) for definied classifiers
         """
         chunksize = 1000
         gen = pd.read_csv(csv_path, chunksize=chunksize)
@@ -160,22 +167,27 @@ class AnalysisPipeline:
         selected_columns.remove("no_repeat")
         selected_columns.remove("metric_value")
 
-        df_list = []
+        df_dict = {}
+        param_comb_dict = {}
         for i in product(*query_dict.values()):
             df = AnalysisPipeline._search_df_by_query(query_dict, combination=i, csv_path=csv_path, chunksize=chunksize)
-
+            param_comb = {param: number for number, param in enumerate(df["clf_params"].unique())}
+            df["resampling_method"] += "_" + df["clf_params"].apply(lambda x: param_comb[x]).astype(str)
             for posthoc_func, params in posthoc_func_list:
-                posthoc_df = posthoc_func(df, "metric_value", "resampling_method", **params)
-                df_name = posthoc_func.__name__ + "_" + "_".join(i)
-                posthoc_df.columns.name = df_name
+                posthoc_df: pd.DataFrame = posthoc_func(df, "metric_value", "resampling_method", **params)
+                name = posthoc_func.__name__ + "_" + "_".join(i)
+                keep = (np.triu(np.ones_like(posthoc_df), k=1)).astype(bool).flatten()
+                posthoc_df = posthoc_df.stack()[keep]
+                posthoc_df.name = "p-value"
                 if save_to_csv:
                     if save_path is None:
                         save_path = Path(csv_path).parent
-                    df_path = save_path / (df_name + ".csv")
+                    df_path = Path(save_path) / (name + ".csv")
                     posthoc_df.to_csv(Path(df_path))
-                df_list.append(posthoc_df)
+                df_dict[name] = posthoc_df
+                param_comb_dict[name] = param_comb
 
-        return df_list
+        return df_dict, param_comb_dict
 
     @property
     def dataset_names(self) -> List[str]:
@@ -517,9 +529,9 @@ class AnalysisPipeline:
     help="Option specifying if the analysis would be run without using resampling",
 )
 @click.option(
-    "--save-to-csv",
-    is_flag=True,
-    help="Option defines if results from summary should be save to csv",
+    "--save-path",
+    help="Option defines where results from summary and posthoc analysis should be saved."
+    "If not specified files will be saved in the same directory as file from analysis pipeline",
 )
 def main(
     output_path,
@@ -532,7 +544,7 @@ def main(
     aggregate_json,
     posthoc_func_json,
     train_without_resampling,
-    save_to_csv,
+    save_path,
 ):
     """
     This function helps to use pipeline analysis, summary and posthoc tests by CLI.
@@ -556,7 +568,7 @@ def main(
                 aggregate_func_paths = json.load(f)
             aggregate_func = list(map(import_from_string, aggregate_func_paths))
 
-        AnalysisPipeline.generate_summary(query_dict, output_path, save_to_csv, aggregate_func=aggregate_func)
+        AnalysisPipeline.generate_summary(query_dict, output_path, save_to_csv=True, aggregate_func=aggregate_func, save_path=save_path)
 
     if posthoc_analysis:
         print("Run generate posthoc analysis")
@@ -568,7 +580,9 @@ def main(
             posthoc_func_paths = json.load(f)
         posthoc_func = [[import_from_string(func_path), params] for func_path, params in posthoc_func_paths.items()]
 
-        AnalysisPipeline.generate_posthoc_analysis(query_dict, output_path, posthoc_func_list=posthoc_func, save_to_csv=save_to_csv)
+        AnalysisPipeline.generate_posthoc_analysis(
+            query_dict, output_path, posthoc_func_list=posthoc_func, save_to_csv=True, save_path=save_path
+        )
 
     print("Done")
 

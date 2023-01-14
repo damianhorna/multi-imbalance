@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import importlib
 import json
+import pandas as pd
 from typing import Callable, Dict, List, Tuple, Union
 from sklearn.base import ClassifierMixin
 from imblearn.base import BaseSampler
@@ -10,6 +11,13 @@ def import_from_string(cls_path: str) -> Union[BaseSampler, ClassifierMixin, Cal
     module_name, class_name = cls_path.rsplit(".", 1)
     module = importlib.import_module(module_name)
     return getattr(module, class_name)
+
+
+def read_summary_from_csv(csv_path: str) -> pd.DataFrame:
+    df = pd.read_csv(csv_path, index_col=[0, 1, 2, 3, 4], header=[0, 1])
+    df.index.names = ["metric_name", "clf_name", "dataset_name", "resampling_method", "clf_params"]
+    df.columns.names = [None, None]
+    return df
 
 
 @dataclass

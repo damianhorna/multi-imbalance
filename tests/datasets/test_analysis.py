@@ -293,15 +293,18 @@ def test_run_analysis_cli(prepare_dataset_file, output_file, run_analysis_config
     assert Path(output_file).exists()
 
 
-def test_generate_summary(prepare_dataset_file, query_dict, output_file, run_analysis_config, tmp_path):
+@pytest.mark.parametrize("concat_results", [True, False])
+def test_generate_summary(concat_results, prepare_dataset_file, query_dict, output_file, run_analysis_config, tmp_path):
     config = Config.from_dict(run_analysis_config)
     pipeline = AnalysisPipeline(config)
     pipeline.run_analysis(output_file, train_without_resampling=False)
 
-    list_of_df = pipeline.generate_summary(query_dict, csv_path=output_file, save_to_csv=True)
-
-    assert len(list_of_df) == 1
-    df = list_of_df[0]
+    list_of_df = pipeline.generate_summary(query_dict, csv_path=output_file, save_to_csv=True, concat_results=concat_results)
+    if concat_results:
+        df = list_of_df
+    else:
+        assert len(list_of_df) == 1
+        df = list_of_df[0]
     assert df.shape[0] == 1
     assert (tmp_path / ("_".join([j for i in query_dict.values() for j in i]) + ".csv")).exists() is True
 
@@ -318,7 +321,7 @@ def test_generate_summary_cli(prepare_dataset_file, query_dict_json, output_file
     runner = CliRunner()
     result = runner.invoke(
         main,
-        [str(output_file), "--summary", "--query-json", str(query_dict_json), "--save-to-csv", "--aggregate-json", str(aggr_func_path)],
+        [str(output_file), "--summary", "--query-json", str(query_dict_json), "--aggregate-json", str(aggr_func_path)],
     )
     assert result.exit_code == 0
     assert result.output == "Start\nRun generate summary\nDone\n"
@@ -334,14 +337,16 @@ def test_generate_posthoc_analysis(prepare_dataset_file, query_dict, output_file
     pipeline = AnalysisPipeline(config)
     pipeline.run_analysis(output_file, train_without_resampling=False)
     query_dict.pop("resampling_method")
-    list_of_df = pipeline.generate_posthoc_analysis(
+    df_dict, param_comb_dict = pipeline.generate_posthoc_analysis(
         query_dict, csv_path=output_file, posthoc_func_list=[[posthoc_dunn, {}]], save_to_csv=True
     )
 
-    assert len(list_of_df) == 1
-    df = list_of_df[0]
-    assert df.shape[0] == 1
-    assert (tmp_path / ("_".join([posthoc_dunn.__name__, *[j for i in query_dict.values() for j in i]]) + ".csv")).exists() is True
+    assert len(df_dict) == 1
+    name = "_".join([posthoc_dunn.__name__, *[j for i in query_dict.values() for j in i]])
+    df = df_dict[name]
+    assert df.shape[0] == 0
+    assert (tmp_path / (name + ".csv")).exists() is True
+    assert param_comb_dict == {name: {"{'max_depth': 30}": 0}}
 
 
 def test_generate_posthoc_analysis_cli(prepare_dataset_file, query_dict, output_file, run_analysis_config, tmp_path):
@@ -366,7 +371,6 @@ def test_generate_posthoc_analysis_cli(prepare_dataset_file, query_dict, output_
             "--posthoc-analysis",
             "--posthoc-query-json",
             str(query_dict_path),
-            "--save-to-csv",
             "--posthoc-func-json",
             str(posthoc_func_path),
         ],
