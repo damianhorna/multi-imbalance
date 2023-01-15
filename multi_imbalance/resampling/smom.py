@@ -108,8 +108,8 @@ class SMOM(BaseSampler):
     """
 
     def __init__(self,
-                 c: int,
-                 zeta: int,
+                 minority_class: int,
+                 num_synth: int,
                  k1: int = 12,
                  k2: int = 8,
                  rTh: float = 5 / 8,
@@ -122,11 +122,11 @@ class SMOM(BaseSampler):
                  shuffle: bool = False,
                  metric: str = 'minkowski',
                  p: int = 2,
-                 seed: Optional[int] = None) -> None:
+                 random_state: Optional[int, np.random.RandomState] = None) -> None:
         """
-        :param c:
+        :param minority_class:
             The minority class under consideration.
-        :param zeta:
+        :param num_synth:
             Number of synthetic instances to be generated.
         :param k1:
             Number of nearest neighbors used to generate the synthetic instances.
@@ -142,14 +142,14 @@ class SMOM(BaseSampler):
             Metric to use for distance computation.
         :param p:
             Power parameter for Minkowski metric.
-        :param seed:
-            Seed for random state.
+        :param random_state:
+            Optional seed for random state or a np.random.RandomState instance.
         """
         super().__init__()
         self._sampling_type = 'over-sampling'
         self.maj_int_min = maj_int_min
-        self.c = c
-        self.zeta = zeta
+        self.c = minority_class
+        self.zeta = num_synth
         self.k1 = k1
         self.k2 = k2
         self.k3 = max(k1, k2)
@@ -160,7 +160,7 @@ class SMOM(BaseSampler):
         self.r1 = r1
         self.r2 = r2
         self.shuffle = shuffle
-        self.random_state = sklearn.utils.check_random_state(seed)
+        self.random_state = sklearn.utils.check_random_state(random_state)
         if metric == 'minkowski':
             self._metric = neighbors.DistanceMetric.get_metric(metric, p=p)
         else:
@@ -379,7 +379,7 @@ class SMOM(BaseSampler):
         y_resampled = np.concatenate([y, [self.c] * SI.shape[0]], 0)
 
         if self.shuffle:
-            X_resampled, y_resampled = array_util.shuffle(X_resampled,
+            X_resampled, y_resampled = sklearn.utils.shuffle(X_resampled,
                                                           y_resampled,
-                                                          state=self.random_state)
+                                                             state=self.random_state)
         return X_resampled, y_resampled
