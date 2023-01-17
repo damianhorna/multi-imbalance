@@ -4,16 +4,15 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-from typing import List, Dict, Optional, Sequence
+from typing import List, Dict, Optional, Union, Collection
 
 import sklearn.utils
 from sklearn import neighbors
-from multi_imbalance.utils import array_util
 from imblearn.base import BaseSampler
 
 
 def _nbdos(Sc: List[int], k: int,
-           sNk: Dict[int, List[int]], rTh: float,
+           sNk: Dict[int, np.ndarray], rTh: float,
            nTh: int):
     """
     NBDOS clustering algorithm implementation.
@@ -85,7 +84,7 @@ def _compute_ss(Fs_i, Fs_d, i, dst):
     return np.array(Ss, dtype=np.int64)
 
 
-def _normalized_entropy(classes_counts: Sequence[int]):
+def _normalized_entropy(classes_counts: Collection[int]):
     if len(classes_counts) <= 1:
         E = 0
     else:
@@ -93,13 +92,23 @@ def _normalized_entropy(classes_counts: Sequence[int]):
         E_min = np.log(1. / total)
         E = sum(count / total * np.log(count / total) for count in
                 classes_counts) / E_min
-    assert 0 <= E <= 1, f'{E=} not in range [0, 1]'
+    assert 0 <= E <= 1, f"{E=} not in range [0, 1]"
     return E
+
+
+def _compute_number_of_synthetic_instances(Sc, n_to_generate):
+    N_syn = dict()
+    div, mod = divmod(n_to_generate, Sc.shape[0])
+    for i in Sc:
+        N_syn[i] = div + (mod > 0)
+        mod -= 1
+    return N_syn
 
 
 class SMOM(BaseSampler):
     """
-    SMOM technique implementation for synthetic minority oversampling for multiclass imbalanced problems.
+    SMOM technique implementation for synthetic minority oversampling for
+    multiclass imbalanced problems.
 
     Reference:
     Zhu, Tuanfei, Yaping Lin, and Yonghe Liu. "Synthetic minority oversampling
@@ -108,8 +117,8 @@ class SMOM(BaseSampler):
     """
 
     def __init__(self,
-                 minority_class: int,
-                 num_synth: int,
+                 minority_class: Optional[int] = None,
+                 prop: float = 1.0,
                  k1: int = 12,
                  k2: int = 8,
                  rTh: float = 5 / 8,
@@ -118,24 +127,29 @@ class SMOM(BaseSampler):
                  w2: float = 0.5,
                  r1: float = 1 / 3,
                  r2: float = 0.2,
-                 maj_int_min: Optional[Dict[str, Sequence[int]]] = None,
+                 maj_int_min: Optional[Dict[str, List[int]]] = None,
                  shuffle: bool = False,
-                 metric: str = 'minkowski',
+                 metric: str = "minkowski",
                  p: int = 2,
-                 random_state: Optional[int, np.random.RandomState] = None) -> None:
+                 random_state: Optional[Union[
+                     int, np.random.RandomState]] = None) -> None:
         """
         :param minority_class:
-            The minority class under consideration.
-        :param num_synth:
-            Number of synthetic instances to be generated.
+            The minority class under consideration. If none, every minority
+            class will be resampled.
+        :param prop:
+            A float describing the number of instances after oversampling. The
+            number of instances after oversampling will be prop * size of
+            largest majority class.
         :param k1:
-            Number of nearest neighbors used to generate the synthetic instances.
+            Number of nearest neighbors used to generate synthetic instances.
         :params k2, rTh, nTh:
             The parameters used in clustering algorithm NBDOS.
         :params w1, w2, r1, r2:
             The parameters used for calculating the selection weights.
         :param maj_int_min:
-            Dict that contains lists of majority, intermediate and minority classes labels.
+            Dict that contains lists of majority, intermediate and minority
+            classes labels.
         :param shuffle:
             Shuffle resampled data.
         :param metric:
@@ -146,10 +160,10 @@ class SMOM(BaseSampler):
             Optional seed for random state or a np.random.RandomState instance.
         """
         super().__init__()
-        self._sampling_type = 'over-sampling'
+        self._sampling_type = "over-sampling"
         self.maj_int_min = maj_int_min
         self.c = minority_class
-        self.zeta = num_synth
+        self.prop = prop
         self.k1 = k1
         self.k2 = k2
         self.k3 = max(k1, k2)
@@ -161,7 +175,7 @@ class SMOM(BaseSampler):
         self.r2 = r2
         self.shuffle = shuffle
         self.random_state = sklearn.utils.check_random_state(random_state)
-        if metric == 'minkowski':
+        if metric == "minkowski":
             self._metric = neighbors.DistanceMetric.get_metric(metric, p=p)
         else:
             self._metric = neighbors.metrics.DistanceMetric.get_metric(metric)
@@ -225,12 +239,10 @@ class SMOM(BaseSampler):
             y_min_classes = {k: v for k, v in cnt.items() if v < M / L}
         else:
             cnt = Counter(y)
-            if 'int' not in self.maj_int_min:
-                self.maj_int_min['int'] = []
             y_maj_classes = {cls: cnt[cls] for cls in
-                             self.maj_int_min['maj'] + self.maj_int_min['int']
+                             self.maj_int_min["maj"]
                              if cls != self.c}
-            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min['min']
+            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min["min"]
                              if cls != self.c}
         return y_maj_classes, y_min_classes
 
@@ -295,14 +307,6 @@ class SMOM(BaseSampler):
                 P[i][j] = Sw[i][j] / sum(Sw[i][k] for k in self.N_c_k1_i[i])
         return P
 
-    def _compute_number_of_synthetic_instances(self, Sc):
-        N_syn = dict()
-        div, mod = divmod(self.zeta, Sc.shape[0])
-        for i in Sc:
-            N_syn[i] = div + (mod > 0)
-            mod -= 1
-        return N_syn
-
     def _generate_synthetic_instances(self, X, Sc, N_syn, TiC, P):
         SI = []
         for i in Sc:
@@ -336,7 +340,7 @@ class SMOM(BaseSampler):
         self.Fs_i = dict()
         self.Fs_d = dict()
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray):
         """
         Performs resampling
 
@@ -348,38 +352,58 @@ class SMOM(BaseSampler):
             Resampled X along with accordingly modified labels, resampled y
         """
 
-        # 1
-        Sc = np.array([i for i, _ in enumerate(X) if y[i] == self.c])
-        Sct = np.array([i for i, _ in enumerate(X) if y[i] != self.c])
-
         y_maj_classes, y_min_classes = self._compute_min_maj(y)
 
-        self._setup()
+        if self.c is None:
+            target_classes = y_min_classes.keys()
+        else:
+            target_classes = [self.c]
 
-        self.kdt_c = neighbors.KDTree(X[Sc], metric=self._metric)
-        self.kdt_ct = neighbors.KDTree(X[Sct], metric=self._metric)
+        SI_synth = []
+        y_synth = []
+        target_number_to_generate = max(
+            int(max(y_maj_classes.values()) * self.prop), 1)
+        for target_class in target_classes:
+            self._setup()
 
-        for i in Sc:
-            self._find_nearest_k3_in_sc(X, Sc, i)
-            self._find_nearest_k3_in_sct(X, Sct, i)
-            self._find_k2_nearest_in_neighbor(X, i)
+            Sc = np.array([i for i, _ in enumerate(X) if y[i] == target_class])
+            Sct = np.array(
+                [i for i, _ in enumerate(X) if y[i] != target_class])
 
-        Sc_cl = self._run_nbdos(Sc)
+            to_generate = target_number_to_generate - Sc.shape[0]
+            if to_generate <= 0:
+                continue
 
-        OiC = Sc[Sc_cl != 0]
-        TiC = Sc[Sc_cl == 0]
+            self.kdt_c = neighbors.KDTree(X[Sc], metric=self._metric)
+            self.kdt_ct = neighbors.KDTree(X[Sct], metric=self._metric)
 
-        Sw = self._compute_selection_weights(X, Sc, TiC, OiC, y_min_classes,
-                                             y_maj_classes)
-        P = self._obtain_probability_distribution(X, y, Sw, TiC)
-        N_syn = self._compute_number_of_synthetic_instances(Sc)
-        SI = self._generate_synthetic_instances(X, Sc, N_syn, TiC, P)
+            for i in Sc:
+                self._find_nearest_k3_in_sc(X, Sc, i)
+                self._find_nearest_k3_in_sct(X, Sct, i)
+                self._find_k2_nearest_in_neighbor(X, i)
 
-        X_resampled = np.concatenate([X, SI], 0)
-        y_resampled = np.concatenate([y, [self.c] * SI.shape[0]], 0)
+            Sc_cl = self._run_nbdos(Sc)
+
+            OiC = Sc[Sc_cl != 0]
+            TiC = Sc[Sc_cl == 0]
+
+            Sw = self._compute_selection_weights(X, Sc, TiC, OiC,
+                                                 y_min_classes,
+                                                 y_maj_classes)
+            P = self._obtain_probability_distribution(X, y, Sw, TiC)
+            N_syn = _compute_number_of_synthetic_instances(Sc,
+                                                           to_generate)
+            SI = self._generate_synthetic_instances(X, Sc, N_syn, TiC, P)
+
+            SI_synth.append(SI)
+            y_synth.append(np.full(SI.shape[0], target_class))
+
+        X_resampled = np.concatenate([X, *SI_synth], 0)
+        y_resampled = np.concatenate([y, *y_synth], 0)
 
         if self.shuffle:
-            X_resampled, y_resampled = sklearn.utils.shuffle(X_resampled,
-                                                          y_resampled,
-                                                             state=self.random_state)
+            (X_resampled, y_resampled
+             ) = sklearn.utils.shuffle(X_resampled,
+                                       y_resampled,
+                                       random_state=self.random_state)
         return X_resampled, y_resampled
