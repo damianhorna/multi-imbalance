@@ -1,6 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from math import sqrt
+from typing import Callable, Dict, List, Set, Tuple, Union
 
 import numpy as np
 from scipy.stats import multinomial
@@ -8,6 +9,7 @@ from sklearn.ensemble import BaggingClassifier
 from sklearn.feature_selection import SelectKBest, chi2, f_classif
 from sklearn.utils import resample
 from sklearn.utils.random import sample_without_replacement
+from sklearn.base import ClassifierMixin
 
 
 class MRBBagging(BaggingClassifier):
@@ -21,8 +23,16 @@ class MRBBagging(BaggingClassifier):
     J. Intell Inf Syst (2018) 50: 97
     """
 
-    def __init__(self, k, learning_algorithm, undersampling=True, feature_selection=False, random_fs=False,
-                 half_features=True, random_state=None):
+    def __init__(
+        self,
+        k: int,
+        learning_algorithm: ClassifierMixin,
+        undersampling: bool = True,
+        feature_selection: bool = False,
+        random_fs: bool = False,
+        half_features: bool = True,
+        random_state: Union[int, None] = None,
+    ) -> None:
         """
         :param k:
             number of classifiers (multiplied by 3 when choosing feature selection)
@@ -50,11 +60,11 @@ class MRBBagging(BaggingClassifier):
         self.learning_algorithm = learning_algorithm
         self.undersampling = undersampling
         self.feature_selection = feature_selection
-        self.all_random = random_fs
+        self.random_fs = random_fs
         self.half_features = half_features
         self.random_state = random_state
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs):
         """
         Build a MRBBagging ensemble of estimators from the training data.
 
@@ -90,7 +100,7 @@ class MRBBagging(BaggingClassifier):
 
         return self
 
-    def predict(self, data):
+    def predict(self, data: np.ndarray) -> List[int]:
         """
         Predict classes for examples in data.
 
@@ -99,7 +109,7 @@ class MRBBagging(BaggingClassifier):
         """
         return self._select_classes(data)
 
-    def _group_data(self, x, y):
+    def _group_data(self, x: np.ndarray, y: np.ndarray) -> Tuple[Set[int], Dict[int, List[Tuple[np.ndarray, int]]]]:
         classes = set(y)
         self.classes = {key: value for (key, value) in enumerate(classes)}
         data = [[x[i], y[i]] for i in range(len(x))]
@@ -109,32 +119,50 @@ class MRBBagging(BaggingClassifier):
             grouped_data[cl] = list(filter(lambda d: d[1] == cl, data))
         return classes, grouped_data
 
-    def _resample(self, n, prob, classes, grouped_data):
+    def _resample(
+        self,
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
+    ) -> Tuple[np.ndarray, np.ndarray]:
         samples_no = multinomial.rvs(n=n, p=prob, random_state=self.random_state)
         subset_x, subset_y = [], []
         for no, j in enumerate(classes):
             data = grouped_data[j]
-            resample_class = resample(data, replace=True, n_samples=samples_no[no], random_state=self.random_state)
+            resample_class = resample(
+                data,
+                replace=True,
+                n_samples=samples_no[no],
+                random_state=self.random_state,
+            )
             for sample in resample_class:
                 subset_x.append(sample[0])
                 subset_y.append(sample[1])
         return np.array(subset_x), np.array(subset_y)
 
-    def _train(self, la_list, n, prob, classes, grouped_data):
+    def _train(
+        self,
+        la_list: List[ClassifierMixin],
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
+    ) -> None:
         for i in range(len(la_list)):
             subset_x, subset_y = self._resample(n, prob, classes, grouped_data)
 
-            subset_x = np.array(subset_x).astype(np.float)
-            subset_y = np.array(subset_y).astype(np.float)
+            subset_x = np.array(subset_x).astype(np.float64)
+            subset_y = np.array(subset_y).astype(np.float64)
 
             self.classifiers[i] = la_list[i].fit(subset_x, subset_y)
 
-    def _find_random_features(self, labels_no, features_no, subset_x):
+    def _find_random_features(self, labels_no: int, features_no: int, subset_x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         random_features_idx = sample_without_replacement(labels_no, features_no)
         random_features = self._get_features_array(subset_x, random_features_idx)
         return random_features, random_features_idx
 
-    def _get_features_array(self, subset_x, random_features_idx):
+    def _get_features_array(self, subset_x: np.ndarray, random_features_idx: np.ndarray) -> np.ndarray:
         random_features = np.array(subset_x[:, random_features_idx[0]])
         for f in range(1, len(random_features_idx)):
             random_features = np.vstack((random_features, subset_x[:, random_features_idx[f]]))
@@ -142,12 +170,25 @@ class MRBBagging(BaggingClassifier):
             return random_features[:, np.newaxis]
         return random_features.T
 
-    def _get_kbest_classifier(self, test, features_no, subset_x, subset_y):
+    def _get_kbest_classifier(
+        self,
+        test: Callable,
+        features_no: int,
+        subset_x: np.ndarray,
+        subset_y: np.ndarray,
+    ) -> Tuple[np.ndarray, SelectKBest]:
         kBest_estimator = SelectKBest(test, k=features_no)
         subset = kBest_estimator.fit_transform(subset_x, subset_y)
         return subset, kBest_estimator
 
-    def _train_with_feature_selection(self, la_list, n, prob, classes, grouped_data):
+    def _train_with_feature_selection(
+        self,
+        la_list: List[ClassifierMixin],
+        n: int,
+        prob: float,
+        classes: Set[int],
+        grouped_data: Dict[int, List[Tuple[np.ndarray, int]]],
+    ) -> None:
         for i in range(0, len(la_list), 3):
             subset_x, subset_y = self._resample(n, prob, classes, grouped_data)
             labels_no = len(subset_x[0])
@@ -156,10 +197,10 @@ class MRBBagging(BaggingClassifier):
             else:
                 features_no = int(sqrt(labels_no))
 
-            subset_x = np.array(subset_x).astype(np.float)
-            subset_y = np.array(subset_y).astype(np.float)
+            subset_x = np.array(subset_x).astype(np.float64)
+            subset_y = np.array(subset_y).astype(np.float64)
 
-            if self.all_random:
+            if self.random_fs:
                 subset1, subset1_idx = self._find_random_features(labels_no, features_no, subset_x)
                 subset2, subset2_idx = self._find_random_features(labels_no, features_no, subset_x)
                 subset3, subset3_idx = self._find_random_features(labels_no, features_no, subset_x)
@@ -177,12 +218,12 @@ class MRBBagging(BaggingClassifier):
             self.classifiers[i + 1] = la_list[i + 1].fit(subset2, subset_y)
             self.classifiers[i + 2] = la_list[i + 2].fit(subset3, subset_y)
 
-    def _set_classes_dict(self, classes):
+    def _set_classes_dict(self, classes: Set[int]) -> None:
         self.classifier_classes = dict(enumerate(classes))
 
-    def _select_data(self, classifier_id, data):
+    def _select_data(self, classifier_id: int, data: np.ndarray) -> np.ndarray:
         if self.feature_selection:
-            if self.all_random:
+            if self.random_fs:
                 new_data = self._get_features_array(data, self.feature_selection_methods[classifier_id])
             else:
                 if (classifier_id % 3) - 2 == 0:
@@ -192,7 +233,7 @@ class MRBBagging(BaggingClassifier):
             return new_data
         return data
 
-    def _count_votes(self, data):
+    def _count_votes(self, data: np.ndarray) -> np.ndarray:
         voting_matrix = np.zeros((len(data), len(self.classes)))
         for classifier_id in range(len(self.classifiers)):
             new_data = self._select_data(classifier_id, data)
@@ -203,7 +244,7 @@ class MRBBagging(BaggingClassifier):
                 voting_matrix[i][idx] += max(probabilities[i])
         return voting_matrix
 
-    def _select_classes(self, data):
+    def _select_classes(self, data: np.ndarray) -> List[int]:
         voting_matrix = self._count_votes(data)
         selected_classes_ids = voting_matrix.argmax(axis=1)
         selected_classes = []

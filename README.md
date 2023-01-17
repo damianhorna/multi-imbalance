@@ -9,16 +9,16 @@
 Multi-class imbalance is a common problem occurring in real-world supervised classifications tasks. While there has already been some research on the specialized methods aiming to tackle that challenging problem, most of them still lack coherent Python implementation that is simple, intuitive and easy to use.
 multi-imbalance is a python package tackling the problem of multi-class imbalanced datasets in machine learning.
 ## Requirements
-Tha package has been tested under python 3.6, 3.7 and 3.8. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
+Tha package has been tested under python 3.9. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
 Requirements include:
-* numpy>=1.17.0,
-* scikit-learn>=0.22.0,
-* pandas>=0.25.1,
-* pytest>=5.1.2,
-* imbalanced-learn>=0.6.1
-* IPython>=7.13.0,
-* seaborn>=0.10.1,
-* matplotlib>=3.2.1
+* numpy>=1.23.4,
+* scikit-learn>=1.1.3,
+* pandas>=1.5.1,
+* pytest>=7.2.0,
+* imbalanced-learn>=0.9.1
+* IPython>=8.6.0,
+* seaborn>=0.12.1,
+* matplotlib>=3.6.2
 
 
 ## Installation
@@ -91,11 +91,22 @@ We use pytest as our unit tests framework. To use it, simply run:
 pytest
 ```
 
-If you would like to check the code coverage:
+If you would like to check the code coverage just install and use tox:
 ```bash
-coverage run -m pytest
-coverage report -m # or coverage html
+pip install tox
+tox
 ```
+multi-imbalance uses flake8 as code linter. To use it, simply run:
+```bash
+pip install flake8
+flake8 multi_imbalance
+```
+If you would use project for local tests (e.g. run `examples/` with your code changes) type:
+```
+pip install -U -e ".[all]"
+```
+After that you can use multi-imbalance as normal Python package. Your next changes will be automatically loaded.
+Our project uses GitHub actions on push and pull request. The actions run tox with configuration define in tox.ini.
 
 multi-imbalance uses reStructuredText markdown for docstrings. To build the documentation locally run:
 ```bash

@@ -13,17 +13,18 @@
 import os
 import sys
 import sphinx_rtd_theme
-sys.path.insert(0, os.path.abspath('../'))
+
+sys.path.insert(0, os.path.abspath("../"))
 
 
 # -- Project information -----------------------------------------------------
-master_doc = 'index'
-project = 'multi-imbalance'
-copyright = '2020, Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński'
-author = 'Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński'
+master_doc = "index"
+project = "multi-imbalance"
+copyright = "2020, Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński"
+author = "Damian Horna, Jacek Grycza, Hanna Klimczak, Kamil Pluciński"
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.4'
+release = "0.0.4"
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,12 +41,12 @@ extensions = [
 html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -65,4 +66,4 @@ html_static_path = []
 # for mod_name in MOCK_MODULES:
 #     sys.modules[mod_name] = mock.Mock()
 
-autoclass_content = 'both' # for including __init__ in docs
+autoclass_content = "both"  # for including __init__ in docs

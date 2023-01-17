@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from copy import deepcopy
 from operator import itemgetter
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import sklearn
@@ -18,7 +19,12 @@ class SOUP(BaseSampler):
     which are in the safest area in space
     """
 
-    def __init__(self, k: int = 7, shuffle=False, maj_int_min=None) -> None:
+    def __init__(
+        self,
+        k: int = 7,
+        shuffle: bool = False,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
+    ) -> None:
         """
         :param k:
             number of neighbors
@@ -28,7 +34,7 @@ class SOUP(BaseSampler):
             dict {'maj': majority class labels, 'min': minority class labels}
         """
         super().__init__()
-        self._sampling_type = 'clean-sampling'
+        self._sampling_type = "clean-sampling"
         self.k = k
         self.shuffle = shuffle
         self.maj_int_min = maj_int_min
@@ -36,7 +42,7 @@ class SOUP(BaseSampler):
         self.dsc_maj_cls, self.asc_min_cls = None, None
         self._X, self._y = None, None
 
-    def _fit_resample(self, X, y):
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         The method computes the metrics required for resampling based on the given set
 
@@ -54,15 +60,21 @@ class SOUP(BaseSampler):
         self._X = deepcopy(X)
         self._y = deepcopy(y)
 
-        assert len(self._X.shape) == 2, 'X should have 2 dimension'
-        assert self._X.shape[0] == self._y.shape[0], 'Number of labels must be equal to number of samples'
+        assert len(self._X.shape) == 2, "X should have 2 dimension"
+        assert self._X.shape[0] == self._y.shape[0], "Number of labels must be equal to number of samples"
 
         self.quantities = Counter(self._y)
         self.goal_quantity = self._calculate_goal_quantity(self.maj_int_min)
-        self.dsc_maj_cls = sorted(((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity),
-                                  key=itemgetter(1), reverse=True)
-        self.asc_min_cls = sorted(((v, i) for v, i in self.quantities.items() if i < self.goal_quantity),
-                                  key=itemgetter(1), reverse=False)
+        self.dsc_maj_cls = sorted(
+            ((v, i) for v, i in self.quantities.items() if i >= self.goal_quantity),
+            key=itemgetter(1),
+            reverse=True,
+        )
+        self.asc_min_cls = sorted(
+            ((v, i) for v, i in self.quantities.items() if i < self.goal_quantity),
+            key=itemgetter(1),
+            reverse=False,
+        )
 
         for class_name, class_quantity in self.dsc_maj_cls:
             self._X, self._y = self._undersample(self._X, self._y, class_name)
@@ -75,7 +87,7 @@ class SOUP(BaseSampler):
 
         return np.array(self._X), np.array(self._y)
 
-    def _construct_class_safe_levels(self, X, y, class_name) -> defaultdict:
+    def _construct_class_safe_levels(self, X: np.ndarray, y: np.ndarray, class_name: str) -> defaultdict:
         self.quantities = Counter(y)
         indices_in_class = [i for i, value in enumerate(y) if value == class_name]
 
@@ -90,7 +102,7 @@ class SOUP(BaseSampler):
 
         return class_safe_levels
 
-    def _calculate_sample_safe_level(self, class_name, neighbours_quantities: Counter):
+    def _calculate_sample_safe_level(self, class_name: str, neighbours_quantities: Counter) -> float:
         safe_level = 0
         q: Counter = self.quantities
 
@@ -101,11 +113,11 @@ class SOUP(BaseSampler):
         safe_level /= self.k
 
         if safe_level > 1:
-            raise ValueError(f'Safe level is bigger than 1: {safe_level}')
+            raise ValueError(f"Safe level is bigger than 1: {safe_level}")
 
         return safe_level
 
-    def _undersample(self, X, y, class_name):
+    def _undersample(self, X: np.ndarray, y: np.ndarray, class_name: str) -> Tuple[np.ndarray, np.ndarray]:
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
 
         class_quantity = self.quantities[class_name]
@@ -118,7 +130,7 @@ class SOUP(BaseSampler):
 
         return X, y
 
-    def _oversample(self, X, y, class_name):
+    def _oversample(self, X: np.ndarray, y: np.ndarray, class_name: str) -> Tuple[np.ndarray, np.ndarray]:
         safe_levels_of_samples_in_class = self._construct_class_safe_levels(X, y, class_name)
         class_quantity = self.quantities[class_name]
         safe_levels_list = list(sorted(safe_levels_of_samples_in_class.items(), key=itemgetter(1), reverse=True))
@@ -133,20 +145,22 @@ class SOUP(BaseSampler):
 
         return X, y
 
-    def _calculate_goal_quantity(self, maj_int_min=None):
+    def _calculate_goal_quantity(self, maj_int_min: Union[Dict[str, List[int]], None] = None) -> Union[int, float]:
         if maj_int_min is None:
             maj_q = max(list(self.quantities.values()))
             min_q = min(list(self.quantities.values()))
             return np.mean((min_q, maj_q), dtype=int)
         else:
-            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['maj']}
+            maj_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min["maj"]}
             maj_q = list(maj_classes.values())
-            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min['min']}
+            min_classes = {k: v for k, v in self.quantities.items() if k in maj_int_min["min"]}
             min_q = list(min_classes.values())
 
-            if len(maj_q) == 0:
+            if len(min_q) == 0 and len(maj_q) == 0:
+                return np.nan
+            elif len(maj_q) == 0:
                 return np.mean(min_q, dtype=int)
-            if len(min_q) == 0:
+            elif len(min_q) == 0:
                 return np.mean(maj_q, dtype=int)
 
             return np.mean((max(min_q), min(maj_q)), dtype=int)

@@ -1,17 +1,28 @@
 import multiprocessing
 from collections import Counter
 from copy import deepcopy
+from typing import Dict, List, Tuple, Union
+from joblib import Parallel, delayed
 
 import numpy as np
 from sklearn.ensemble import BaggingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.utils import resample
+from sklearn.base import ClassifierMixin
 
 from multi_imbalance.resampling.soup import SOUP
 from multi_imbalance.utils.array_util import setdiff
 
 
-def fit_clf(args):
+def fit_clf(
+    args: Tuple[
+        ClassifierMixin,
+        np.ndarray,
+        np.ndarray,
+        Tuple[np.ndarray, np.ndarray],
+        Union[Dict[str, List[int]], None],
+    ]
+):
     return SOUPBagging.fit_classifier(args)
 
 
@@ -25,7 +36,12 @@ class SOUPBagging(BaggingClassifier):
     Inteligencji (2019).
     """
 
-    def __init__(self, classifier=None, maj_int_min=None, n_classifiers=5):
+    def __init__(
+        self,
+        classifier: Union[ClassifierMixin, None] = None,
+        maj_int_min: Union[Dict[str, List[int]], None] = None,
+        n_classifiers: int = 5,
+    ):
         """
         :param classifier:
             Instance of classifier
@@ -36,6 +52,7 @@ class SOUPBagging(BaggingClassifier):
         """
         super().__init__()
         self.classifiers, self.clf_weights = list(), list()
+        self.classifier = classifier
         self.maj_int_min = maj_int_min
         self.num_core = multiprocessing.cpu_count()
         self.n_classifiers = n_classifiers
@@ -48,11 +65,22 @@ class SOUPBagging(BaggingClassifier):
                 self.classifiers.append(KNeighborsClassifier())
 
     @staticmethod
-    def fit_classifier(args):
+    def fit_classifier(
+        args: Tuple[
+            ClassifierMixin,
+            np.ndarray,
+            np.ndarray,
+            Tuple[np.ndarray, np.ndarray],
+            Union[Dict[str, List[int]], None],
+        ]
+    ) -> Tuple[ClassifierMixin, np.ndarray]:
         clf, X, y, resampled, maj_int_min = args
         x_sampled, y_sampled = resampled
 
-        out_of_bag = setdiff(np.hstack((X, y[:, np.newaxis])), np.hstack((x_sampled, y_sampled[:, np.newaxis])))
+        out_of_bag = setdiff(
+            np.hstack((X, y[:, np.newaxis])),
+            np.hstack((x_sampled, y_sampled[:, np.newaxis])),
+        )
         x_out, y_out = out_of_bag[:, :-1], out_of_bag[:, -1].astype(int)
 
         x_resampled, y_resampled = SOUP(maj_int_min=maj_int_min).fit_resample(x_sampled, y_sampled)
@@ -66,10 +94,10 @@ class SOUPBagging(BaggingClassifier):
             global_weights = expected_sum_prob / class_sum_prob
         except Exception:
             global_weights = np.ones(shape=len(Counter(y)))
-            print(f'Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}')
+            print(f"Exc {Counter(y)} {Counter(y_out)} {result.shape} {expected_sum_prob.shape} {class_sum_prob.shape}")
         return clf, global_weights
 
-    def fit(self, X, y, **kwargs):
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """
         :param X:
             array-like, sparse matrix of shape = [n_samples, n_features] The training input samples.
@@ -81,19 +109,26 @@ class SOUPBagging(BaggingClassifier):
             self object
         """
         self.classes = np.unique(y)
-
-        pool = multiprocessing.Pool(self.num_core)
-        results = pool.map(fit_clf, [(clf, X, y, resample(X, y, stratify=y, random_state=i), self.maj_int_min)
-                                     for i, clf in enumerate(self.classifiers)])
-        pool.close()
-        pool.join()
+        parallel = Parallel(n_jobs=self.num_core)
+        results = parallel(
+            delayed(fit_clf)(
+                (
+                    clf,
+                    X,
+                    y,
+                    resample(X, y, stratify=y, random_state=i),
+                    self.maj_int_min,
+                )
+            )
+            for i, clf in enumerate(self.classifiers)
+        )
         for i, (clf, weights) in enumerate(results):
             self.classifiers[i] = clf
             self.clf_weights[i] = weights
 
         self.clf_weights = np.array(self.clf_weights)
 
-    def predict(self, X, strategy: str = 'average'):
+    def predict(self, X: np.ndarray, strategy: str = "average") -> np.ndarray:
         """
         Predict class for X. The predicted class of an input sample is computed as the class with the highest
         sum of predicted probability.
@@ -113,36 +148,36 @@ class SOUPBagging(BaggingClassifier):
             array of shape = [n_samples]. The predicted classes.
         """
         weights_sum = self.predict_proba(X)
-        if strategy == 'average':
+        if strategy == "average":
             p = np.sum(weights_sum, axis=0)
-        elif strategy == 'optimistic':
+        elif strategy == "optimistic":
             p = np.max(weights_sum, axis=0)
-        elif strategy == 'pessimistic':
+        elif strategy == "pessimistic":
             p = np.min(weights_sum, axis=0)
-        elif strategy == 'mixed':
+        elif strategy == "mixed":
             n_samples = X.shape[0]
             n_classes = self.classes.shape[0]
             p = np.zeros(shape=(n_samples, n_classes)) - 1
 
             for i in range(n_classes):
                 two_dim_class_vector = weights_sum[:, :, i]  # [:,:,1] -> [classifiers x samples]
-                if i in self.maj_int_min['min']:
+                if i in self.maj_int_min["min"]:
                     squeeze_with_strategy = np.max(two_dim_class_vector, axis=0)
                 else:
                     squeeze_with_strategy = np.min(two_dim_class_vector, axis=0)  # [1, n_samples, 1] -> [n_samples]
                 p[:, i] = squeeze_with_strategy
             assert -1 not in p
-        elif strategy == 'global':
+        elif strategy == "global":
             for i, weight in enumerate(self.clf_weights):
                 weights_sum[i] *= weight
             p = np.sum(weights_sum, axis=0)
         else:
-            raise KeyError(f'Incorrect strategy param: ${strategy}')
+            raise KeyError(f"Incorrect strategy param: ${strategy}")
 
         y_result = np.argmax(p, axis=1)
         return y_result
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class probabilities for X.
 
