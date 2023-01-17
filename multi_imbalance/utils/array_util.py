@@ -1,6 +1,4 @@
 import numpy as np
-from typing import Optional, Tuple
-import sklearn
 
 
 def setdiff(arr1: np.ndarray, arr2: np.ndarray) -> np.ndarray:

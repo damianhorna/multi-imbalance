@@ -226,7 +226,7 @@ class SMOM(BaseSampler):
         dist_, ind_ = neighbors.KDTree(X[nc_nct_union_i],
                                        metric=self._metric).query([X[i]],
                                                                   self.k2)
-        ind, dist = ind_[0], dist_[0]
+        ind = ind_[0]
         self.N_k2_i[i] = nc_nct_union_i[ind]
         self.N_k2_d[i] = nc_nct_union_d[ind]
 
