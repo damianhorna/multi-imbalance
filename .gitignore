@@ -70,6 +70,7 @@ venv
 
 # Datasets
 data/extracted/
+data/csv/
 
 docs/_build
 htmlcov

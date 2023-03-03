@@ -23,7 +23,7 @@ from os import makedirs
 from os.path import join, isfile
 
 import numpy as np
-
+import pandas as pd
 from sklearn.datasets._base import Bunch
 
 PRE_FILENAME = "x"
@@ -57,7 +57,7 @@ for v, k in enumerate(MAP_NAME_ID_KEYS):
     MAP_ID_NAME[v + 1] = k
 
 
-def load_datasets(data_home: str = DATA_HOME_BASIC) -> OrderedDict:
+def load_datasets(data_home: str = DATA_HOME_BASIC, save_to_csv: bool = False) -> OrderedDict:
     """
     Load the benchmark datasets.
 
@@ -73,6 +73,9 @@ def load_datasets(data_home: str = DATA_HOME_BASIC) -> OrderedDict:
                 string Description of the each dataset.
     """
     extracted_dir = join(data_home, "extracted")
+    csv_dir = join(data_home, "csv")
+    makedirs(csv_dir, exist_ok=True)
+
     datasets = OrderedDict()
 
     filter_data_ = MAP_NAME_ID.keys()
@@ -91,6 +94,14 @@ def load_datasets(data_home: str = DATA_HOME_BASIC) -> OrderedDict:
 
         data = np.load(filename)
         X, y = data["data"], data["label"]
+
+        if save_to_csv:
+            csv_filename = it + ".csv"
+            csv_filename = join(csv_dir, csv_filename)
+            df = pd.DataFrame(X)
+            df.rename(columns=lambda x: f"X{x}", inplace=True)
+            df["y"] = y
+            df.to_csv(csv_filename, index=False)
 
         datasets[it] = Bunch(data=X, target=y, DESCR=it)
 
