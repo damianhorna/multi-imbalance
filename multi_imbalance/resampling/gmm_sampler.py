@@ -22,34 +22,45 @@ class GMMSampler(BaseSampler):
     """
     GGMSampling algorithm that uses creating new examples by sampling from a multivariate normal distribution
     (whose parameters are estimated from the input data) and removing troublesome examples from the majority class.
+
     Parameters
     ----------
     likelihood_threshold : float, default=0.0
         Minimum likelihood change threshold. A value below this threshold will be equivalent to no change.
+
     k_neighbors : int, default=7
         The number of analyzed nearest neighbors during the analysis.
         Used during both undersampling and oversampling.
+
     undersample : bool, default=True
         A binary value indicating whether to perform an undersampling operation on majority classes.
+
     min_components : int, default=1
         Minimum number of components of GaussianMixture.
+
     max_components : Optional[int], default=None
         Maximum number of components of GaussianMixture. Without upper bound if not specified.
+
     minority_classes : Optional[List[int]], default=None
         List containing minority classes given by hand - no auto detection of minority classes will be done.
+
     valid_size : float, default=0.25
         Size of validation set to perform test for components choosing.
+
     filter_new : float, default=-1
         Parameter controlling the behavior after the oversampling operation.
         Checks if and how to filter newly created examples:
         -1 -> do not filter out
         0 -> filter out by max/mean value of created examples
         >0 -> specify your own value e.g. 2.0
+
     add_after_filtration : bool, default=True
         Value specifying whether to regenerate the examples after filtering.
+
     iterations_after_filtration : int, default=50
         This value will potentially avoid an endless loop of deleting and re-generating examples.
         The upper limit for the number of repetitions.
+
     covariance_type : "full", "tied", "diag", "spherical", default="full"
         String describing the type of covariance parameters to use in GaussianMixture. Must be one of:
         - "full"
@@ -60,35 +71,48 @@ class GMMSampler(BaseSampler):
             each component has its own diagonal covariance matrix
         - "spherical"
             each component has its own single variance
+
     strategy : str "average" or "median", default="average"
         The strategy of selecting the number of examples considers the target number in each class.
+
     {random_state}
+
     n_init : int, default=10
         The number of initializations to perform in GaussianMixture. The best results are kept.
+
     tol : float, default=1e-3
         The convergence threshold in GaussianMixture. EM iterations will stop when the lower bound
         average gain is below this threshold.
+
     max_iter : int, default=100
         The number of EM iterations to perform in GaussianMixture.
+
     Attributes
     ----------
     likelihoods : dict
         Likelihood of each minority class obtained after fitting the final Gaussian model.
+
     gaussian_mixtures : dict
         Dictionary containing all Gaussian models for each minority class separately.
+
     class_sizes : Optional[Counter]
         A dictionary containing the counts of each class.
+
     neighborhood : Optional[dict]
         Dictionary with information on the nearest points for each example separately.
+
     maj_int_min : OrderedDict
         A dictionary containing information on which class can be considered majority,
         which minority and which remaining class - a heuristic matching.
+
     size_to_align : Optional[np.ndarray]
         ndarray containing information about the quantity considered the gold standard -
         it is this size that we will want to generate and remove examples.
+
     cdist_min_count : int
         The minimum number of examples found in the data sample on which
         distances between points are calculated (by the cdist method).
+
     Examples
     --------
     >>> import numpy as np
