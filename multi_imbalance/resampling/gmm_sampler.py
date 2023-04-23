@@ -279,7 +279,7 @@ class GMMSampler(BaseSampler):
     def _check_sample_neighborhood(self, sample_class: int, neigh_counts: Counter[int]) -> float:
         neighborhood = 0.0
         for neigh_class, count in neigh_counts.items():
-            class_sizes: List = [
+            class_sizes = [
                 self.class_sizes[sample_class],
                 self.class_sizes[neigh_class],
             ]
@@ -388,12 +388,12 @@ class GMMSampler(BaseSampler):
         if self.covariance_type == "tied":
             covariances = np.array([covariances] * gaussian_mixture.n_components)
         elif self.covariance_type == "diag":
-            cov_list: List = []
+            cov_list = []
             for component in range(gaussian_mixture.n_components):
                 cov_list.append(np.diagflat(covariances[component, :]))
             covariances = np.array(cov_list)
         elif self.covariance_type == "spherical":
-            cov_list: List = []
+            cov_list = []
             for component in range(gaussian_mixture.n_components):
                 var = np.array([covariances[component]] * self.__x_subset.shape[1])
                 cov_list.append(np.diagflat(var))
@@ -431,7 +431,7 @@ class GMMSampler(BaseSampler):
             mdist = cdist(data, [mean], metric="mahalanobis", VI=np.linalg.inv(covariance))[:, 0]
         except Exception as e:
             self.__logger.error("Can't compute 'cdist' function. Distance threshold is set to 2.0")
-            self.__logger.info(f"For more information, examine exception: {e}")
+            self.__logger.error(f"For more information, examine exception: {e}")
             mdist = np.full_like(in_data, fill_value=2.0)[:, 0]
         return mdist
 
