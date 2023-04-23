@@ -1,3 +1,4 @@
+from __future__ import annotations
 from collections import OrderedDict, Counter
 from copy import deepcopy
 from typing import Optional, List, Dict, Tuple, Any, TypeVar
