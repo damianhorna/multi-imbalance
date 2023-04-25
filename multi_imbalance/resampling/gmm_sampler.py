@@ -359,6 +359,7 @@ class GMMSampler(BaseSampler):
         for minority_class in self.minority_classes:
             self.__x_subset = X_copy[y_copy == minority_class]
             X, y = self._oversample(X_copy, y_copy, minority_class)
+            X_copy, y_copy = X, y
             self.__x_subset = None
         return X, y
 
@@ -367,9 +368,11 @@ class GMMSampler(BaseSampler):
 
         probabilities = self._get_probas_for_samples_in_component(X, y, minority_class)
         quantity_to_generate = self.size_to_align - self.__x_subset.shape[0]
+
         for component in range(self.gaussian_mixtures[minority_class].n_components):
             Nk: np.ndarray = probabilities[component] * quantity_to_generate
             x = self._create_samples(means[component], covariances[component], int(Nk))
+
             X = np.append(X, x, axis=0)
             y = np.append(y, np.full((x.shape[0],), fill_value=minority_class), axis=0)
 
