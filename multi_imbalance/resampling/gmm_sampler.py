@@ -124,7 +124,7 @@ class GMMSampler(BaseSampler):
     Examples
     --------
     >>> import numpy as np
-    >>> from algorithms.gmm_sampler import GMMSampler
+    >>> from multi_imbalance.resampling.gmm_sampler import GMMSampler
     >>> from sklearn.datasets import make_blobs
     >>> from collections import Counter
     >>> blobs = [800, 100]
