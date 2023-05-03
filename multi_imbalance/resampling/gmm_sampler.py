@@ -354,29 +354,34 @@ class GMMSampler(BaseSampler):
         return X, y
 
     def _oversample_each_minority_class(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        X_copy = X.copy()
-        y_copy = y.copy()
+        X_oversample = []
+        y_oversample = []
+        X_oversample.append(X)
+        y_oversample.append(y)
         for minority_class in self.minority_classes:
-            self.__x_subset = X_copy[y_copy == minority_class]
-            X, y = self._oversample(X_copy, y_copy, minority_class)
-            X_copy, y_copy = X, y
+            self.__x_subset = X[y == minority_class]
+            X_subset_oversample, y_subset_oversample = self._oversample(X, y, minority_class)
+            X_oversample.append(X_subset_oversample)
+            y_oversample.append(y_subset_oversample)
             self.__x_subset = None
-        return X, y
+
+        return np.vstack(X_oversample), np.hstack(y_oversample)
 
     def _oversample(self, X: np.ndarray, y: np.ndarray, minority_class: int) -> Tuple[np.ndarray, np.ndarray]:
         means, covariances = self._get_coefficients(self.gaussian_mixtures[minority_class])
 
         probabilities = self._get_probas_for_samples_in_component(X, y, minority_class)
         quantity_to_generate = self.size_to_align - self.__x_subset.shape[0]
-
+        X_subset_oversample = []
+        y_subset_oversample = []
         for component in range(self.gaussian_mixtures[minority_class].n_components):
             Nk: np.ndarray = probabilities[component] * quantity_to_generate
             x = self._create_samples(means[component], covariances[component], int(Nk))
 
-            X = np.append(X, x, axis=0)
-            y = np.append(y, np.full((x.shape[0],), fill_value=minority_class), axis=0)
+            X_subset_oversample.append(x)
+            y_subset_oversample.append([minority_class] * x.shape[0])
 
-        return X, y
+        return np.vstack(X_subset_oversample), np.hstack(y_subset_oversample)
 
     def _get_probas_for_samples_in_component(self, X: np.ndarray, y: np.ndarray, minority_class: int) -> np.ndarray:
         X_prob: np.ndarray = self.gaussian_mixtures[minority_class].predict_proba(X[y == minority_class])
