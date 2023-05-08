@@ -40,7 +40,7 @@ class DefaultSampler(BaseSampler):
                 safe_X, safe_y = X_copy[~index], y_copy[~index]
                 current_X, current_y = X_copy[index], y_copy[index]
                 res_X, res_y = self.sampler.fit_resample(current_X, current_y)
-                myX, myy = np.concatenate([res_X, safe_X]), np.concatenate([res_y, safe_y])
+                X_copy, y_copy = np.concatenate([res_X, safe_X]), np.concatenate([res_y, safe_y])
 
             return X_copy, y_copy
 
