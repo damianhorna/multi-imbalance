@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from multi_imbalance.resampling.ccr import CCR
 
@@ -30,21 +29,9 @@ original_cleaning_results = np.array([
     [0.55701822, 0.32693741]
 ])
 
-nop_test_data = [(X, y)]
 
-
-@pytest.fixture()
-def ccr_mock():
-    def _get_parametrized_ccr():
-        clf = CCR(energy=0.5)
-        return clf
-
-    return _get_parametrized_ccr
-
-
-@pytest.mark.parametrize("X, y", nop_test_data)
-def test_compare_cleaning_results_to_original_article_implementation(X, y, ccr_mock):
-    clf = ccr_mock()
+def test_compare_cleaning_results_to_original_article_implementation():
+    clf = CCR(energy=0.5)
     resampled_X, resampled_y = clf.fit_resample(X, y)
     assert np.array_equiv(np.sort(resampled_X[:X.shape[0]], axis=0),
                           np.sort(original_cleaning_results, axis=0)) == True
