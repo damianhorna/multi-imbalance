@@ -1,3 +1,4 @@
+import typing
 from collections import Counter
 from typing import Tuple
 
@@ -138,7 +139,7 @@ class CCR(BaseSampler):
 
         return clean_majority_examples, generated
 
-    def distances(self, minority_example, majority_examples):
+    def distances(self, minority_example: np.ndarray, majority_examples: np.ndarray) -> np.ndarray:
         return (abs(minority_example - majority_examples)).sum(1)
 
 
@@ -213,7 +214,7 @@ class MultiClassCCR(BaseSampler):
         final_y = np.hstack([np.full((class_X[clazz].shape[0],), clazz) for clazz, _ in sorted_class_counts])
         return final_X, final_y
 
-    def _number_of_classes_with_higher_count(self, sorted_class_counts, i):
+    def _number_of_classes_with_higher_count(self, sorted_class_counts: dict[typing.Any, int], i: int) -> int:
         number_of_classes_with_higher_count = 0
         _, current_class_count = sorted_class_counts[i]
         for _, class_count in sorted_class_counts[:i]:
