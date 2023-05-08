@@ -9,11 +9,12 @@ class CCR(BaseSampler):
     """
     CCR is a combined cleaning and resampling energy-based algorithm.
 
-    Each minority example has an associated energy budget that is used to expand a sphere around it.
-    With each majority example within the sphere, the cost of further expansion increases.
-    When energy is used up, majority examples are pushed out of the spheres and synthetic minority examples are generated inside the spheres.
-    Synthetic examples are generated until the count of minority examples is approximately equal to the count of majority examples.
-    Smaller spheres generate more synthetic examples than big ones to force the classification algorithm to focus on the most difficult examples.
+    Each minority example has an associated energy budget that is used to expand a sphere around it. With each
+    majority example within the sphere, the cost of further expansion increases. When energy is used up,
+    majority examples are pushed out of the spheres and synthetic minority examples are generated inside the spheres.
+    Synthetic examples are generated until the count of minority examples is approximately equal to the count of
+    majority examples. Smaller spheres generate more synthetic examples than big ones to force the classification
+    algorithm to focus on the most difficult examples.
 
     Reference:
     Koziarski, M., Wozniak, M.: CCR: A combined cleaning and resampling algorithm for imbalanced data classification.
@@ -51,7 +52,8 @@ class CCR(BaseSampler):
             np.full((synthetic_minority.shape[0],), minority_class)
         ])
 
-    def _clean_and_generate(self, minority_examples: np.ndarray, majority_examples: np.ndarray, synthetic_examples_total: int = None) -> Tuple[np.ndarray, np.ndarray]:
+    def _clean_and_generate(self, minority_examples: np.ndarray, majority_examples: np.ndarray,
+                            synthetic_examples_total: int = None) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param minority_examples:
             two-dimensional numpy array (number of samples x number of features) with float numbers of minority class
