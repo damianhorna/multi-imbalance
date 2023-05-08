@@ -85,7 +85,8 @@ class SamplerFactory:
 
 class ImblearnWrapper(BaseSampler):
     """
-    A wrapper for imblearn binary sampling methods. It is used to perform multi-class resampling by performing binary resampling for each class.
+    A wrapper for imblearn binary sampling methods. It is used to perform multi-class resampling by performing binary
+    resampling for each class.
     """
 
     def __init__(self, sampler: BaseSampler, mode: str = "default") -> None:
