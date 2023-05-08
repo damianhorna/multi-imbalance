@@ -1,6 +1,5 @@
-import typing
 from collections import Counter
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -42,8 +41,8 @@ class CCR(BaseSampler):
         """
         minority_class = min(list(Counter(y).items()), key=lambda x: x[1])[0]
 
-        minority_examples = X[y == minority_class]
-        majority_examples = X[y != minority_class]
+        minority_examples = X[y == minority_class].copy()
+        majority_examples = X[y != minority_class].copy()
 
         clean_majority, synthetic_minority = self._clean_and_generate(minority_examples, majority_examples)
 
@@ -65,8 +64,6 @@ class CCR(BaseSampler):
         :return:
             clean majority X, synthetic minority X
         """
-        clean_majority_examples = np.copy(majority_examples)
-
         majority_count = len(majority_examples)
 
         r = np.zeros(minority_examples.shape[0])
@@ -106,7 +103,7 @@ class CCR(BaseSampler):
                 translation = majority_examples[j] - x
                 t[j] += (r[i] - d) / d * translation
 
-        clean_majority_examples += t
+        majority_examples += t
 
         generation_order = r.argsort()
         if synthetic_examples_total is None:
@@ -137,7 +134,7 @@ class CCR(BaseSampler):
         else:
             generated = np.empty((0, minority_examples.shape[1]))
 
-        return clean_majority_examples, generated
+        return majority_examples, generated
 
     def distances(self, minority_example: np.ndarray, majority_examples: np.ndarray) -> np.ndarray:
         return (abs(minority_example - majority_examples)).sum(1)
@@ -214,7 +211,7 @@ class MultiClassCCR(BaseSampler):
         final_y = np.hstack([np.full((class_X[clazz].shape[0],), clazz) for clazz, _ in sorted_class_counts])
         return final_X, final_y
 
-    def _number_of_classes_with_higher_count(self, sorted_class_counts: dict[typing.Any, int], i: int) -> int:
+    def _number_of_classes_with_higher_count(self, sorted_class_counts: List[int], i: int) -> int:
         number_of_classes_with_higher_count = 0
         _, current_class_count = sorted_class_counts[i]
         for _, class_count in sorted_class_counts[:i]:

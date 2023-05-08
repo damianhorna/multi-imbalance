@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 
 from multi_imbalance.resampling.ccr import CCR
 
@@ -33,5 +34,4 @@ original_cleaning_results = np.array([
 def test_compare_cleaning_results_to_original_article_implementation():
     clf = CCR(energy=0.5)
     resampled_X, resampled_y = clf.fit_resample(X, y)
-    assert np.array_equiv(np.sort(resampled_X[:X.shape[0]], axis=0),
-                          np.sort(original_cleaning_results, axis=0)) == True
+    assert_array_equal(np.sort(resampled_X[:X.shape[0]], axis=0), np.sort(original_cleaning_results, axis=0))
