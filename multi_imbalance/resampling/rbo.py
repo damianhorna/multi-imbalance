@@ -10,6 +10,13 @@ class RBO(BaseSampler):
     """
     Radial-based oversampling algorithm.
 
+    Radial-based oversampling tries to overcome limitations of neighborhood-based oversampling algorithms by using
+    class potential estimation with radial-basis function. Potential represents the cumulative proximity of an
+    example to given collection of examples. Class potential is the potential computed on the collection of examples
+    belonging to a specific class. Mutual class potential is a difference between the potential of two different
+    classes at some point in the space of examples. New examples are generated in the areas of low mutual class
+    potential by random walking from randomly selected minority examples.
+
     Reference:
     Krawczyk, B., Koziarski, M., Wozniak, M.: Radial-Based Oversampling for Multiclass Imbalanced Data Classification
     IEEE Transactions on Neural Networks and Learning Systems
@@ -70,7 +77,7 @@ class RBO(BaseSampler):
 
         while len(minority_examples) + len(S) < len(majority_examples):
             random_minority_index = random.randint(0, len(minority_examples) - 1)
-            current_minority_example = minority_examples[random_minority_index]
+            current_minority_example = minority_examples[random_minority_index].copy()
             nearest_index = minority_nearest[random_minority_index]
             nearest_classes = y[nearest_index]
             x_majority = X[nearest_index[nearest_classes != minority_class]]
@@ -108,13 +115,14 @@ class MultiClassRBO(BaseSampler):
     1. The classes are sorted in the descending order by the number of associated observations.
     2. For each of the minority classes, a collection of combined majority observations is constructed, consisting of
     a randomly sampled fraction of observations from each of the already considered class.
-    3. Preprocessing with the CCR algorithm is performed, using the observations from the currently considered class
+    3. Preprocessing with the RBO algorithm is performed, using the observations from the currently considered class
     as a minority, and the combined majority observations as the majority class. Both the generated synthetic
     minority observations and the applied translations are incorporated into the original data, and the synthetic
     observations can be used to construct the collection of combined majority observations for later classes.
 
-    Koziarski, M., Wozniak, M., Krawczyk, B.: Combined Cleaning and Resampling Algorithm for Multi-Class Imbalanced
-    Data with Label Noise. (2020)
+    Reference:
+    Krawczyk, B., Koziarski, M., Wozniak, M.: Radial-Based Oversampling for Multiclass Imbalanced Data Classification
+    IEEE Transactions on Neural Networks and Learning Systems
     """
 
     def __init__(self, gamma: float, step: int, iterations: int, k: int,
