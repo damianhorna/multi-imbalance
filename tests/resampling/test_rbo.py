@@ -2,7 +2,7 @@ from collections import Counter
 
 import numpy as np
 
-from multi_imbalance.resampling.rbo import RBO
+from multi_imbalance.resampling.rbo import RBO, MultiClassRBO
 
 X = np.array([
     [0.51916715, 0.46894559],
@@ -22,9 +22,28 @@ y = np.array([
     0
 ])
 
+mc_X = np.vstack(
+    [
+        np.random.normal(0, 1, (100, 2)),
+        np.random.normal(3, 5, (30, 2)),
+        np.random.normal(-2, 2, (20, 2)),
+    ]
+)
+
+mc_y = np.array([1] * 100 + [2] * 30 + [3] * 20)
+
 
 def test_rbo():
     clf = RBO(gamma=0.5, step=2, iterations=10, k=3)
     oversampled_X, oversampled_y = clf.fit_resample(X, y)
     cnt = Counter(oversampled_y)
     assert cnt[1] == cnt[0]
+
+
+def test_mcrbo():
+    clf = MultiClassRBO(gamma=0.5, step=2, iterations=10, k=3)
+    oversampled_X, oversampled_y = clf.fit_resample(mc_X, mc_y)
+    cnt = Counter(oversampled_y)
+    assert cnt[1] == cnt[2]
+    assert cnt[1] == cnt[3]
+    assert cnt[2] == cnt[3]
