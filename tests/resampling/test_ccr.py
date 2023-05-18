@@ -1,7 +1,9 @@
+from unittest.mock import patch
+
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from multi_imbalance.resampling.ccr import CCR
+from multi_imbalance.resampling.ccr import CCR, MultiClassCCR
 
 X = np.array([
     [0.51916715, 0.46894559],
@@ -30,8 +32,29 @@ original_cleaning_results = np.array([
     [0.55701822, 0.32693741]
 ])
 
+multiclass_X = np.vstack(
+        [
+            np.random.normal(0, 1, (100, 2)),
+            np.random.normal(3, 5, (30, 2)),
+            np.random.normal(-2, 2, (20, 2)),
+            np.random.normal(-4, 1, (10, 2)),
+            np.random.normal(10, 1, (5, 2)),
+        ]
+    )
+
+multiclass_y = np.array([1] * 100 + [2] * 30 + [3] * 20 + [4] * 10 + [5] * 5)
+
 
 def test_compare_cleaning_results_to_original_article_implementation():
     clf = CCR(energy=0.5)
     resampled_X, resampled_y = clf.fit_resample(X, y)
     assert_array_equal(np.sort(resampled_X[:X.shape[0]], axis=0), np.sort(original_cleaning_results, axis=0))
+
+
+def test_multiclass_ccr_call_count():
+    clf = MultiClassCCR(energy=0.5)
+
+    with patch.object(CCR, '_clean_and_generate', wraps=clf.CCR._clean_and_generate) as mock:
+        _, _ = clf.fit_resample(multiclass_X, multiclass_y)
+        print(mock.call_count)
+        assert mock.call_count == 4
