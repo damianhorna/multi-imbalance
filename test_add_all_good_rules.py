@@ -6,7 +6,7 @@ import pandas as pd
 # from scripts.utils import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
 #     Bounds, compute_hashable_key
 
-from scripts.bracid import BRACID, Bounds, Data
+from scripts.bracid import BRACID, Bounds, Data, ConfusionMatrix
 import scripts.vars as my_vars
 
 
@@ -77,7 +77,8 @@ class TestAddAllGoodRules(TestCase):
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
         initial_f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
-        correct_confusion_matrix = {my_vars.TP: {2, 5}, my_vars.FP: set(), my_vars.TN: {0, 1}, my_vars.FN: {3, 4}}
+        # correct_confusion_matrix = ConfusionMatrix(TP= {2, 5}, FP= set(), TN= {0, 1}, FN= {3, 4})
+        correct_confusion_matrix = ConfusionMatrix(TP={2, 5}, FP=set(), TN={0, 1}, FN={3, 4})
         correct_rules = 8
         self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
 
@@ -99,7 +100,8 @@ class TestAddAllGoodRules(TestCase):
         print("f1", f1)
         # correct_covered = {2: {0, 1, 2, 3, 4, 5}}
         correct_covered = {6: {0, 1, 2, 4, 5}, 7: {3}}
-        correct_confusion_matrix = {my_vars.TP: {2, 3, 4, 5}, my_vars.FP: {0, 1}, my_vars.TN: set(), my_vars.FN: set()}
+        # correct_confusion_matrix = ConfusionMatrix(TP= {2, 3, 4, 5}, FP= {0, 1}, TN= set(), FN= set())
+        correct_confusion_matrix = ConfusionMatrix(TP={2, 3, 4, 5}, FP={0, 1}, TN=set(), FN=set())
         # correct_closest_rule_per_example = {
         #     0: Data(rule_id=2, dist=0.0),
         #     1: Data(rule_id=2, dist=0.0),
@@ -195,7 +197,7 @@ class TestAddAllGoodRules(TestCase):
     #         0: Data(rule_id=1, dist=0.010000000000000002)
     #     }
     #     bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0}, 2: {3, 5}, 5: {2}}
-    #     bracid.conf_matrix = {my_vars.TP: {2, 3, 5}, my_vars.FP: set(), my_vars.TN: {0, 1}, my_vars.FN: {4}}
+    #     bracid.conf_matrix = ConfusionMatrix(TP= {2, 3, 5}, FP= set(), TN= {0, 1}, FN= {4})
     #     bracid.examples_covered_by_rule = {0: {1}, 2: {3}}
     #     bracid.latest_rule_id = 5
     #
@@ -205,7 +207,7 @@ class TestAddAllGoodRules(TestCase):
     #     correct_f1 = 0.888888888888889
     #     rule_6 = pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
     #                         "Class": "banana"}, name=6)
-    #     correct_conf_matrix = {my_vars.TP: {2, 3, 4, 5}, my_vars.FP: {0}, my_vars.TN: {1}, my_vars.FN: set()}
+    #     correct_conf_matrix = ConfusionMatrix(TP= {2, 3, 4, 5}, FP= {0}, TN= {1}, FN= set())
     #     correct_closest_rule = {1: Data(rule_id=0, dist=0.0), 4: Data(rule_id=6, dist=0.0),
     #                             3: Data(rule_id=2, dist=0.0), 5: Data(rule_id=2, dist=0.04515625),
     #                             2: Data(rule_id=5, dist=0.67015625), 0: Data(rule_id=6, dist=0.0)}

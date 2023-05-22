@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 
 # from scripts.utils import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
-from scripts.bracid import BRACID, Bounds, Data
+from scripts.bracid import BRACID, Bounds, Data, ConfusionMatrix
 import scripts.vars as my_vars
 
 
@@ -81,9 +81,10 @@ class TestAddOneBestRule(TestCase):
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
-        # bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         # at the start (i.e. F1=0.66666), but to see if it changes, it's changed
-        bracid.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = ConfusionMatrix(TP= {0}, FP= set(), TN= {1, 2, 5}, FN= {3, 4})
+        bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
         k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
@@ -109,7 +110,8 @@ class TestAddOneBestRule(TestCase):
         self.assertTrue(improved is True)
         self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
-        correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
+        correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
         for example_id in bracid.closest_rule_per_example:
             rule_id, dist = bracid.closest_rule_per_example[example_id]
@@ -191,9 +193,10 @@ class TestAddOneBestRule(TestCase):
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
-        # bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         # at the start (i.e. F1=0.66666), but to see if it changes, it's changed
-        bracid.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = ConfusionMatrix(TP= {0}, FP= set(), TN= {1, 2, 5}, FN= {3, 4})
+        bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
         k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
@@ -219,7 +222,8 @@ class TestAddOneBestRule(TestCase):
         self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
         self.assertTrue(improved is True)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
-        correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
+        correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
         for example_id in bracid.closest_rule_per_example:
             rule_id, dist = bracid.closest_rule_per_example[example_id]
@@ -286,7 +290,7 @@ class TestAddOneBestRule(TestCase):
         bracid.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[0]}
         bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
-        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        bracid.conf_matrix = ConfusionMatrix(TP={0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         bracid.examples_covered_by_rule = {}
         # F1 is actually 0.6666, but setting it to 0.8 makes it not update any rule
         initial_f1 = 0.8
@@ -312,7 +316,8 @@ class TestAddOneBestRule(TestCase):
         correct_f1 = initial_f1
         self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
-        correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
+        correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP= set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
         for example_id in bracid.closest_rule_per_example:
             rule_id, dist = bracid.closest_rule_per_example[example_id]
@@ -401,7 +406,7 @@ class TestAddOneBestRule(TestCase):
                 5: Data(rule_id=2, dist=0.67015625),
                 8: Data(rule_id=6, dist=0)  # Fake entry
             }
-            bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+            bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
             initial_f1 = 0.66666
             k = 3
             neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max,
@@ -420,7 +425,7 @@ class TestAddOneBestRule(TestCase):
             self.assertTrue(improved is True)
             correct_f1 = 2 * 0.5 * 1 / 1.5
             self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
-            correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+            correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
 
             # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
             for example_id in bracid.closest_rule_per_example:

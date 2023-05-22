@@ -4,7 +4,7 @@ import copy
 
 import pandas as pd
 
-from scripts.bracid import BRACID, Data, Bounds
+from scripts.bracid import BRACID, Data, Bounds, ConfusionMatrix
 import scripts.vars as my_vars
 
 
@@ -77,7 +77,7 @@ class TestEvaluateF1Temporarily(TestCase):
         }
         correct_closest_rules = copy.deepcopy(bracid.closest_rule_per_example)
         correct_closest_examples = copy.deepcopy(bracid.closest_examples_per_rule)
-        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+        bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
         new_rule = pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.0), "C": Bounds(lower=3, upper=3),
                               "Class": "banana"}, name=0)
         correct_f1 = 0.8
@@ -101,10 +101,10 @@ class TestEvaluateF1Temporarily(TestCase):
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
         self.assertTrue(closest_examples == bracid.closest_examples_per_rule)
-        correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3}, my_vars.TN: {2, 4, 5}, my_vars.FN: set()}
+        correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3}, TN= {2, 4, 5}, FN= set())
         self.assertTrue(conf_matrix == correct_conf_matrix)
         # But now check that global variables remained unaffected by the changes
-        correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+        correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
         self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
         self.assertTrue(correct_closest_rules == bracid.closest_rule_per_example)
         self.assertTrue(correct_closest_examples == bracid.closest_examples_per_rule)
