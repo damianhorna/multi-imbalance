@@ -21,7 +21,7 @@ class TestIsDuplicate(TestCase):
         ]
         new_rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3),
                               "Class": "apple"}, name=2)
-        my_vars.all_rules = {0: rules[0], 1: rules[1]}
+        bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
         self.assertTrue(rule_id == 0)
 
@@ -36,6 +36,6 @@ class TestIsDuplicate(TestCase):
         ]
         new_rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=3), "C": Bounds(lower=1, upper=3),
                               "Class": "apple"}, name=2)
-        my_vars.all_rules = {0: rules[0], 1: rules[1]}
+        bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
         self.assertTrue(rule_id == -1)

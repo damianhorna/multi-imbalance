@@ -40,7 +40,7 @@ class TestAddOneBestRule(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
                       name=1),
@@ -55,13 +55,13 @@ class TestAddOneBestRule(TestCase):
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                       name=0)  # Current rule is always at the end of the list
         ]
-        my_vars.closest_examples_per_rule = {
+        bracid.closest_examples_per_rule = {
             0: {1, 4},
             1: {0, 3},
             2: {5},
             5: {2}
         }
-        my_vars.closest_rule_per_example = {
+        bracid.closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
             2: Data(rule_id=5, dist=0.67015625),
@@ -70,20 +70,20 @@ class TestAddOneBestRule(TestCase):
             5: Data(rule_id=2, dist=0.67015625)}
         test_idx = -1
         # Reset because other tests change the data
-        my_vars.examples_covered_by_rule = {}
-        my_vars.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[0]}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
-        my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.examples_covered_by_rule = {}
+        bracid.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[0]}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
+        bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.unique_rules = {}
+        bracid.unique_rules = {}
         for rule in rules:
             rule_hash = bracid.compute_hashable_key(rule)
-            my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
+            bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
-        # my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
         # at the start (i.e. F1=0.66666), but to see if it changes, it's changed
-        my_vars.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
+        bracid.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
         initial_f1 = 0.1
         k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
@@ -111,13 +111,13 @@ class TestAddOneBestRule(TestCase):
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
         correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
-        for example_id in my_vars.closest_rule_per_example:
-            rule_id, dist = my_vars.closest_rule_per_example[example_id]
+        for example_id in bracid.closest_rule_per_example:
+            rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
         self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(my_vars.conf_matrix == correct_confusion_matrix)
-        self.assertTrue(correct_closest_examples_per_rule == my_vars.closest_examples_per_rule)
+        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
+        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
 
     def test_add_one_best_rule_update_stats(self):
         """Tests that rule set is updated when a generalized rule improves F1 and also the mapping of closest rule per
@@ -150,7 +150,7 @@ class TestAddOneBestRule(TestCase):
         test_idx = -1
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
                       name=1),
@@ -165,13 +165,13 @@ class TestAddOneBestRule(TestCase):
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                       name=0)  # Current rule is always at the end of the list
         ]
-        my_vars.closest_examples_per_rule = {
+        bracid.closest_examples_per_rule = {
             0: {4},
             1: {0, 1, 3},   # Change compared to previous test case
             2: {5},
             5: {2}
         }
-        my_vars.closest_rule_per_example = {
+        bracid.closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=1, dist=0.010000000000000002),   # Change compared to previous test case
             2: Data(rule_id=5, dist=0.67015625),
@@ -179,21 +179,21 @@ class TestAddOneBestRule(TestCase):
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
         # Reset because other tests change the data
-        # my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}, 6: {8}}
-        my_vars.examples_covered_by_rule = {}
-        my_vars.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
-        my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
-        my_vars.unique_rules = {}
-        my_vars.unique_rules = {}
+        # bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}, 6: {8}}
+        bracid.examples_covered_by_rule = {}
+        bracid.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
+        bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.unique_rules = {}
+        bracid.unique_rules = {}
         for rule in rules:
             rule_hash = bracid.compute_hashable_key(rule)
-            my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
+            bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
-        # my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        # bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
         # at the start (i.e. F1=0.66666), but to see if it changes, it's changed
-        my_vars.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
+        bracid.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
         initial_f1 = 0.1
         k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
@@ -221,15 +221,15 @@ class TestAddOneBestRule(TestCase):
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
         correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
-        for example_id in my_vars.closest_rule_per_example:
-            rule_id, dist = my_vars.closest_rule_per_example[example_id]
+        for example_id in bracid.closest_rule_per_example:
+            rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
         self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(my_vars.conf_matrix == correct_confusion_matrix)
+        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
         print(correct_closest_examples_per_rule)
-        print(my_vars.closest_examples_per_rule)
-        self.assertTrue(correct_closest_examples_per_rule == my_vars.closest_examples_per_rule)
+        print(bracid.closest_examples_per_rule)
+        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
 
     def test_add_one_best_rule_no_update(self):
         """Tests that rule set is not updated when no generalized rule improves F1"""
@@ -261,7 +261,7 @@ class TestAddOneBestRule(TestCase):
         test_idx = -1
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
                       name=1),
@@ -276,25 +276,25 @@ class TestAddOneBestRule(TestCase):
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                       name=0)   # Current rule is always at the end of the list
         ]
-        my_vars.closest_rule_per_example = {
+        bracid.closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
             2: Data(rule_id=5, dist=0.67015625),
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        my_vars.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[0]}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
-        my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
-        my_vars.examples_covered_by_rule = {}
+        bracid.all_rules = {0: rules[test_idx], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[0]}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        bracid.examples_covered_by_rule = {}
         # F1 is actually 0.6666, but setting it to 0.8 makes it not update any rule
         initial_f1 = 0.8
         k = 3
-        my_vars.unique_rules = {}
+        bracid.unique_rules = {}
         for rule in rules:
             rule_hash = bracid.compute_hashable_key(rule)
-            my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
+            bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
@@ -314,8 +314,8 @@ class TestAddOneBestRule(TestCase):
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
         correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
-        for example_id in my_vars.closest_rule_per_example:
-            rule_id, dist = my_vars.closest_rule_per_example[example_id]
+        for example_id in bracid.closest_rule_per_example:
+            rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
         print(rules[test_idx])
@@ -323,7 +323,7 @@ class TestAddOneBestRule(TestCase):
         print("updated")
         print(updated_rules)
         self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(my_vars.conf_matrix == correct_confusion_matrix)
+        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
 
     def test_add_one_best_rule_unique(self):
             """Tests that the best rule found by this function is unique and correspondingly updates relevant
@@ -356,7 +356,7 @@ class TestAddOneBestRule(TestCase):
             test_idx = -1
             classes = ["apple", "banana"]
             min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-            my_vars.minority_class = "apple"
+            bracid.minority_class = "apple"
             # name=6 because this guy already exists in the rules and the new rule with name=0 becomes the same, so
             # it's removed
             correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=6)
@@ -378,21 +378,21 @@ class TestAddOneBestRule(TestCase):
             ]
             for rule in rules:
                 rule_hash = bracid.compute_hashable_key(rule)
-                my_vars.unique_rules[rule_hash] = {rule.name}
+                bracid.unique_rules[rule_hash] = {rule.name}
             correct_generalized_rule_hash = bracid.compute_hashable_key(correct_generalized_rule)
 
-            my_vars.examples_covered_by_rule = {}
-            my_vars.all_rules = {0: rules[test_idx], 1: rules[0], 2: rules[1], 3: rules[2], 4: rules[3], 5: rules[4],
+            bracid.examples_covered_by_rule = {}
+            bracid.all_rules = {0: rules[test_idx], 1: rules[0], 2: rules[1], 3: rules[2], 4: rules[3], 5: rules[4],
                                  6: rules[5]}
-            my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
-            my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+            bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
+            bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
 
-            my_vars.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
+            bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
             # Note that 6: {8} is incorrect and was just added to test if the entries are merged correctly
-            my_vars.examples_covered_by_rule = {6: {8}}
-            print("rule hashes", my_vars.unique_rules)
+            bracid.examples_covered_by_rule = {6: {8}}
+            print("rule hashes", bracid.unique_rules)
             print(correct_generalized_rule_hash)
-            my_vars.closest_rule_per_example = {
+            bracid.closest_rule_per_example = {
                 0: Data(rule_id=1, dist=0.010000000000000002),
                 1: Data(rule_id=6, dist=0.0),
                 2: Data(rule_id=5, dist=0.67015625),
@@ -401,7 +401,7 @@ class TestAddOneBestRule(TestCase):
                 5: Data(rule_id=2, dist=0.67015625),
                 8: Data(rule_id=6, dist=0)  # Fake entry
             }
-            my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+            bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
             initial_f1 = 0.66666
             k = 3
             neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max,
@@ -423,13 +423,13 @@ class TestAddOneBestRule(TestCase):
             correct_confusion_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
 
             # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
-            for example_id in my_vars.closest_rule_per_example:
+            for example_id in bracid.closest_rule_per_example:
                 # 8 was only added to test something else, since it won't be in the result
                 # if example_id != 8:
-                    rule_id, dist = my_vars.closest_rule_per_example[example_id]
+                    rule_id, dist = bracid.closest_rule_per_example[example_id]
                     self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                                     abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
             self.assertTrue(updated_rules[5].equals(correct_generalized_rule))
-            self.assertTrue(my_vars.conf_matrix == correct_confusion_matrix)
+            self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
             # Duplicate rule was deleted so that the last rule now corresponds to the rule with id
             self.assertTrue(len(rules) - 1 == len(updated_rules) and updated_rules[-1].name == 6)

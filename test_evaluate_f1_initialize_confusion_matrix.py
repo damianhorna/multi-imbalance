@@ -54,16 +54,16 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
                        "Class": "banana"}, name=5)
         ]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         # Reset as other tests changed the data
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
 
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
 
         # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
         correct_f1 = 2*1*0.5/1.5
@@ -78,9 +78,9 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
         correct_closest_examples_per_rule = {1: {0, 3}, 0: {1, 4}, 5: {2}, 2: {5}}
         correct_conf_matrix = {'tp': {0, 1}, 'fp': {3, 4}, 'tn': {2, 5}, 'fn': set()}
         self.assertTrue(f1 == correct_f1)
-        self.assertTrue(correct_closest_examples_per_rule == my_vars.closest_examples_per_rule)
-        for example_id in my_vars.closest_rule_per_example:
-            rule_id, dist = my_vars.closest_rule_per_example[example_id]
+        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
+        for example_id in bracid.closest_rule_per_example:
+            rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
-        self.assertTrue(my_vars.conf_matrix == correct_conf_matrix)
+        self.assertTrue(bracid.conf_matrix == correct_conf_matrix)

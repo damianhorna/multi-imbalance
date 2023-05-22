@@ -18,8 +18,8 @@ class TestFindDuplicateRuleId(TestCase):
                        "Class": "banana"}, name=12)  # Duplicate
         ]
         duplicate_idx = 1
-        my_vars.unique_rules = {compute_hashable_key(rules[0]): {7}}
-        my_vars.all_rules = {7: rules[0]}
+        bracid.unique_rules = {compute_hashable_key(rules[0]): {7}}
+        bracid.all_rules = {7: rules[0]}
         duplicate_hash = compute_hashable_key(rules[duplicate_idx])
         duplicate_id = find_duplicate_rule_id(rules[duplicate_idx], duplicate_hash)
         print("duplicate ID:", duplicate_id)

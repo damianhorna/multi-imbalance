@@ -19,7 +19,7 @@ class TestAddTagsAndExtractRules(TestCase):
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
         bracid = BRACID()
-        my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         lookup = \
             {
                 "A":
@@ -40,7 +40,7 @@ class TestAddTagsAndExtractRules(TestCase):
                             }
                     }
             }
-        my_vars.latest_rule_id = 5
+        bracid.latest_rule_id = 5
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": ["apple", "apple", "banana", "banana", "banana", "banana"],
@@ -63,11 +63,11 @@ class TestAddTagsAndExtractRules(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {}
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.seed_rule_example = {}
-        my_vars.seed_example_rule = {}
+        bracid.all_rules = {}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.seed_rule_example = {}
+        bracid.seed_example_rule = {}
 
         correct_latest_id = 5
         correct_seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
@@ -75,12 +75,12 @@ class TestAddTagsAndExtractRules(TestCase):
         correct_all_rules = {0: correct_rules[0], 1: correct_rules[1], 2: correct_rules[2], 3: correct_rules[3],
                              4: correct_rules[4], 5: correct_rules[5]}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
         tagged, rules = bracid.add_tags_and_extract_rules(df, k, class_col_name, lookup, min_max, classes)
         self.assertTrue(tagged.equals(correct))
-        self.assertTrue(my_vars.seed_example_rule == correct_seed_example_rule)
-        self.assertTrue(my_vars.seed_rule_example == correct_seed_rule_example)
-        self.assertTrue(my_vars.all_rules.keys() == correct_all_rules.keys())
-        self.assertTrue(my_vars.latest_rule_id == correct_latest_id)
+        self.assertTrue(bracid.seed_example_rule == correct_seed_example_rule)
+        self.assertTrue(bracid.seed_rule_example == correct_seed_rule_example)
+        self.assertTrue(bracid.all_rules.keys() == correct_all_rules.keys())
+        self.assertTrue(bracid.latest_rule_id == correct_latest_id)
         for idx, rule in enumerate(rules):
             self.assertTrue(rule.equals(correct_all_rules[idx]))

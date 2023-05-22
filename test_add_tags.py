@@ -44,12 +44,12 @@ class TestAddTags(TestCase):
                                 "Class": ["apple", "apple", "banana", "banana", "banana", "banana"],
                                 TAG: [BORDERLINE, BORDERLINE, SAFE, BORDERLINE, BORDERLINE, BORDERLINE]
                                 })
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         k = 3
@@ -67,7 +67,7 @@ class TestAddTags(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
@@ -105,12 +105,12 @@ class TestAddTags(TestCase):
                                 TAG: [NOISY, BORDERLINE, SAFE, SAFE, SAFE, SAFE]
                                 })
         classes = ["apple", "banana"]
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         k = 3
         rules = [
@@ -127,7 +127,7 @@ class TestAddTags(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
@@ -138,7 +138,7 @@ class TestAddTags(TestCase):
                            "B": [np.NaN, 1, np.NaN, 1.5, np.NaN, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
-        my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         bracid = BRACID()
         class_col_name = "Class"
         lookup = \
@@ -183,13 +183,13 @@ class TestAddTags(TestCase):
                        "Class": "banana"}, name=5)
         ]
         k = 3
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
@@ -201,7 +201,7 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
-        my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         lookup = \
             {
                 "A":
@@ -244,12 +244,12 @@ class TestAddTags(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
-        my_vars.examples_covered_by_rule = {}
+        bracid.examples_covered_by_rule = {}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         self.assertTrue(tagged.equals(correct))

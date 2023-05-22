@@ -83,7 +83,7 @@ class TestFindNeighbors(TestCase):
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         # Reset as other tests changed the content of the dictionary
-        my_vars.closest_rule_per_example = {}
+        bracid.closest_rule_per_example = {}
         neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, lookup, min_max, classes,
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False)
         if neighbors is not None:
@@ -132,9 +132,9 @@ class TestFindNeighbors(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        my_vars.closest_rule_per_example = {}
-        my_vars.closest_examples_per_rule = {}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
         correct_all = df.iloc[[5, 2, 0]]
         correct_same = df.iloc[[5, 2, 3]]
         correct_opposite = df.iloc[[0, 1]]
@@ -185,7 +185,7 @@ class TestFindNeighbors(TestCase):
                     }
             }
         k = 4
-        my_vars.closest_rule_per_example = {}
+        bracid.closest_rule_per_example = {}
         correct = None
         if k == 1:
             correct = df.iloc[[5]]
@@ -196,9 +196,9 @@ class TestFindNeighbors(TestCase):
         elif k >= 4:
             # correct = df.iloc[[5, 2, 3, 4]]
             # Examples at indices 2 and 4 are already covered by the rule, so don't return them as neighbors
-            my_vars.examples_covered_by_rule = {0: {2, 4}}
+            bracid.examples_covered_by_rule = {0: {2, 4}}
             correct = df.iloc[[5, 3]]
-        my_vars.all_rules = {}
+        bracid.all_rules = {}
         rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=1), "Class": "banana"}, name=0)
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
@@ -236,7 +236,7 @@ class TestFindNeighbors(TestCase):
                     }
             }
         rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"}, name=0)
-        my_vars.closest_rule_per_example = {
+        bracid.closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
             2: Data(rule_id=5, dist=0.67015625),
@@ -245,9 +245,9 @@ class TestFindNeighbors(TestCase):
             5: Data(rule_id=2, dist=0.67015625)}
         # Reset because other tests added data, so if you only run this test it would work, but not if other
         # tests are run prior to that
-        my_vars.examples_covered_by_rule = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
+        bracid.examples_covered_by_rule = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                         name=0),
@@ -262,13 +262,13 @@ class TestFindNeighbors(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                         "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        # my_vars.all_rules = {0: rule}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        # bracid.all_rules = {0: rule}
         k = 4
         correct = df.iloc[[5, 2, 3, 4]]
 
         classes = ["apple", "banana"]
-        my_vars.minority_class = "banana"
+        bracid.minority_class = "banana"
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         correct_covered = {}
         correct_examples_per_rule = {0: {1, 2, 4, 5}, 1: {0, 3}}
@@ -283,13 +283,13 @@ class TestFindNeighbors(TestCase):
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                 False)
         self.assertTrue(neighbors.equals(correct))
-        self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
+        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
+        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
         for example_id, (rule_id, dist) in correct_closest_rule_per_example.items():
-            features = my_vars.all_rules[rule_id].size
-            self.assertTrue(example_id in my_vars.closest_rule_per_example)
-            other_id, other_dist = my_vars.closest_rule_per_example[example_id]
-            other_features = my_vars.all_rules[other_id].size
+            features = bracid.all_rules[rule_id].size
+            self.assertTrue(example_id in bracid.closest_rule_per_example)
+            other_id, other_dist = bracid.closest_rule_per_example[example_id]
+            other_features = bracid.all_rules[other_id].size
             self.assertTrue(rule_id == other_id)
             self.assertTrue(features == other_features)
             self.assertTrue(abs(dist-other_dist) < 0.0001)
@@ -336,23 +336,23 @@ class TestFindNeighbors(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                         "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        my_vars.closest_rule_per_example = {
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.closest_rule_per_example = {
             0: (1, 0.010000000000000002),
             1: (0, 0.010000000000000002),
             2: (5, 0.67015625),
             3: (1, 0.038125),
             4: (0, 0.015625),
             5: (2, 0.67015625)}
-        my_vars.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
+        bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
         k = 4
         correct = df.iloc[[2, 3, 5, 4]]
         rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"}, name=0)
         classes = ["apple", "banana"]
-        my_vars.minority_class = "banana"
+        bracid.minority_class = "banana"
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         # An example could be covered by multiple rules, so example 2 should be covered by rules 0 and 1 at the end
-        my_vars.examples_covered_by_rule = {1: {2}}
+        bracid.examples_covered_by_rule = {1: {2}}
         correct_covered = {0: {2, 3}, 1: {2}}
         correct_examples_per_rule = {0: {1, 2, 3, 4, 5}, 1: {0}}
         correct_closest_rule_per_example = {
@@ -362,10 +362,10 @@ class TestFindNeighbors(TestCase):
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                 False)
         self.assertTrue(neighbors.equals(correct))
-        self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
+        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
+        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
         for example_id, (rule_id, dist) in correct_closest_rule_per_example.items():
-            self.assertTrue(example_id in my_vars.closest_rule_per_example)
-            other_id, other_dist = my_vars.closest_rule_per_example[example_id]
+            self.assertTrue(example_id in bracid.closest_rule_per_example)
+            other_id, other_dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == other_id)
             self.assertTrue(abs(dist - other_dist) < 0.0001)
