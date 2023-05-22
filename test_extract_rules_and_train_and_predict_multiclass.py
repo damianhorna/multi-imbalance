@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.bracid import extract_rules_and_train_and_predict_multiclass
+from scripts.bracid import BRACID
 import scripts.vars as my_vars
 
 
@@ -20,6 +20,7 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
                                  "B": [4.1, 1, 5.4, 0.15, 0.05, 0.075],
                                  "C": [0.3, 2, 0.1, .4, 0.3, 5],
                                  "Class": ["", "", "", "", "", ""]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -47,7 +48,7 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
 
         k = 3
         rules, preds_df = \
-            extract_rules_and_train_and_predict_multiclass(train_set, test_set, lookup, min_max, class_col_name, k)
+            bracid.extract_rules_and_train_and_predict_multiclass(train_set, test_set, lookup, min_max, class_col_name, k)
         correct_preds = pd.DataFrame({
             my_vars.PREDICTED_LABEL: ["banana", "apple", "banana", "apple", "apple", "banana"],
             my_vars.PREDICTION_CONFIDENCE: [0.4, 1, 0.4, 1, 1, 0.4]

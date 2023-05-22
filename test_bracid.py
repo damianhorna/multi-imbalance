@@ -4,7 +4,8 @@ from collections import Counter
 import pandas as pd
 
 # from utils import bracid, Bounds
-from scripts.bracid import bracid, Bounds
+# from scripts.utils import bracid, Bounds
+from scripts.bracid import BRACID, Bounds
 # import vars as my_vars
 from scripts import vars as my_vars
 
@@ -14,6 +15,7 @@ class TestBracid(TestCase):
 
     def test_bracid_stops(self):
         """Tests that the method stops"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -55,7 +57,7 @@ class TestBracid(TestCase):
             5: pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=4.0), "C": Bounds(lower=1.0, upper=2.5),
                           "Class": "banana"}, name=5),
         }
-        rules = bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
+        rules = bracid.bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
         all_rules_are_equal = True
         for r in rules:
             if not rules[r].equals(correct_rules[r]):

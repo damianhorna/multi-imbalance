@@ -6,7 +6,7 @@ from pandas.api.types import is_string_dtype
 import numpy as np
 
 from scripts.vars import CONDITIONAL
-from scripts.bracid import svdm
+from scripts.bracid import BRACID
 
 
 class TestSvdm(TestCase):
@@ -14,6 +14,7 @@ class TestSvdm(TestCase):
 
     def test_svdm_nan_row(self):
         """Tests that correct svdm is computed if NaNs occur in a row of a column"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "C": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -48,7 +49,7 @@ class TestSvdm(TestCase):
                 continue
             col = df[col_name]
             if is_string_dtype(col):
-                dist = svdm(col, rule, lookup, classes)
+                dist = bracid.svdm(col, rule, lookup, classes)
                 if j == 0:
                     self.assertTrue(np.allclose(correct[0], dist))
                 else:
@@ -57,6 +58,7 @@ class TestSvdm(TestCase):
 
     def test_svdm_nan_rule(self):
         """Tests that correct svdm is computed if NaNs occur in a rule"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -89,11 +91,12 @@ class TestSvdm(TestCase):
                 continue
             col = df[col_name]
             if is_string_dtype(col):
-                dist = svdm(col, rule, lookup, classes)
+                dist = bracid.svdm(col, rule, lookup, classes)
                 self.assertTrue(dist.equals(correct))
 
     def test_svdm_single_feature(self):
         """Tests that correct svdm is computed for 1 nominal feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -128,11 +131,12 @@ class TestSvdm(TestCase):
                 continue
             col = df[col_name]
             if is_string_dtype(col):
-                dist = svdm(col, rule, lookup, classes)
+                dist = bracid.svdm(col, rule, lookup, classes)
         self.assertTrue(dist.equals(correct))
 
     def test_svdm_single_feature2(self):
         """Tests that correct svdm is computed for 1 nominal feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -168,11 +172,12 @@ class TestSvdm(TestCase):
                 continue
             col = df[col_name]
             if is_string_dtype(col):
-                dist = svdm(col, rule, lookup, classes)
+                dist = bracid.svdm(col, rule, lookup, classes)
         self.assertTrue(dist.equals(correct))
 
     def test_svdm_multiple_features(self):
         """Tests that correct svdm is computed for 2 nominal features"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["x", "y", "x", "x", "y", "x"],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -227,11 +232,12 @@ class TestSvdm(TestCase):
                 continue
             col = df[col_name]
             if is_string_dtype(col):
-                dists.append(svdm(col, rule, lookup, classes))
+                dists.append(bracid.svdm(col, rule, lookup, classes))
             self.assertTrue(dists[i].equals(correct[i]))
 
     def test_svdm_multiple_features_multiple_rules(self):
         """Tests that correct svdm is computed for 2 nominal features with 2 rules"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["x", "y", "x", "x", "y", "x"],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -288,5 +294,5 @@ class TestSvdm(TestCase):
                     continue
                 col = df[col_name]
                 if is_string_dtype(col):
-                    dists.append(svdm(col, rule, lookup, classes))
+                    dists.append(bracid.svdm(col, rule, lookup, classes))
                 self.assertTrue(dists[i].equals(correct[i]))

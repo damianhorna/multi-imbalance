@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from scripts.vars import CONDITIONAL
-from scripts.bracid import hvdm
+from scripts.bracid import BRACID
 
 
 class TestHvdm(TestCase):
@@ -13,6 +13,7 @@ class TestHvdm(TestCase):
 
     def test_hvdm_numeric_nominal(self):
         """Tests what happens if input has a numeric and a nominal feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -43,13 +44,14 @@ class TestHvdm(TestCase):
         rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"})
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(np.allclose(correct["A"], dist["A"]) and np.allclose(correct["B"], dist["B"]) and
                         np.allclose(correct["dist"], dist["dist"]))
 
     def test_hvdm_numeric(self):
         """Tests what happens if input has only one type of input, namely a numeric feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -80,12 +82,13 @@ class TestHvdm(TestCase):
         rule = pd.Series({"B": (1, 1), "Class": "banana"})
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(np.allclose(correct["B"], dist["B"]) and np.allclose(correct["dist"], dist["dist"]))
 
     def test_hvdm_nominal(self):
         """Tests what happens if input has only one type of input, namely a nominal feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -116,6 +119,6 @@ class TestHvdm(TestCase):
         rule = pd.Series({"A": "high", "Class": "banana"})
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(np.allclose(correct["A"], dist["A"]) and np.allclose(correct["dist"], dist["dist"]))

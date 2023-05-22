@@ -4,7 +4,7 @@ import copy
 
 import pandas as pd
 
-from scripts.bracid import evaluate_f1_temporarily, Data, Bounds
+from scripts.bracid import BRACID, Data, Bounds
 import scripts.vars as my_vars
 
 
@@ -16,6 +16,7 @@ class TestEvaluateF1Temporarily(TestCase):
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -82,7 +83,7 @@ class TestEvaluateF1Temporarily(TestCase):
         correct_f1 = 0.8
 
         f1, conf_matrix, closest_rules, closest_examples, covered, updated_example_ids = \
-            evaluate_f1_temporarily(df, new_rule, new_rule.name, class_col_name, lookup, min_max, classes)
+            bracid.evaluate_f1_temporarily(df, new_rule, new_rule.name, class_col_name, lookup, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),

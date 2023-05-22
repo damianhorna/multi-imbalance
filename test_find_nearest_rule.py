@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.bracid import find_nearest_rule, Data
+from scripts.bracid import BRACID, Data
 import scripts.vars as my_vars
 
 
@@ -12,6 +12,7 @@ class TestFindNearestRule(TestCase):
 
     def test_find_nearest_rule_no_ties(self):
         """Tests that the nearest rule is found per example assuming no ties"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -57,7 +58,7 @@ class TestFindNearestRule(TestCase):
         my_vars.unique_rules = {}
         my_vars.conf_matrix = {}
         for example_id, example in df.iterrows():
-            rule, dist, was_updated = find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
+            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
                                                         my_vars.examples_covered_by_rule,
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
@@ -87,6 +88,7 @@ class TestFindNearestRule(TestCase):
 
     def test_find_nearest_rule_ties(self):
         """Tests that ties (multiple rules cover an example) are resolved properly"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "low"], "B": [1, 1, 2],
                            "C": [1, 2, 3],
                            "Class": ["apple", "banana", "banana"]})
@@ -130,7 +132,7 @@ class TestFindNearestRule(TestCase):
         my_vars.conf_matrix = {}
 
         for example_id, example in df.iterrows():
-            rule, dist, was_updated = find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
+            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
                                                         my_vars.examples_covered_by_rule,
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))

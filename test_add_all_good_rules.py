@@ -3,8 +3,10 @@ from collections import Counter, deque
 
 import pandas as pd
 
-from scripts.bracid import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
-    Bounds, compute_hashable_key
+# from scripts.utils import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
+#     Bounds, compute_hashable_key
+
+from scripts.bracid import BRACID, Bounds, Data
 import scripts.vars as my_vars
 
 
@@ -16,6 +18,7 @@ class TestAddAllGoodRules(TestCase):
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -63,7 +66,7 @@ class TestAddAllGoodRules(TestCase):
         my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         my_vars.unique_rules = {}
         for rule in rules:
-            hash_val = compute_hashable_key(rule)
+            hash_val = bracid.compute_hashable_key(rule)
             my_vars.unique_rules.setdefault(hash_val, set()).add(rule.name)
 
         initial_correct_closest_rule_per_example = {
@@ -73,7 +76,7 @@ class TestAddAllGoodRules(TestCase):
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        initial_f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
+        initial_f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
         correct_confusion_matrix = {my_vars.TP: {2, 5}, my_vars.FP: set(), my_vars.TN: {0, 1}, my_vars.FN: {3, 4}}
         correct_rules = 8
         self.assertTrue(my_vars.conf_matrix == correct_confusion_matrix)
@@ -87,10 +90,10 @@ class TestAddAllGoodRules(TestCase):
         correct_initial_f1 = 2 * 0.5 * 1 / 1.5
         self.assertTrue(initial_f1 == correct_initial_f1)
         k = 3
-        neighbors, dists, _ = find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
-        improved, updated_rules, f1 = add_all_good_rules(df, neighbors, rules[test_idx], rules, initial_f1,
+        improved, updated_rules, f1 = bracid.add_all_good_rules(df, neighbors, rules[test_idx], rules, initial_f1,
                                                          class_col_name, lookup, min_max, classes)
         self.assertTrue(improved is True)
         print("f1", f1)

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.bracid import train_binary, Bounds, Support
+from scripts.bracid import BRACID, Bounds, Support
 
 
 class TestTrain(TestCase):
@@ -10,6 +10,7 @@ class TestTrain(TestCase):
 
     def test_train(self):
         """Test with numeric and nominal features"""
+        bracid = BRACID()
         training_set = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                      "C": [3, 2, 1, .5, 3, 2],
                                      "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -26,7 +27,7 @@ class TestTrain(TestCase):
             0: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
                           "Class": "apple"}, name=0),
         }
-        model = train_binary(rules, training_set, minority_label, class_col_name)
+        model = bracid.train_binary(rules, training_set, minority_label, class_col_name)
         correct_model = {2: Support(minority=1.0, majority=0.0), 6: Support(minority=0.5, majority=0.5),
                          5: Support(minority=1.0, majority=0.0), 0: Support(minority=0.5, majority=0.5)}
         self.assertTrue(model == correct_model)
