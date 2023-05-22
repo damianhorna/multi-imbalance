@@ -5,7 +5,8 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
 from scripts.vars import CONDITIONAL
-from scripts.bracid import create_svdm_lookup_column
+# from scripts.utils import create_svdm_lookup_column
+from scripts.bracid import BRACID
 
 
 class TestCreateLookupMatrix(TestCase):
@@ -15,18 +16,20 @@ class TestCreateLookupMatrix(TestCase):
         """
         Test that an empty dictionary is created if no nominal feature exists
         """
+        bracid = BRACID()
         df = pd.DataFrame({"A": [1, 2, 3], "B": [3, 2, 1]})
         lookup = {}
         for i, _ in enumerate(df):
             col = df.iloc[:, i]
             if not is_numeric_dtype(col):
-                lookup[i] = create_svdm_lookup_column(df, col, "")
+                lookup[i] = bracid.create_svdm_lookup_column(df, col, "")
         self.assertTrue(lookup == dict())
 
     def test_lookup_single_feature(self):
         """
         Test that a correct matrix is created if one feature is nominal
         """
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         lookup = {}
@@ -35,7 +38,7 @@ class TestCreateLookupMatrix(TestCase):
             if col_name != class_col_name:
                 col = df[col_name]
                 if not is_numeric_dtype(col):
-                    lookup[col_name] = create_svdm_lookup_column(df, col, class_col_name)
+                    lookup[col_name] = bracid.create_svdm_lookup_column(df, col, class_col_name)
         correct =\
             {
                 "A":
@@ -63,6 +66,7 @@ class TestCreateLookupMatrix(TestCase):
         """
         Test that a correct matrix is created if two features are nominal
         """
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["A", "A", "B", "C", "A", "A"],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         lookup = {}
@@ -71,7 +75,7 @@ class TestCreateLookupMatrix(TestCase):
             if col_name != class_col_name:
                 col = df[col_name]
                 if not is_numeric_dtype(col):
-                    lookup[col_name] = create_svdm_lookup_column(df, col, class_col_name)
+                    lookup[col_name] = bracid.create_svdm_lookup_column(df, col, class_col_name)
         correct = \
             {"A": {
                 'high': 3,

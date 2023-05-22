@@ -4,7 +4,8 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.bracid import cv_binary
+# from scripts.utils import cv_binary
+from scripts.bracid import BRACID
 import scripts.vars as my_vars
 
 
@@ -13,6 +14,7 @@ class TestCv(TestCase):
 
     def test_cv(self):
         """Tests that cross-validation is performed correctly"""
+        bracid = BRACID()
         dataset = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -45,7 +47,7 @@ class TestCv(TestCase):
         k = 3
         folds = 2
         seed = 135
-        micro_f1, classwise_f1 = cv_binary(dataset, k, class_col_name, lookup, min_max, classes, minority_label,
+        micro_f1, classwise_f1 = bracid.cv_binary(dataset, k, class_col_name, lookup, min_max, classes, minority_label,
                                            folds=folds, seed=seed)
 
         correct_micro = 1/3

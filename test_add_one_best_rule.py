@@ -3,7 +3,8 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.bracid import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
+# from scripts.utils import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
+from scripts.bracid import BRACID, Bounds, Data
 import scripts.vars as my_vars
 
 
@@ -15,6 +16,7 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -75,7 +77,7 @@ class TestAddOneBestRule(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         my_vars.unique_rules = {}
         for rule in rules:
-            rule_hash = compute_hashable_key(rule)
+            rule_hash = bracid.compute_hashable_key(rule)
             my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
@@ -84,10 +86,10 @@ class TestAddOneBestRule(TestCase):
         my_vars.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
         initial_f1 = 0.1
         k = 3
-        neighbors, dists, _ = find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
-        improved, updated_rules, f1 = add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
+        improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
                                                         class_col_name, lookup, min_max, classes)
 
         correct_closest_rule_per_example = {
@@ -123,6 +125,7 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -184,7 +187,7 @@ class TestAddOneBestRule(TestCase):
         my_vars.unique_rules = {}
         my_vars.unique_rules = {}
         for rule in rules:
-            rule_hash = compute_hashable_key(rule)
+            rule_hash = bracid.compute_hashable_key(rule)
             my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
@@ -193,10 +196,10 @@ class TestAddOneBestRule(TestCase):
         my_vars.conf_matrix = {my_vars.TP: {0}, my_vars.FP: set(), my_vars.TN: {1, 2, 5}, my_vars.FN: {3, 4}}
         initial_f1 = 0.1
         k = 3
-        neighbors, dists, _ = find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
-        improved, updated_rules, f1 = add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
+        improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
                                                         class_col_name, lookup, min_max, classes)
 
         correct_closest_rule_per_example = {
@@ -233,6 +236,7 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -289,13 +293,13 @@ class TestAddOneBestRule(TestCase):
         k = 3
         my_vars.unique_rules = {}
         for rule in rules:
-            rule_hash = compute_hashable_key(rule)
+            rule_hash = bracid.compute_hashable_key(rule)
             my_vars.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
-        neighbors, dists, _ = find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
-        improved, updated_rules, f1 = add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
+        improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
                                                         class_col_name, lookup, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
@@ -327,6 +331,7 @@ class TestAddOneBestRule(TestCase):
             df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                "C": [3, 2, 1, .5, 3, 2],
                                "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+            bracid = BRACID()
             class_col_name = "Class"
             lookup = \
                 {
@@ -372,9 +377,9 @@ class TestAddOneBestRule(TestCase):
                           name=0)  # Current rule is always at the end of the list
             ]
             for rule in rules:
-                rule_hash = compute_hashable_key(rule)
+                rule_hash = bracid.compute_hashable_key(rule)
                 my_vars.unique_rules[rule_hash] = {rule.name}
-            correct_generalized_rule_hash = compute_hashable_key(correct_generalized_rule)
+            correct_generalized_rule_hash = bracid.compute_hashable_key(correct_generalized_rule)
 
             my_vars.examples_covered_by_rule = {}
             my_vars.all_rules = {0: rules[test_idx], 1: rules[0], 2: rules[1], 3: rules[2], 4: rules[3], 5: rules[4],
@@ -399,10 +404,10 @@ class TestAddOneBestRule(TestCase):
             my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
             initial_f1 = 0.66666
             k = 3
-            neighbors, dists, _ = find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max,
+            neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max,
                                                         classes, label_type=my_vars.SAME_LABEL_AS_RULE,
                                                         only_uncovered_neighbors=True)
-            improved, updated_rules, f1 = add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
+            improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
                                                             class_col_name, lookup, min_max, classes)
             correct_closest_rule_per_example = {
                 0: Data(rule_id=1, dist=0.010000000000000002),

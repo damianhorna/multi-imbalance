@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.bracid import predict_binary, Bounds, Support, Predictions
+from scripts.bracid import BRACID, Bounds, Support, Predictions
 import scripts.vars as my_vars
 
 
@@ -17,6 +17,7 @@ class TestPredict(TestCase):
                                  "C": [3, 2, 1, .5, 3, 2],
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
+        bracid = BRACID()
         classes = ["apple", "banana"]
         class_col_name = "Class"
         my_vars.minority_class = classes[0]
@@ -34,7 +35,7 @@ class TestPredict(TestCase):
                  5: Support(minority=1.0, majority=0.0), 0: Support(minority=0, majority=1)}
 
         # Last 2 parameters aren't be used in this test
-        df = predict_binary(model, test_set, rules, classes, class_col_name, None, None, for_multiclass=False)
+        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, None, None, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL:["banana", "banana", "apple", "banana", "banana", "apple"],
@@ -47,6 +48,7 @@ class TestPredict(TestCase):
         """Predict the class labels of uncovered examples with handling ties (2 rules are equally distant) for
         example 4, namely rules 0 and 6"""
         # Assumptions: these are the data for the training set NOT for the test set
+        bracid = BRACID()
         lookup = \
             {
                 "A":
@@ -97,7 +99,7 @@ class TestPredict(TestCase):
         correct_examples_per_rule = {}
         correct_rule_per_example = {}
 
-        df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max, for_multiclass=False)
+        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL: ["apple", "apple", "apple", "banana", "banana", "apple"],
@@ -115,6 +117,7 @@ class TestPredict(TestCase):
     def test_predict_mixed(self):
         """Predict the class labels of uncovered and covered examples while handling ties"""
         # Assumptions: these are the data for the training set NOT for the test set
+        bracid = BRACID()
         lookup = \
             {
                 "A":
@@ -172,7 +175,7 @@ class TestPredict(TestCase):
                                4: Predictions(label='banana', confidence=0.9),
                                5: Predictions(label='apple', confidence=1.0)}
 
-        df = predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
+        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
                                    for_multiclass=False)
         correct = pd.DataFrame(
             {

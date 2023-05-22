@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
-from scripts.bracid import add_tags, Bounds
+from scripts.bracid import BRACID, Bounds
 import scripts.vars as my_vars
 
 
@@ -18,6 +18,7 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
+        bracid = BRACID()
         lookup = \
             {
                 "A":
@@ -67,7 +68,7 @@ class TestAddTags(TestCase):
                        "Class": "banana"}, name=5)
         ]
         my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        tagged = add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
 
@@ -77,6 +78,7 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "banana", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
+        bracid = BRACID()
         lookup = \
             {
                 "A":
@@ -126,7 +128,7 @@ class TestAddTags(TestCase):
                        "Class": "banana"}, name=5)
         ]
         my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        tagged = add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
 
@@ -137,6 +139,7 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid = BRACID()
         class_col_name = "Class"
         lookup = \
             {
@@ -187,12 +190,13 @@ class TestAddTags(TestCase):
         my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         my_vars.examples_covered_by_rule = {}
-        tagged = add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
         self.assertTrue(tagged.equals(correct))
 
     def test_add_tags_all_tags(self):
         """Add tags when using nominal and numeric features and assigning noisy, borderline and safe as tags"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -247,5 +251,5 @@ class TestAddTags(TestCase):
         my_vars.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         my_vars.examples_covered_by_rule = {}
-        tagged = add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         self.assertTrue(tagged.equals(correct))

@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.bracid import evaluate_f1_update_confusion_matrix, Data, Bounds
+from scripts.bracid import BRACID, Data, Bounds
 import scripts.vars as my_vars
 
 
@@ -13,6 +13,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
     def test_evaluate_f1_update_confusion_matrix_updated(self):
         """Tests what happens if input has a numeric and a nominal feature and a rule that predicts an example is
         updated"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -72,7 +73,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
                               "Class": "banana"}, name=0)
         # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
         correct_f1 = 0.8
-        f1 = evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
@@ -92,6 +93,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
     def test_evaluate_f1_update_confusion_matrix_not_updated(self):
         """Tests what happens if input has a numeric and a nominal feature and a rule that predicts an example is
         not updated as F1 score doesn't improve"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -150,7 +152,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
         new_rule = pd.Series({"A": "low", "B": (0.5, 0.5), "C": (3, 3), "Class": "banana"}, name=4)
         correct_f1 = 2*1*0.5/1.5
 
-        f1 = evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),

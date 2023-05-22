@@ -4,7 +4,8 @@ from collections import Counter
 import pandas as pd
 
 from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
-from scripts.bracid import add_tags_and_extract_rules, Bounds
+# from scripts.utils import add_tags_and_extract_rules, Bounds
+from scripts.bracid import BRACID, Bounds
 import scripts.vars as my_vars
 
 
@@ -17,6 +18,7 @@ class TestAddTagsAndExtractRules(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
+        bracid = BRACID()
         my_vars.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         lookup = \
             {
@@ -74,7 +76,7 @@ class TestAddTagsAndExtractRules(TestCase):
                              4: correct_rules[4], 5: correct_rules[5]}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         my_vars.examples_covered_by_rule = {}
-        tagged, rules = add_tags_and_extract_rules(df, k, class_col_name, lookup, min_max, classes)
+        tagged, rules = bracid.add_tags_and_extract_rules(df, k, class_col_name, lookup, min_max, classes)
         self.assertTrue(tagged.equals(correct))
         self.assertTrue(my_vars.seed_example_rule == correct_seed_example_rule)
         self.assertTrue(my_vars.seed_rule_example == correct_seed_rule_example)

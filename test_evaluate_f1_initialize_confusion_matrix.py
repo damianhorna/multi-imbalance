@@ -3,7 +3,8 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.bracid import evaluate_f1_initialize_confusion_matrix, Bounds
+# from scripts.utils import evaluate_f1_initialize_confusion_matrix, Bounds
+from scripts.bracid import BRACID, Bounds
 import scripts.vars as my_vars
 
 
@@ -12,6 +13,7 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
 
     def test_evaluate_f1_initialize_confusion_matrix(self):
         """Tests what happens if input has a numeric and a nominal feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -65,7 +67,7 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
 
         # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
         correct_f1 = 2*1*0.5/1.5
-        f1 = evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
         correct_closest_rule_per_example = {
             0: (1, 0.010000000000000002),
             1: (0, 0.010000000000000002),

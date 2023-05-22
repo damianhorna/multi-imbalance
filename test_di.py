@@ -4,7 +4,8 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 
-from scripts.bracid import di
+# from scripts.utils import di
+from scripts.bracid import BRACID
 
 
 class TestDi(TestCase):
@@ -12,6 +13,7 @@ class TestDi(TestCase):
 
     def test_di_nan_row(self):
         """Tests that correct distance is computed if NaNs occur in a row of a column"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, np.nan, 0.5, 2],
                            "C": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -26,12 +28,13 @@ class TestDi(TestCase):
                 continue
             col = df[col_name]
             if is_numeric_dtype(col):
-                dist = di(col, rule, min_max)
+                dist = bracid.di(col, rule, min_max)
                 self.assertTrue(dist.equals(correct[j]))
                 j += 1
 
     def test_di_nan_rule(self):
         """Tests that correct distance is computed if NaNs occur in a rule"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, np.nan, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -43,11 +46,12 @@ class TestDi(TestCase):
                 continue
             col = df[col_name]
             if is_numeric_dtype(col):
-                dist = di(col, rule, min_max)
+                dist = bracid.di(col, rule, min_max)
                 self.assertTrue(dist.equals(correct))
 
     def test_di_single_feature(self):
         """Tests that correct distance is computed for 1 numeric feature"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, .5, 1, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -60,11 +64,12 @@ class TestDi(TestCase):
                 continue
             col = df[col_name]
             if is_numeric_dtype(col):
-                dist = di(col, rule, min_max)
+                dist = bracid.di(col, rule, min_max)
         self.assertTrue(dist.equals(correct))
 
     def test_di_multiple_features(self):
         """Tests that correct distance is computed for 2 numeric features"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": [1, 1, 4, 1.5, 0.5, 0.75], "B": [3, 2, 1, .5, 3, 2],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
         class_col_name = "Class"
@@ -80,12 +85,13 @@ class TestDi(TestCase):
                 continue
             col = df[col_name]
             if is_numeric_dtype(col):
-                dist = di(col, rule, min_max)
+                dist = bracid.di(col, rule, min_max)
                 dists.append(dist)
                 self.assertTrue(dists[i].equals(correct[i]))
 
     def test_di_multiple_features_multiple_rules(self):
         """Tests that correct distance is computed for 2 numeric features"""
+        bracid = BRACID()
         df = pd.DataFrame({"A": [1, 1, 4, 1.5, 0.5, 0.75], "B": [3, 2, 1, .5, 3, 2],
                            "C": ["a", "b", "c", "d", "e", "f"],
                            "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
@@ -106,6 +112,6 @@ class TestDi(TestCase):
                     continue
                 col = df[col_name]
                 if is_numeric_dtype(col):
-                    dist = di(col, rule, min_max)
+                    dist = bracid.di(col, rule, min_max)
                     dists.append(dist)
                     self.assertTrue(dists[i].equals(correct[i]))
