@@ -48,19 +48,19 @@ class TestDeleteRuleStatistics(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
 
         for rule in rules:
             hash_val = bracid.compute_hashable_key(rule)
-            my_vars.unique_rules.setdefault(hash_val, set()).add(rule.name)
-            my_vars.all_rules[rule.name] = rule
+            bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
+            bracid.all_rules[rule.name] = rule
         # Some random values
-        my_vars.seed_example_rule = {0: {1, 5}, 10: {0}, 4: {7}}
-        my_vars.seed_rule_example = {5: 0, 1: 0, 0: 10, 7: 4}
-        my_vars.closest_examples_per_rule = {0: {0, 3}, 1: {4}, 4: {8}}
-        my_vars.closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
+        bracid.seed_example_rule = {0: {1, 5}, 10: {0}, 4: {7}}
+        bracid.seed_rule_example = {5: 0, 1: 0, 0: 10, 7: 4}
+        bracid.closest_examples_per_rule = {0: {0, 3}, 1: {4}, 4: {8}}
+        bracid.closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
                                             4: Data(rule_id=1, dist=0.13), 5: Data(rule_id=76, dist=3)}
-        my_vars.examples_covered_by_rule = {0: {43, 12}, 1: {7}, 2: {3}}
+        bracid.examples_covered_by_rule = {0: {43, 12}, 1: {7}, 2: {3}}
         final_rules = {}
         # Delete entries for rules with IDs 0 and 1 from all statistics
         rule1 = rules.pop()
@@ -77,13 +77,13 @@ class TestDeleteRuleStatistics(TestCase):
         correct_closest_rule_per_example = {5: Data(rule_id=76, dist=3), 4: Data(rule_id=4, dist=0.25),
                                             0: Data(rule_id=4, dist=0.25), 3: Data(rule_id=4, dist=0.371141975308642)}
         correct_covered_by_rule = {2: {3}}
-        self.assertTrue(my_vars.seed_rule_example == correct_seed_rule_example)
-        self.assertTrue(my_vars.seed_example_rule == correct_seed_example_rule)
-        self.assertTrue(my_vars.unique_rules == correct_unique_rules)
-        self.assertTrue(my_vars.all_rules == correct_all_rules)
-        self.assertTrue(my_vars.closest_examples_per_rule == correct_closest_examples_per_rule)
-        self.assertTrue(my_vars.closest_rule_per_example == correct_closest_rule_per_example)
-        self.assertTrue(my_vars.examples_covered_by_rule == correct_covered_by_rule)
+        self.assertTrue(bracid.seed_rule_example == correct_seed_rule_example)
+        self.assertTrue(bracid.seed_example_rule == correct_seed_example_rule)
+        self.assertTrue(bracid.unique_rules == correct_unique_rules)
+        self.assertTrue(bracid.all_rules == correct_all_rules)
+        self.assertTrue(bracid.closest_examples_per_rule == correct_closest_examples_per_rule)
+        self.assertTrue(bracid.closest_rule_per_example == correct_closest_rule_per_example)
+        self.assertTrue(bracid.examples_covered_by_rule == correct_covered_by_rule)
 
     def test_delete_rule_statistics_collision(self):
         """Deletes a rule that shares its hash with other rules"""
@@ -122,21 +122,21 @@ class TestDeleteRuleStatistics(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        my_vars.minority_class = "apple"
-        my_vars.unique_rules = {}
-        my_vars.all_rules = {}
+        bracid.minority_class = "apple"
+        bracid.unique_rules = {}
+        bracid.all_rules = {}
         for rule in rules:
             hash_val = bracid.compute_hashable_key(rule)
-            my_vars.unique_rules.setdefault(hash_val, set()).add(rule.name)
-            my_vars.all_rules[rule.name] = rule
-        print("hashes", my_vars.unique_rules)
+            bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
+            bracid.all_rules[rule.name] = rule
+        print("hashes", bracid.unique_rules)
         # Some random values
-        my_vars.seed_example_rule = {0: {1, 5}, 10: {0}, 4: {7}}
-        my_vars.seed_rule_example = {5: 0, 1: 0, 0: 10, 7: 4}
-        my_vars.closest_examples_per_rule = {0: {0, 3}, 1: {4}, 4: {8}}
-        my_vars.closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
+        bracid.seed_example_rule = {0: {1, 5}, 10: {0}, 4: {7}}
+        bracid.seed_rule_example = {5: 0, 1: 0, 0: 10, 7: 4}
+        bracid.closest_examples_per_rule = {0: {0, 3}, 1: {4}, 4: {8}}
+        bracid.closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
                                             4: Data(rule_id=1, dist=0.13), 5: Data(rule_id=76, dist=3)}
-        my_vars.examples_covered_by_rule = {0: {43, 12}, 1: {7}, 2: {3}}
+        bracid.examples_covered_by_rule = {0: {43, 12}, 1: {7}, 2: {3}}
         final_rules = {}
         # Delete entries for rules with IDs 0 and 1 from all statistics
         rule1 = rules.pop()
@@ -153,10 +153,10 @@ class TestDeleteRuleStatistics(TestCase):
         correct_closest_rule_per_example = {5: Data(rule_id=76, dist=3), 4: Data(rule_id=4, dist=0.25),
                                             0: Data(rule_id=4, dist=0.25), 3: Data(rule_id=4, dist=0.371141975308642)}
         correct_covered_by_rule = {2: {3}}
-        self.assertTrue(my_vars.seed_rule_example == correct_seed_rule_example)
-        self.assertTrue(my_vars.seed_example_rule == correct_seed_example_rule)
-        self.assertTrue(my_vars.unique_rules == correct_unique_rules)
-        self.assertTrue(my_vars.all_rules == correct_all_rules)
-        self.assertTrue(my_vars.closest_examples_per_rule == correct_closest_examples_per_rule)
-        self.assertTrue(my_vars.closest_rule_per_example == correct_closest_rule_per_example)
-        self.assertTrue(my_vars.examples_covered_by_rule == correct_covered_by_rule)
+        self.assertTrue(bracid.seed_rule_example == correct_seed_rule_example)
+        self.assertTrue(bracid.seed_example_rule == correct_seed_example_rule)
+        self.assertTrue(bracid.unique_rules == correct_unique_rules)
+        self.assertTrue(bracid.all_rules == correct_all_rules)
+        self.assertTrue(bracid.closest_examples_per_rule == correct_closest_examples_per_rule)
+        self.assertTrue(bracid.closest_rule_per_example == correct_closest_rule_per_example)
+        self.assertTrue(bracid.examples_covered_by_rule == correct_covered_by_rule)

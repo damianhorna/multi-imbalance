@@ -40,11 +40,11 @@ class TestEvaluateF1Temporarily(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         # Reset as other tests change the data
-        my_vars.examples_covered_by_rule = {}
-        my_vars.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
-        my_vars.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
+        bracid.examples_covered_by_rule = {}
+        bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+        bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
 
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
@@ -60,24 +60,24 @@ class TestEvaluateF1Temporarily(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
+        bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
 
-        my_vars.closest_rule_per_example = {
+        bracid.closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
             2: Data(rule_id=5, dist=0.67015625),
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        my_vars.closest_examples_per_rule = {
+        bracid.closest_examples_per_rule = {
             0: {1, 4},
             1: {0, 3},
             2: {5},
             5: {2}
         }
-        correct_closest_rules = copy.deepcopy(my_vars.closest_rule_per_example)
-        correct_closest_examples = copy.deepcopy(my_vars.closest_examples_per_rule)
-        my_vars.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+        correct_closest_rules = copy.deepcopy(bracid.closest_rule_per_example)
+        correct_closest_examples = copy.deepcopy(bracid.closest_examples_per_rule)
+        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
         new_rule = pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.0), "C": Bounds(lower=3, upper=3),
                               "Class": "banana"}, name=0)
         correct_f1 = 0.8
@@ -100,12 +100,12 @@ class TestEvaluateF1Temporarily(TestCase):
             rule_id, dist = closest_rules[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
-        self.assertTrue(closest_examples == my_vars.closest_examples_per_rule)
+        self.assertTrue(closest_examples == bracid.closest_examples_per_rule)
         correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3}, my_vars.TN: {2, 4, 5}, my_vars.FN: set()}
         self.assertTrue(conf_matrix == correct_conf_matrix)
         # But now check that global variables remained unaffected by the changes
         correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
-        self.assertTrue(my_vars.conf_matrix == correct_conf_matrix)
-        self.assertTrue(correct_closest_rules == my_vars.closest_rule_per_example)
-        self.assertTrue(correct_closest_examples == my_vars.closest_examples_per_rule)
+        self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
+        self.assertTrue(correct_closest_rules == bracid.closest_rule_per_example)
+        self.assertTrue(correct_closest_examples == bracid.closest_examples_per_rule)
         self.assertTrue(correct_covered == covered)

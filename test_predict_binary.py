@@ -20,7 +20,7 @@ class TestPredict(TestCase):
         bracid = BRACID()
         classes = ["apple", "banana"]
         class_col_name = "Class"
-        my_vars.minority_class = classes[0]
+        bracid.minority_class = classes[0]
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": "banana"}, name=2),
@@ -78,10 +78,10 @@ class TestPredict(TestCase):
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
-        my_vars.minority_class = classes[0]
-        my_vars.examples_covered_by_rule = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.closest_rule_per_example = {}
+        bracid.minority_class = classes[0]
+        bracid.examples_covered_by_rule = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.closest_rule_per_example = {}
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": "banana"}, name=2),
@@ -92,7 +92,7 @@ class TestPredict(TestCase):
             0: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
                           "Class": "apple"}, name=0),
         }
-        my_vars.all_rules = rules
+        bracid.all_rules = rules
         model = {2: Support(minority=0.75, majority=0.25), 6: Support(minority=0.2, majority=0.8),
                  5: Support(minority=1.0, majority=0.0), 0: Support(minority=0, majority=1)}
         correct_covered = {}
@@ -107,9 +107,9 @@ class TestPredict(TestCase):
             })
 
         # Test that predictions didn't change internal statistics of the model
-        self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
-        self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
+        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
+        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
+        self.assertTrue(correct_rule_per_example == bracid.closest_rule_per_example)
 
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
@@ -147,10 +147,10 @@ class TestPredict(TestCase):
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
-        my_vars.minority_class = classes[0]
-        my_vars.examples_covered_by_rule = {}
-        my_vars.closest_examples_per_rule = {}
-        my_vars.closest_rule_per_example = {}
+        bracid.minority_class = classes[0]
+        bracid.examples_covered_by_rule = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.closest_rule_per_example = {}
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": "banana"}, name=2),
@@ -161,7 +161,7 @@ class TestPredict(TestCase):
             0: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
                           "Class": "apple"}, name=0),
         }
-        my_vars.all_rules = rules
+        bracid.all_rules = rules
         model = {2: Support(minority=0.75, majority=0.25), 6: Support(minority=0.2, majority=0.8),
                  5: Support(minority=1.0, majority=0.0), 0: Support(minority=0, majority=1)}
         correct_covered = {}
@@ -184,9 +184,9 @@ class TestPredict(TestCase):
             })
 
         # Test that predictions didn't change internal statistics of the model
-        self.assertTrue(correct_covered == my_vars.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == my_vars.closest_examples_per_rule)
-        self.assertTrue(correct_rule_per_example == my_vars.closest_rule_per_example)
+        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
+        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
+        self.assertTrue(correct_rule_per_example == bracid.closest_rule_per_example)
 
         self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
         self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))

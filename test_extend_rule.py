@@ -39,7 +39,7 @@ class TestExtendRule(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                       name=0),
@@ -57,9 +57,9 @@ class TestExtendRule(TestCase):
 
         k = 3
         # Reset from previous test to make sure they don't affect the outcomes of this test
-        my_vars.closest_examples_per_rule = {}
-        my_vars.closest_rule_per_example = {}
-        my_vars.examples_covered_by_rule = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.closest_rule_per_example = {}
+        bracid.examples_covered_by_rule = {}
         extended_rule = bracid.extend_rule(df, k, rules[0], class_col_name, lookup, min_max, classes)
         correct_rule = pd.Series({"A": "low", "B": (0.875, 1.25), "C": (1.75, 3.05), "Class": "apple"}, name=0)
         print(extended_rule)
@@ -94,7 +94,7 @@ class TestExtendRule(TestCase):
             }
         classes = ["apple", "banana"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        my_vars.minority_class = "apple"
+        bracid.minority_class = "apple"
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
                       name=0),
@@ -109,8 +109,8 @@ class TestExtendRule(TestCase):
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": "banana"}, name=5)
         ]
-        my_vars.closest_examples_per_rule = {}
-        my_vars.closest_rule_per_example = {}
+        bracid.closest_examples_per_rule = {}
+        bracid.closest_rule_per_example = {}
         k = 3
         extended_rule = bracid.extend_rule(df, k, rules[0], class_col_name, lookup, min_max, classes)
         correct_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
