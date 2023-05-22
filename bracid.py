@@ -11,9 +11,15 @@ from pandas.api.types import is_numeric_dtype, is_string_dtype
 import sklearn.datasets
 from sklearn.metrics import f1_score
 import numpy as np
+import enum
+import dataclasses
 
 import scripts.vars as my_vars
 
+class ExampleClass:
+    SAFE = enum.auto()
+    NOISY = enum.auto()
+    BORDERLINE = enum.auto()
 
 class MyException(Exception):
     pass
@@ -236,16 +242,16 @@ class BRACID:
         frequencies = labels.most_common(2)
         # print(frequencies)
         most_common = frequencies[0]
-        tag = my_vars.SAFE
+        tag = ExampleClass.SAFE
         if most_common[1] == total_labels and most_common[0] != label:
-            tag = my_vars.NOISY
+            tag = ExampleClass.NOISY
         elif most_common[1] < total_labels:
             second_most_common = frequencies[1]
             # print("most common: {} 2nd most common: {}".format(most_common, second_most_common))
 
             # Tie
             if most_common[1] == second_most_common[1] or most_common[0] != label:
-                tag = my_vars.BORDERLINE
+                tag = ExampleClass.BORDERLINE
         # print("neighbor labels: {} vs. {}".format(labels, label))
         # print("tag:", tag)
         return tag
@@ -1973,7 +1979,7 @@ class BRACID:
                                                                 only_uncovered_neighbors=True)
                     # Neighbors exist
                     # if neighbors is not None:
-                    if seed_tag == my_vars.SAFE:
+                    if seed_tag == ExampleClass.SAFE:
                         improved, generalized_rules, f1 = self.add_one_best_rule(df, neighbors, rule, rules, f1,
                                                                             class_col_name, counts, min_max, classes)
                     else:
@@ -1998,7 +2004,7 @@ class BRACID:
                 # Majority label
                 else:
                     n = k
-                    if seed_tag == my_vars.SAFE:
+                    if seed_tag == ExampleClass.SAFE:
                         n = 1
                     neighbors, dists, _ = self.find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes,
                                                                 label_type=my_vars.SAME_LABEL_AS_RULE,
