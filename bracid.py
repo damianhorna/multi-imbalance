@@ -24,6 +24,12 @@ class ExampleClass:
 class MyException(Exception):
     pass
 
+@dataclasses.dataclass
+class ConfusionMatrix:
+    TP: set = dataclasses.field(default_factory=set)
+    TN: set = dataclasses.field(default_factory=set)
+    FP: set = dataclasses.field(default_factory=set)
+    FN: set = dataclasses.field(default_factory=set)
 
 # (ID of rule, distance of rule to the closest example) is stored per example in a named tuple
 Data = namedtuple("Data", ["rule_id", "dist"])
@@ -32,8 +38,6 @@ Support = namedtuple("Support", ["minority", "majority"])
 Predictions = namedtuple("Predictions", ["label", "confidence"])
 # Keep original rule and delete the corresponding duplicate rule which is at duplicate_idx in the list of rules
 Duplicates = namedtuple("Duplicates", ["original", "duplicate", "duplicate_idx"])
-
-
 
 
 class BRACID:
@@ -49,7 +53,7 @@ class BRACID:
         self.closest_rule_per_example = {}
         # {rule ri: set(example ei, example ej)}
         self.closest_examples_per_rule = {}
-        self.conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.TN: set(), my_vars.FN: set()}
+        self.conf_matrix = ConfusionMatrix()
         # {hash of rule ri: set(ID of rule ri, ID of rule rj)}
         self.unique_rules = {}
         # {ID of rule ri: rule ri (=pd.Series)}
@@ -1079,24 +1083,24 @@ class BRACID:
         # print("example label: {} vs. rule label: {}".format(predicted, true))
         predicted_id = example.name
         # Potentially remove example from confusion matrix
-        conf_matrix[my_vars.TP].discard(predicted_id)
-        conf_matrix[my_vars.TN].discard(predicted_id)
-        conf_matrix[my_vars.FP].discard(predicted_id)
-        conf_matrix[my_vars.FN].discard(predicted_id)
+        conf_matrix.TP.discard(predicted_id)
+        conf_matrix.TN.discard(predicted_id)
+        conf_matrix.FP.discard(predicted_id)
+        conf_matrix.FN.discard(predicted_id)
         # Add updated value
         if true == positive_class:
             if predicted == true:
-                conf_matrix[my_vars.TP].add(predicted_id)
+                conf_matrix.TP.add(predicted_id)
                 # print("pred: {} <-> true: {} -> tp".format(predicted, true))
             else:
-                conf_matrix[my_vars.FN].add(predicted_id)
+                conf_matrix.FN.add(predicted_id)
                 # print("pred: {} <-> true: {} -> fn".format(predicted, true))
         else:
             if predicted == true:
-                conf_matrix[my_vars.TN].add(predicted_id)
+                conf_matrix.TN.add(predicted_id)
                 # print("pred: {} <-> true: {} -> tn".format(predicted, true))
             else:
-                conf_matrix[my_vars.FP].add(predicted_id)
+                conf_matrix.FP.add(predicted_id)
                 # print("pred: {} <-> true: {} -> fp".format(predicted, true))
         return conf_matrix
 
@@ -1117,10 +1121,10 @@ class BRACID:
         """
         f1 = 0.0
         if conf_matrix is not None:
-            tp = len(conf_matrix[my_vars.TP])
-            fp = len(conf_matrix[my_vars.FP])
-            fn = len(conf_matrix[my_vars.FN])
-            # tn = len(self.conf_matrix[my_vars.TN])
+            tp = len(conf_matrix.TP)
+            fp = len(conf_matrix.FP)
+            fn = len(conf_matrix.FN)
+            # tn = len(self.conf_matrix.TN)
             precision = 0
             recall = 0
             prec_denom = tp + fp
@@ -2343,7 +2347,7 @@ class BRACID:
         self.seed_rule_example = {}
         self.closest_rule_per_example = {}
         self.closest_examples_per_rule = {}
-        self.conf_matrix = {my_vars.TP: set(), my_vars.FP: set(), my_vars.TN: set(), my_vars.FN: set()}
+        self.conf_matrix = ConfusionMatrix()
         self.examples_covered_by_rule = {}
         # Initial rule (with the highest index) will be derived from seed examples, so we already know the maximum ID now
         max_example_id = df.index.max()
