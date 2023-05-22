@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 import scripts.vars as my_vars
-from scripts.bracid import BRACID
+from scripts.bracid import BRACID, ConfusionMatrix
 
 
 class TestUpdateConfusionMatrix(TestCase):
@@ -12,7 +12,7 @@ class TestUpdateConfusionMatrix(TestCase):
     def test_update_confusion_matrix(self):
         """Tests that TP, FN, FP, TN are updated correctly"""
         bracid = BRACID()
-        bracid.conf_matrix = {my_vars.TP: {0}, my_vars.FP: {2}, my_vars.TN: {1}, my_vars.FN: set()}
+        bracid.conf_matrix = ConfusionMatrix(TP= {0}, FP= {2}, TN= {1}, FN= set())
         positive_class = "apple"
         class_col_name = "Class"
         examples = [
@@ -33,10 +33,10 @@ class TestUpdateConfusionMatrix(TestCase):
                                                       bracid.conf_matrix)  # FN
         bracid.conf_matrix = bracid.update_confusion_matrix(examples[3], rules[1], positive_class, class_col_name,
                                                       bracid.conf_matrix)  # TN
-        correct = {
-            my_vars.TP: {0, 3},
-            my_vars.TN: {1, 6},
-            my_vars.FN: {5},
-            my_vars.FP: {2, 4},
-        }
+        correct = ConfusionMatrix(
+            TP= {0, 3},
+            TN= {1, 6},
+            FN= {5},
+            FP= {2, 4},
+        )
         self.assertTrue(correct == bracid.conf_matrix)

@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 
 # from scripts.utils import evaluate_f1_initialize_confusion_matrix, Bounds
-from scripts.bracid import BRACID, Bounds
+from scripts.bracid import BRACID, Bounds, ConfusionMatrix
 import scripts.vars as my_vars
 
 
@@ -76,7 +76,8 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
             4: (0, 0.015625),
             5: (2, 0.67015625)}
         correct_closest_examples_per_rule = {1: {0, 3}, 0: {1, 4}, 5: {2}, 2: {5}}
-        correct_conf_matrix = {'tp': {0, 1}, 'fp': {3, 4}, 'tn': {2, 5}, 'fn': set()}
+        # correct_conf_matrix = {'tp': {0, 1}, 'fp': {3, 4}, 'tn': {2, 5}, 'fn': set()}
+        correct_conf_matrix = ConfusionMatrix(TP={0, 1}, FP={3, 4}, TN={2, 5}, FN=set())
         self.assertTrue(f1 == correct_f1)
         self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
         for example_id in bracid.closest_rule_per_example:

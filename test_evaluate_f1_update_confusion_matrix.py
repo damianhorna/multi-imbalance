@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.bracid import BRACID, Data, Bounds
+from scripts.bracid import BRACID, Data, Bounds, ConfusionMatrix
 import scripts.vars as my_vars
 
 
@@ -68,7 +68,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
         bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3, 4}, my_vars.TN: {2, 5}, my_vars.FN: set()}
+        bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
         new_rule = pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.0), "C": Bounds(lower=3, upper=3),
                               "Class": "banana"}, name=0)
         # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
@@ -87,7 +87,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
-        correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: {3}, my_vars.TN: {2, 4, 5}, my_vars.FN: set()}
+        correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3}, TN= {2, 4, 5}, FN= set())
         self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
 
     def test_evaluate_f1_update_confusion_matrix_not_updated(self):
@@ -148,7 +148,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        bracid.conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         new_rule = pd.Series({"A": "low", "B": (0.5, 0.5), "C": (3, 3), "Class": "banana"}, name=4)
         correct_f1 = 2*1*0.5/1.5
 
@@ -165,5 +165,5 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
-        correct_conf_matrix = {my_vars.TP: {0, 1}, my_vars.FP: set(), my_vars.TN: {2, 5}, my_vars.FN: {3, 4}}
+        correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
