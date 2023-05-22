@@ -5,13 +5,11 @@ NOMINAL = 0
 NUMERIC = 1
 CONDITIONAL = "Conditional"
 COVERED = "is_covered"
-CLASSES = []
-SAFE = "safe"
-NOISY = "noisy"
-BORDERLINE = "borderline"
+# CLASSES = []
+
 TAG = "tag"
 DIST = "dist"
-DISTANCE_MATRIX = {}
+# DISTANCE_MATRIX = {}
 # Number of digits used for precision when comparing floats
 PRECISION = 0.00001
 TP = "tp"
@@ -28,20 +26,20 @@ PREDICTION_CONFIDENCE = "confidence_for_prediction"
 # Indicates that a rule has a unique hash
 UNIQUE_RULE = -1
 # {example ei: set(rule ri for which ei is the seed)}
-seed_example_rule = {}
+# seed_example_rule = {}
 # {rule ri: example ei is seed for ri}
-seed_rule_example = {}
+# seed_rule_example = {}
 # {rule ri: set(example ei)}
-examples_covered_by_rule = {}
+# examples_covered_by_rule = {}
 # {example ei: tuple(rule ri, distance di)}
-closest_rule_per_example = {}
+# closest_rule_per_example = {}
 # {rule ri: set(example ei, example ej)}
-closest_examples_per_rule = {}
-conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
+# closest_examples_per_rule = {}
+# conf_matrix = {TP: set(), FP: set(), TN: set(), FN: set()}
 # {hash of rule ri: set(ID of rule ri, ID of rule rj)}
-unique_rules = {}
+# unique_rules = {}
 # {ID of rule ri: rule ri (=pd.Series)}
-all_rules = {}
-latest_rule_id = 0
-minority_class = ""
+# all_rules = {}
+# latest_rule_id = 0
+# minority_class = ""
 
