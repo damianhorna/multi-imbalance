@@ -51,10 +51,10 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         correct_closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
                                             4: Data(rule_id=0, dist=0.13), 5: Data(rule_id=76, dist=3)}
         correct_covered_by_rule = {2: {3}, 0: {43, 12, 7}}
-        self.assertTrue(bracid.seed_rule_example == correct_seed_rule_example)
-        self.assertTrue(bracid.seed_example_rule == correct_seed_example_rule)
-        self.assertTrue(bracid.unique_rules == correct_unique_rules)
-        self.assertTrue(bracid.all_rules == correct_all_rules)
-        self.assertTrue(bracid.closest_examples_per_rule == correct_closest_examples_per_rule)
-        self.assertTrue(bracid.closest_rule_per_example == correct_closest_rule_per_example)
-        self.assertTrue(bracid.examples_covered_by_rule == correct_covered_by_rule)
+        self.assertEqual(bracid.seed_rule_example, correct_seed_rule_example)
+        self.assertEqual(bracid.seed_example_rule, correct_seed_example_rule)
+        self.assertEqual(bracid.unique_rules, correct_unique_rules)
+        self.assertEqual(bracid.all_rules, correct_all_rules)
+        self.assertEqual(bracid.closest_examples_per_rule, correct_closest_examples_per_rule)
+        self.assertEqual(bracid.closest_rule_per_example, correct_closest_rule_per_example)
+        self.assertEqual(bracid.examples_covered_by_rule, correct_covered_by_rule)

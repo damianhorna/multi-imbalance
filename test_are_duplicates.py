@@ -19,7 +19,7 @@ class TestAreDuplicates(TestCase):
                        "Class": "apple"}, name=2)
             ]
         duplicate = bracid._are_duplicates(rules[0], rules[1])
-        self.assertTrue(duplicate is False)
+        self.assertFalse(duplicate)
 
     def test_are_duplicates_nominal(self):
         """Tests that no duplicate rules are detected if they are different in a nominal feature"""
@@ -31,7 +31,7 @@ class TestAreDuplicates(TestCase):
                        "Class": "banana"}, name=2)
         ]
         duplicate = bracid._are_duplicates(rules[0], rules[1])
-        self.assertTrue(duplicate is False)
+        self.assertFalse(duplicate)
 
     def test_are_duplicates_true(self):
         """Tests that two rules are detected as duplicates if only the rule ID is different in both rules"""
@@ -43,7 +43,7 @@ class TestAreDuplicates(TestCase):
                        "Class": "apple"}, name=2)
             ]
         duplicate = bracid._are_duplicates(rules[0], rules[1])
-        self.assertTrue(duplicate is True)
+        self.assertTrue(duplicate)
 
     def test_are_duplicates_length(self):
         """Tests that two rules of different lengths can never be duplicates"""
@@ -55,4 +55,4 @@ class TestAreDuplicates(TestCase):
                        "Class": "apple"}, name=2)
             ]
         duplicate = bracid._are_duplicates(rules[0], rules[1])
-        self.assertTrue(duplicate is False)
+        self.assertFalse(duplicate)

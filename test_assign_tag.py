@@ -15,7 +15,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "a", "a", "a"])
         tag = bracid.assign_tag(labels, label)
-        self.assertTrue(tag == SAFE)
+        self.assertEqual(tag, SAFE)
 
     def test_assign_tag_safe(self):
         """Tests if "safe" is assigned correctly"""
@@ -23,7 +23,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "a", "c"])
         tag = bracid.assign_tag(labels, label)
-        self.assertTrue(tag == SAFE)
+        self.assertEqual(tag, SAFE)
 
     def test_assign_tag_noisy(self):
         """Tests if "safe" is assigned correctly"""
@@ -31,7 +31,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["b", "b", "b", "b"])
         tag = bracid.assign_tag(labels, label)
-        self.assertTrue(tag == NOISY)
+        self.assertEqual(tag, NOISY)
 
     def test_assign_tag_borderline_tie(self):
         """Tests if "borderline" is assigned correctly in case of ties"""
@@ -39,7 +39,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "a", "b"])
         tag = bracid.assign_tag(labels, label)
-        self.assertTrue(tag == BORDERLINE)
+        self.assertEqual(tag, BORDERLINE)
 
     def test_assign_tag_borderline(self):
         """Tests if "borderline" is assigned correctly"""
@@ -47,4 +47,4 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "b", "c"])
         tag = bracid.assign_tag(labels, label)
-        self.assertTrue(tag == BORDERLINE)
+        self.assertEqual(tag, BORDERLINE)

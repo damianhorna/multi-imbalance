@@ -53,5 +53,5 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
             my_vars.PREDICTED_LABEL: ["banana", "apple", "banana", "apple", "apple", "banana"],
             my_vars.PREDICTION_CONFIDENCE: [0.4, 1, 0.4, 1, 1, 0.4]
         })
-        self.assertTrue(correct_preds[my_vars.PREDICTION_CONFIDENCE].equals(preds_df[my_vars.PREDICTION_CONFIDENCE]))
-        self.assertTrue(np.array_equal(correct_preds[my_vars.PREDICTED_LABEL], preds_df[my_vars.PREDICTED_LABEL]))
+        pd.testing.assert_series_equal(correct_preds[my_vars.PREDICTION_CONFIDENCE], preds_df[my_vars.PREDICTION_CONFIDENCE])
+        np.testing.assert_array_equal(correct_preds[my_vars.PREDICTED_LABEL], preds_df[my_vars.PREDICTED_LABEL])

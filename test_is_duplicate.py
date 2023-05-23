@@ -23,7 +23,7 @@ class TestIsDuplicate(TestCase):
                               "Class": "apple"}, name=2)
         bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
-        self.assertTrue(rule_id == 0)
+        self.assertEqual(rule_id, 0)
 
     def test_is_duplicate_false(self):
         """Tests if no duplicate rule is detected"""

@@ -70,7 +70,7 @@ class TestAddTags(TestCase):
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(tagged.equals(correct))
+        pd.testing.assert_frame_equal(tagged, correct)
 
     def test_add_tags_noisy_safe(self):
         """Add tags when using nominal and numeric features and assigning noisy and safe as tags"""
@@ -130,7 +130,7 @@ class TestAddTags(TestCase):
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(tagged.equals(correct))
+        pd.testing.assert_frame_equal(tagged, correct)
 
     def test_add_tags_nan(self):
         """Add tags when using nominal and numeric features when all examples contain at least one NaN value"""
@@ -192,7 +192,7 @@ class TestAddTags(TestCase):
         bracid.examples_covered_by_rule = {}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(tagged.equals(correct))
+        pd.testing.assert_frame_equal(tagged, correct)
 
     def test_add_tags_all_tags(self):
         """Add tags when using nominal and numeric features and assigning noisy, borderline and safe as tags"""
@@ -252,4 +252,4 @@ class TestAddTags(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
         tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
-        self.assertTrue(tagged.equals(correct))
+        pd.testing.assert_frame_equal(tagged, correct)

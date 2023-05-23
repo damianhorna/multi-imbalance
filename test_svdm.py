@@ -51,9 +51,9 @@ class TestSvdm(TestCase):
             if is_string_dtype(col):
                 dist = bracid.svdm(col, rule, lookup, classes)
                 if j == 0:
-                    self.assertTrue(np.allclose(correct[0], dist))
+                    np.testing.assert_allclose(correct[0], dist)
                 else:
-                    self.assertTrue(dist.equals(correct[j]))
+                    pd.testing.assert_series_equal(dist, correct[j])
                 j += 1
 
     def test_svdm_nan_rule(self):
@@ -92,7 +92,7 @@ class TestSvdm(TestCase):
             col = df[col_name]
             if is_string_dtype(col):
                 dist = bracid.svdm(col, rule, lookup, classes)
-                self.assertTrue(dist.equals(correct))
+                pd.testing.assert_series_equal(dist, correct, check_names=False)
 
     def test_svdm_single_feature(self):
         """Tests that correct svdm is computed for 1 nominal feature"""
@@ -132,7 +132,7 @@ class TestSvdm(TestCase):
             col = df[col_name]
             if is_string_dtype(col):
                 dist = bracid.svdm(col, rule, lookup, classes)
-        self.assertTrue(dist.equals(correct))
+        pd.testing.assert_series_equal(dist, correct, check_names=False)
 
     def test_svdm_single_feature2(self):
         """Tests that correct svdm is computed for 1 nominal feature"""
@@ -173,7 +173,7 @@ class TestSvdm(TestCase):
             col = df[col_name]
             if is_string_dtype(col):
                 dist = bracid.svdm(col, rule, lookup, classes)
-        self.assertTrue(dist.equals(correct))
+        pd.testing.assert_series_equal(dist, correct, check_names=False)
 
     def test_svdm_multiple_features(self):
         """Tests that correct svdm is computed for 2 nominal features"""
@@ -233,7 +233,7 @@ class TestSvdm(TestCase):
             col = df[col_name]
             if is_string_dtype(col):
                 dists.append(bracid.svdm(col, rule, lookup, classes))
-            self.assertTrue(dists[i].equals(correct[i]))
+            pd.testing.assert_series_equal(dists[i], correct[i], check_names=False)
 
     def test_svdm_multiple_features_multiple_rules(self):
         """Tests that correct svdm is computed for 2 nominal features with 2 rules"""
@@ -295,4 +295,4 @@ class TestSvdm(TestCase):
                 col = df[col_name]
                 if is_string_dtype(col):
                     dists.append(bracid.svdm(col, rule, lookup, classes))
-                self.assertTrue(dists[i].equals(correct[i]))
+                pd.testing.assert_series_equal(dists[i], correct[i], check_names=False)

@@ -82,13 +82,13 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
             4: Data(rule_id=0, dist=0.0),
             5: Data(rule_id=2, dist=0.67015625)}
         print(f1, correct_f1)
-        self.assertTrue(f1 == correct_f1)
+        self.assertEqual(f1, correct_f1)
         for example_id in bracid.closest_rule_per_example:
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
         correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3}, TN= {2, 4, 5}, FN= set())
-        self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
+        self.assertEqual(bracid.conf_matrix, correct_conf_matrix)
 
     def test_evaluate_f1_update_confusion_matrix_not_updated(self):
         """Tests what happens if input has a numeric and a nominal feature and a rule that predicts an example is
@@ -160,10 +160,10 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        self.assertTrue(f1 == correct_f1)
+        self.assertEqual(f1, correct_f1)
         for example_id in bracid.closest_rule_per_example:
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
         correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
-        self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
+        self.assertEqual(bracid.conf_matrix, correct_conf_matrix)

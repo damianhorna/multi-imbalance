@@ -63,7 +63,7 @@ class TestExtendRule(TestCase):
         extended_rule = bracid.extend_rule(df, k, rules[0], class_col_name, lookup, min_max, classes)
         correct_rule = pd.Series({"A": "low", "B": (0.875, 1.25), "C": (1.75, 3.05), "Class": "apple"}, name=0)
         print(extended_rule)
-        self.assertTrue(extended_rule.equals(correct_rule))
+        pd.testing.assert_series_equal(extended_rule, correct_rule, check_names=False)
 
     def test_extend_rule_no_change(self):
         """Test that a rule containing nominal and numeric features isn't extended due to no neighbors"""
@@ -114,4 +114,4 @@ class TestExtendRule(TestCase):
         k = 3
         extended_rule = bracid.extend_rule(df, k, rules[0], class_col_name, lookup, min_max, classes)
         correct_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
-        self.assertTrue(extended_rule.equals(correct_rule))
+        pd.testing.assert_series_equal(extended_rule, correct_rule, check_names=False)

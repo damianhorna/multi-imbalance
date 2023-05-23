@@ -88,7 +88,7 @@ class TestFindNeighbors(TestCase):
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False)
         if neighbors is not None:
             self.assertTrue(neighbors.shape[0] == k)
-        self.assertTrue(neighbors.equals(correct))
+        pd.testing.assert_frame_equal(neighbors, correct)
 
     def test_find_neighbors_numeric_nominal_label_type(self):
         """Tests what happens if input has a numeric and a nominal feature and we vary label_type as parameter"""
@@ -152,9 +152,9 @@ class TestFindNeighbors(TestCase):
         print(neighbors_all)
         print(neighbors_same)
         print(neighbors_opposite)
-        self.assertTrue(neighbors_all.equals(correct_all))
-        self.assertTrue(neighbors_same.equals(correct_same))
-        self.assertTrue(neighbors_opposite.equals(correct_opposite))
+        pd.testing.assert_frame_equal(neighbors_all, correct_all)
+        pd.testing.assert_frame_equal(neighbors_same, correct_same)
+        pd.testing.assert_frame_equal(neighbors_opposite, correct_opposite)
 
     def test_find_neighbors_numeric_nominal_covered(self):
         """Tests what happens if input has a numeric and a nominal feature and some examples are already covered
@@ -206,7 +206,7 @@ class TestFindNeighbors(TestCase):
         neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, lookup, min_max, classes,
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                 True)
-        self.assertTrue(neighbors.equals(correct))
+        pd.testing.assert_frame_equal(neighbors, correct)
 
     def test_find_neighbors_numeric_nominal_stats(self):
         """Tests that global statistics are updated accordingly"""
@@ -282,16 +282,16 @@ class TestFindNeighbors(TestCase):
         neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, lookup, min_max, classes,
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                 False)
-        self.assertTrue(neighbors.equals(correct))
-        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
+        pd.testing.assert_frame_equal(neighbors, correct)
+        self.assertEqual(correct_covered, bracid.examples_covered_by_rule)
+        self.assertEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
         for example_id, (rule_id, dist) in correct_closest_rule_per_example.items():
             features = bracid.all_rules[rule_id].size
             self.assertTrue(example_id in bracid.closest_rule_per_example)
             other_id, other_dist = bracid.closest_rule_per_example[example_id]
             other_features = bracid.all_rules[other_id].size
-            self.assertTrue(rule_id == other_id)
-            self.assertTrue(features == other_features)
+            self.assertEqual(rule_id, other_id)
+            self.assertEqual(features, other_features)
             self.assertTrue(abs(dist-other_dist) < 0.0001)
 
     def test_find_neighbors_numeric_nominal_covers(self):
@@ -361,11 +361,11 @@ class TestFindNeighbors(TestCase):
         neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, lookup, min_max, classes,
                                                 label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                 False)
-        self.assertTrue(neighbors.equals(correct))
-        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
+        pd.testing.assert_frame_equal(neighbors, correct)
+        self.assertEqual(correct_covered, bracid.examples_covered_by_rule)
+        self.assertEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
         for example_id, (rule_id, dist) in correct_closest_rule_per_example.items():
             self.assertTrue(example_id in bracid.closest_rule_per_example)
             other_id, other_dist = bracid.closest_rule_per_example[example_id]
-            self.assertTrue(rule_id == other_id)
+            self.assertEqual(rule_id, other_id)
             self.assertTrue(abs(dist - other_dist) < 0.0001)

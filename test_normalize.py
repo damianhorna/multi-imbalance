@@ -19,9 +19,9 @@ class TestNormalize(TestCase):
         assert(df.shape == (3, 2))
         for col_name in df:
             if col_name == "A":
-                self.assertTrue(df["A"].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df["A"], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             else:
-                self.assertTrue(df["B"].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df["B"], pd.Series([1.0, 0.5, 0.0]), check_names=False)
 
     def test_normalize_floats_dataframe(self):
         """
@@ -33,9 +33,9 @@ class TestNormalize(TestCase):
         assert(df.shape == (3, 2))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             else:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
 
     def test_normalize_nominal_dataframe(self):
         """
@@ -47,11 +47,11 @@ class TestNormalize(TestCase):
         assert (df.shape == (3, 3))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             elif col_idx == 1:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
             else:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series(["A", "B", "C"])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series(["A", "B", "C"]), check_names=False)
 
     def test_normalize_ints_series(self):
         """
@@ -67,9 +67,9 @@ class TestNormalize(TestCase):
                 df[col_name] = bracid.normalize_series(col)
         for col_name in df.columns:
             if col_name == "A":
-                self.assertTrue(df["A"].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df["A"], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             else:
-                self.assertTrue(df["B"].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df["B"], pd.Series([1.0, 0.5, 0.0]), check_names=False)
 
     def test_normalize_floats_series(self):
         """
@@ -81,9 +81,9 @@ class TestNormalize(TestCase):
         assert(df.shape == (3, 2))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             else:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
 
     def test_normalize_nominal_series(self):
         """
@@ -95,8 +95,8 @@ class TestNormalize(TestCase):
         assert (df.shape == (3, 3))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([0.0, 0.5, 1.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             elif col_idx == 1:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series([1.0, 0.5, 0.0])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
             else:
-                self.assertTrue(df.iloc[:, col_idx].equals(pd.Series(["A", "B", "C"])))
+                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series(["A", "B", "C"]), check_names=False)

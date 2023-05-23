@@ -52,5 +52,5 @@ class TestCv(TestCase):
 
         correct_micro = 1/3
         correct_classwise = np.array([0, 0.5])
-        self.assertTrue(np.array_equal(correct_classwise, classwise_f1))
-        self.assertTrue(correct_micro == micro_f1)
+        np.testing.assert_array_equal(correct_classwise, classwise_f1)
+        self.assertEqual(correct_micro, micro_f1)

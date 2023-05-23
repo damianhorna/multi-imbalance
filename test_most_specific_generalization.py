@@ -20,7 +20,7 @@ class TestMostSpecificGeneralization(TestCase):
             # print("example", type(nearest_example), nearest_example, type(nearest_example["A"]), nearest_example["A"])
             rule = rules[i]
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(rule.equals(correct))
+            pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_drop_nominal(self):
         """Generalization for nominal -> feature is dropped"""
@@ -33,7 +33,7 @@ class TestMostSpecificGeneralization(TestCase):
             nearest_example = dataset.iloc[i]
             rule = rules[i]
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(rule.equals(correct))
+            pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_lower(self):
         """Generalization for numeric feature -> lower bound is updated"""
@@ -47,7 +47,7 @@ class TestMostSpecificGeneralization(TestCase):
             nearest_example = dataset.iloc[i]
             rule = rules[i]
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(rule.equals(correct))
+            pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_upper(self):
         """Generalization for numeric feature -> upper bound is updated"""
@@ -61,7 +61,7 @@ class TestMostSpecificGeneralization(TestCase):
             nearest_example = dataset.iloc[i]
             rule = rules[i]
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(rule.equals(correct))
+            pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_multiple(self):
         """Generalization for using all cases at the same time for numeric and nominal features"""
@@ -76,7 +76,7 @@ class TestMostSpecificGeneralization(TestCase):
             nearest_example = dataset.iloc[i]
             rule = rules[i]
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(rule.equals(correct))
+            pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_multiple_rules(self):
         """Generalization for using all cases at the same time for numeric and nominal features with multiple rules"""
@@ -94,4 +94,4 @@ class TestMostSpecificGeneralization(TestCase):
             nearest_example = dataset.iloc[i]
             rule = rules[i]
             updated_rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            self.assertTrue(updated_rule.equals(correct[i]))
+            pd.testing.assert_series_equal(updated_rule, correct[i], check_names=False)
