@@ -24,7 +24,7 @@ class RBO(BaseSampler):
 
     def __init__(self, gamma: float, step: int, iterations: int, k: int,
                  distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
-                 lambda x, y: np.linalg.norm(x - y, axis=1)) -> None:
+                 lambda x, y: np.linalg.norm(x - y, ord=1, axis=1)) -> None:
         """
         :param gamma:
             spread of radial basis function
@@ -77,31 +77,34 @@ class RBO(BaseSampler):
 
         while len(minority_examples) + len(S) < len(majority_examples):
             random_minority_index = random.randint(0, len(minority_examples) - 1)
-            current_minority_example = minority_examples[random_minority_index].copy()
+            current_x = minority_examples[random_minority_index].copy()
             nearest_index = minority_nearest[random_minority_index]
             nearest_classes = y[nearest_index]
             x_majority = X[nearest_index[nearest_classes != minority_class]]
             x_minority = X[nearest_index[nearest_classes == minority_class]]
 
-            mutual_potential = self._potential(current_minority_example, x_majority) - self._potential(
-                current_minority_example, x_minority)
+            mutual_potential = self.mutual_class_potential(current_x, x_majority, x_minority)
 
             for i in range(self.iterations):
                 direction = np.zeros(feature_count)
                 direction[np.random.randint(feature_count)] = 1
                 sign = -1 if random.randint(0, 1) else 1
-                new_x = current_minority_example + direction * sign * self.step
-                new_potential = self._potential(new_x, x_majority) - self._potential(new_x, x_minority)
+                new_x = current_x + direction * sign * self.step
+                new_potential = self.mutual_class_potential(new_x, x_majority, x_minority)
                 if new_potential < mutual_potential:
-                    current_minority_example = new_x
-                    mutual_potential = self._potential(current_minority_example, x_majority) - self._potential(
-                        current_minority_example, x_minority)
+                    current_x = new_x
+                    mutual_potential = self._potential(current_x, x_majority) - self._potential(
+                        current_x, x_minority)
 
-            S.append(current_minority_example)
+            S.append(current_x)
         return np.array(S)
 
-    def _potential(self, example: np.ndarray, collection: np.ndarray) -> float:
-        distances = self.distance_function(example, collection)
+    def mutual_class_potential(self, x, x_majority, x_minority):
+        return self._potential(x, x_majority) - self._potential(
+            x, x_minority)
+
+    def _potential(self, x: np.ndarray, collection: np.ndarray) -> float:
+        distances = self.distance_function(x, collection)
         weights = np.exp(- (distances / self.gamma) ** 2)
         total_weight = weights.sum()
         return total_weight
