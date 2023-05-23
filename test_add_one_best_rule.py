@@ -107,8 +107,8 @@ class TestAddOneBestRule(TestCase):
             5: {2}
         }
         correct_f1 = 2 * 0.5 * 1 / 1.5
-        self.assertTrue(improved is True)
-        self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
+        self.assertTrue(improved)
+        self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
@@ -117,9 +117,9 @@ class TestAddOneBestRule(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
-        self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
-        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
+        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
+        self.assertEqual(correct_closest_examples_per_rule, bracid.closest_examples_per_rule)
 
     def test_add_one_best_rule_update_stats(self):
         """Tests that rule set is updated when a generalized rule improves F1 and also the mapping of closest rule per
@@ -219,8 +219,8 @@ class TestAddOneBestRule(TestCase):
             5: {2}
         }
         correct_f1 = 2 * 0.5 * 1 / 1.5
-        self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
-        self.assertTrue(improved is True)
+        self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
+        self.assertTrue(improved)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
@@ -229,11 +229,11 @@ class TestAddOneBestRule(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
-        self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
+        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
         print(correct_closest_examples_per_rule)
         print(bracid.closest_examples_per_rule)
-        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
+        self.assertEqual(correct_closest_examples_per_rule, bracid.closest_examples_per_rule)
 
     def test_add_one_best_rule_no_update(self):
         """Tests that rule set is not updated when no generalized rule improves F1"""
@@ -312,9 +312,9 @@ class TestAddOneBestRule(TestCase):
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        self.assertTrue(improved is False)
+        self.assertFalse(improved)
         correct_f1 = initial_f1
-        self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
+        self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
         correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP= set(), TN={2, 5}, FN={3, 4})
@@ -327,8 +327,8 @@ class TestAddOneBestRule(TestCase):
         print(correct_generalized_rule)
         print("updated")
         print(updated_rules)
-        self.assertTrue(updated_rules[test_idx].equals(correct_generalized_rule))
-        self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
+        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
 
     def test_add_one_best_rule_unique(self):
             """Tests that the best rule found by this function is unique and correspondingly updates relevant
@@ -422,9 +422,9 @@ class TestAddOneBestRule(TestCase):
                 4: Data(rule_id=6, dist=0.015625),
                 5: Data(rule_id=2, dist=0.67015625),
                 8: Data(rule_id=6, dist=0)}
-            self.assertTrue(improved is True)
+            self.assertTrue(improved)
             correct_f1 = 2 * 0.5 * 1 / 1.5
-            self.assertTrue(abs(correct_f1 - f1) < my_vars.PRECISION)
+            self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
             correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
 
             # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
@@ -434,7 +434,8 @@ class TestAddOneBestRule(TestCase):
                     rule_id, dist = bracid.closest_rule_per_example[example_id]
                     self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                                     abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
-            self.assertTrue(updated_rules[5].equals(correct_generalized_rule))
-            self.assertTrue(bracid.conf_matrix == correct_confusion_matrix)
+            pd.testing.assert_series_equal(updated_rules[5], correct_generalized_rule)
+            self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
             # Duplicate rule was deleted so that the last rule now corresponds to the rule with id
-            self.assertTrue(len(rules) - 1 == len(updated_rules) and updated_rules[-1].name == 6)
+            self.assertEqual(len(rules) - 1, len(updated_rules))
+            self.assertEqual(updated_rules[-1].name, 6)

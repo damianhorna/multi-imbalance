@@ -26,7 +26,7 @@ class TestF1(TestCase):
         score = bracid.f1(bracid.conf_matrix)
         # Assume that positive class is "a"
         correct = 2*1/3*2/3
-        self.assertTrue(score == correct)
+        self.assertEqual(score, correct)
 
     def test_f1_high_precision(self):
         """Tests if F1 is computed correctly"""
@@ -40,7 +40,7 @@ class TestF1(TestCase):
         # Assume that positive class is "a"
         correct = 2*3/7*3/4 / (3/7 + 3/4)
         score = bracid.f1(bracid.conf_matrix)
-        self.assertTrue(score == correct)
+        self.assertEqual(score, correct)
 
     def test_f1_zero(self):
         """Tests if F1 is 0 if precision and recall are 0"""
@@ -49,7 +49,7 @@ class TestF1(TestCase):
         # Assume that positive class is "a"
         correct = 0
         score = bracid.f1(bracid.conf_matrix)
-        self.assertTrue(score == correct)
+        self.assertEqual(score, correct)
 
     def test_f1_none(self):
         """Tests if F1 is 0 if confusion matrix is None"""
@@ -58,7 +58,7 @@ class TestF1(TestCase):
         # Assume that positive class is "a"
         correct = 0
         score = bracid.f1(bracid.conf_matrix)
-        self.assertTrue(score == correct)
+        self.assertEqual(score, correct)
 
 
 

@@ -41,8 +41,8 @@ class TestPredict(TestCase):
                 my_vars.PREDICTED_LABEL:["banana", "banana", "apple", "banana", "banana", "apple"],
                 my_vars.PREDICTION_CONFIDENCE: [0.9, 0.9, 0.875, 0.683333, 0.9, 1]
             })
-        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
-        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
+        np.testing.assert_array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values)
+        np.testing.assert_allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE], atol=my_vars.PRECISION)
 
     def test_predict_uncovered(self):
         """Predict the class labels of uncovered examples with handling ties (2 rules are equally distant) for
@@ -107,12 +107,12 @@ class TestPredict(TestCase):
             })
 
         # Test that predictions didn't change internal statistics of the model
-        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
-        self.assertTrue(correct_rule_per_example == bracid.closest_rule_per_example)
+        self.assertEqual(correct_covered, bracid.examples_covered_by_rule)
+        self.assertEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
+        self.assertEqual(correct_rule_per_example, bracid.closest_rule_per_example)
 
-        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
-        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
+        np.testing.assert_array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values)
+        np.testing.assert_allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE])
 
     def test_predict_mixed(self):
         """Predict the class labels of uncovered and covered examples while handling ties"""
@@ -184,9 +184,9 @@ class TestPredict(TestCase):
             })
 
         # Test that predictions didn't change internal statistics of the model
-        self.assertTrue(correct_covered == bracid.examples_covered_by_rule)
-        self.assertTrue(correct_examples_per_rule == bracid.closest_examples_per_rule)
-        self.assertTrue(correct_rule_per_example == bracid.closest_rule_per_example)
+        self.assertEqual(correct_covered, bracid.examples_covered_by_rule)
+        self.assertEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
+        self.assertEqual(correct_rule_per_example, bracid.closest_rule_per_example)
 
-        self.assertTrue(np.array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values))
-        self.assertTrue(np.allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE]))
+        np.testing.assert_array_equal(correct[my_vars.PREDICTED_LABEL].values, df[my_vars.PREDICTED_LABEL].values)
+        np.testing.assert_allclose(correct[my_vars.PREDICTION_CONFIDENCE], df[my_vars.PREDICTION_CONFIDENCE])

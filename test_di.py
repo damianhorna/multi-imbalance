@@ -29,7 +29,7 @@ class TestDi(TestCase):
             col = df[col_name]
             if is_numeric_dtype(col):
                 dist = bracid.di(col, rule, min_max)
-                self.assertTrue(dist.equals(correct[j]))
+                pd.testing.assert_series_equal(dist, correct[j], check_names=False)
                 j += 1
 
     def test_di_nan_rule(self):
@@ -47,7 +47,7 @@ class TestDi(TestCase):
             col = df[col_name]
             if is_numeric_dtype(col):
                 dist = bracid.di(col, rule, min_max)
-                self.assertTrue(dist.equals(correct))
+                pd.testing.assert_series_equal(dist, correct, check_names=False)
 
     def test_di_single_feature(self):
         """Tests that correct distance is computed for 1 numeric feature"""
@@ -65,7 +65,7 @@ class TestDi(TestCase):
             col = df[col_name]
             if is_numeric_dtype(col):
                 dist = bracid.di(col, rule, min_max)
-        self.assertTrue(dist.equals(correct))
+        pd.testing.assert_series_equal(dist, correct, check_names=False)
 
     def test_di_multiple_features(self):
         """Tests that correct distance is computed for 2 numeric features"""
@@ -87,7 +87,7 @@ class TestDi(TestCase):
             if is_numeric_dtype(col):
                 dist = bracid.di(col, rule, min_max)
                 dists.append(dist)
-                self.assertTrue(dists[i].equals(correct[i]))
+                pd.testing.assert_series_equal(dists[i], correct[i], check_names=False)
 
     def test_di_multiple_features_multiple_rules(self):
         """Tests that correct distance is computed for 2 numeric features"""
@@ -114,4 +114,4 @@ class TestDi(TestCase):
                 if is_numeric_dtype(col):
                     dist = bracid.di(col, rule, min_max)
                     dists.append(dist)
-                    self.assertTrue(dists[i].equals(correct[i]))
+                    pd.testing.assert_series_equal(dists[i], correct[i], check_names=False)

@@ -77,4 +77,4 @@ class TestReadDataset(TestCase):
              }
         self.assertTrue(dataset.columns.tolist() == [0, 1, 2, 3, 4])
         self.assertTrue(dataset.shape == (4, 5))
-        self.assertTrue(lookup == correct)
+        self.assertEqual(lookup, correct)

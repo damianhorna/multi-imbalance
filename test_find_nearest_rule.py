@@ -62,7 +62,7 @@ class TestFindNearestRule(TestCase):
                                                         bracid.examples_covered_by_rule,
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
-            self.assertTrue(was_updated is True)
+            self.assertTrue(was_updated)
 
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
@@ -84,7 +84,7 @@ class TestFindNearestRule(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
-        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
+        self.assertEqual(correct_closest_examples_per_rule, bracid.closest_examples_per_rule)
 
     def test_find_nearest_rule_ties(self):
         """Tests that ties (multiple rules cover an example) are resolved properly"""
@@ -137,7 +137,7 @@ class TestFindNearestRule(TestCase):
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
             print("eid: {} rule: {} dist: {} updated: {}".format(example_id, rule.name, dist, was_updated))
-            self.assertTrue(was_updated is True)
+            self.assertTrue(was_updated)
         print("closest rules")
         print(bracid.closest_rule_per_example)
         # Note: it's permissible that rule 1 covers example 1 (although example 1 is the seed for rule 1)
@@ -157,4 +157,4 @@ class TestFindNearestRule(TestCase):
             rule_id, dist = bracid.closest_rule_per_example[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id].rule_id and
                             abs(dist - correct_closest_rule_per_example[example_id].dist) < 0.001)
-        self.assertTrue(correct_closest_examples_per_rule == bracid.closest_examples_per_rule)
+        self.assertEqual(correct_closest_examples_per_rule, bracid.closest_examples_per_rule)

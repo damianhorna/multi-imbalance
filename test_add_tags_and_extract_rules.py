@@ -77,10 +77,10 @@ class TestAddTagsAndExtractRules(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
         tagged, rules = bracid.add_tags_and_extract_rules(df, k, class_col_name, lookup, min_max, classes)
-        self.assertTrue(tagged.equals(correct))
-        self.assertTrue(bracid.seed_example_rule == correct_seed_example_rule)
-        self.assertTrue(bracid.seed_rule_example == correct_seed_rule_example)
+        pd.testing.assert_frame_equal(tagged, correct)
+        self.assertEqual(bracid.seed_example_rule, correct_seed_example_rule)
+        self.assertEqual(bracid.seed_rule_example, correct_seed_rule_example)
         self.assertTrue(bracid.all_rules.keys() == correct_all_rules.keys())
-        self.assertTrue(bracid.latest_rule_id == correct_latest_id)
+        self.assertEqual(bracid.latest_rule_id, correct_latest_id)
         for idx, rule in enumerate(rules):
-            self.assertTrue(rule.equals(correct_all_rules[idx]))
+            pd.testing.assert_series_equal(rule, correct_all_rules[idx])

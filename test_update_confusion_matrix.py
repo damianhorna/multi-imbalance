@@ -39,4 +39,4 @@ class TestUpdateConfusionMatrix(TestCase):
             FN= {5},
             FP= {2, 4},
         )
-        self.assertTrue(correct == bracid.conf_matrix)
+        self.assertEqual(correct, bracid.conf_matrix)

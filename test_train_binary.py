@@ -30,4 +30,4 @@ class TestTrain(TestCase):
         model = bracid.train_binary(rules, training_set, minority_label, class_col_name)
         correct_model = {2: Support(minority=1.0, majority=0.0), 6: Support(minority=0.5, majority=0.5),
                          5: Support(minority=1.0, majority=0.0), 0: Support(minority=0.5, majority=0.5)}
-        self.assertTrue(model == correct_model)
+        self.assertEqual(model, correct_model)

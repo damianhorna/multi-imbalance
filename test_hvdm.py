@@ -46,8 +46,9 @@ class TestHvdm(TestCase):
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(np.allclose(correct["A"], dist["A"]) and np.allclose(correct["B"], dist["B"]) and
-                        np.allclose(correct["dist"], dist["dist"]))
+        np.testing.assert_allclose(correct["A"], dist["A"])
+        np.testing.assert_allclose(correct["B"], dist["B"])
+        np.testing.assert_allclose(correct["dist"], dist["dist"])
 
     def test_hvdm_numeric(self):
         """Tests what happens if input has only one type of input, namely a numeric feature"""
@@ -84,7 +85,8 @@ class TestHvdm(TestCase):
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(np.allclose(correct["B"], dist["B"]) and np.allclose(correct["dist"], dist["dist"]))
+        np.testing.assert_allclose(correct["B"], dist["B"])
+        np.testing.assert_allclose(correct["dist"], dist["dist"])
 
     def test_hvdm_nominal(self):
         """Tests what happens if input has only one type of input, namely a nominal feature"""
@@ -121,4 +123,5 @@ class TestHvdm(TestCase):
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
-        self.assertTrue(np.allclose(correct["A"], dist["A"]) and np.allclose(correct["dist"], dist["dist"]))
+        np.testing.assert_allclose(correct["A"], dist["A"])
+        np.testing.assert_allclose(correct["dist"], dist["dist"])

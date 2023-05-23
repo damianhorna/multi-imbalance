@@ -93,19 +93,19 @@ class TestEvaluateF1Temporarily(TestCase):
             5: Data(rule_id=2, dist=0.67015625)}
         correct_covered = {0: {4}}
         correct_updated_examples = [4]
-        self.assertTrue(updated_example_ids == correct_updated_examples)
-        self.assertTrue(f1 == correct_f1)
+        self.assertEqual(updated_example_ids, correct_updated_examples)
+        self.assertEqual(f1, correct_f1)
         # Local result is still the same as in test_evaluate_f1_update_confusion_matrix.py
         for example_id in closest_rules:
             rule_id, dist = closest_rules[example_id]
             self.assertTrue(rule_id == correct_closest_rule_per_example[example_id][0] and
                             abs(dist - correct_closest_rule_per_example[example_id][1]) < 0.001)
-        self.assertTrue(closest_examples == bracid.closest_examples_per_rule)
+        self.assertEqual(closest_examples, bracid.closest_examples_per_rule)
         correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3}, TN= {2, 4, 5}, FN= set())
-        self.assertTrue(conf_matrix == correct_conf_matrix)
+        self.assertEqual(conf_matrix, correct_conf_matrix)
         # But now check that global variables remained unaffected by the changes
         correct_conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
-        self.assertTrue(bracid.conf_matrix == correct_conf_matrix)
-        self.assertTrue(correct_closest_rules == bracid.closest_rule_per_example)
-        self.assertTrue(correct_closest_examples == bracid.closest_examples_per_rule)
-        self.assertTrue(correct_covered == covered)
+        self.assertEqual(bracid.conf_matrix, correct_conf_matrix)
+        self.assertEqual(correct_closest_rules, bracid.closest_rule_per_example)
+        self.assertEqual(correct_closest_examples, bracid.closest_examples_per_rule)
+        self.assertEqual(correct_covered, covered)

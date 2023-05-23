@@ -60,7 +60,7 @@ class TestCreateLookupMatrix(TestCase):
                             }
                     }
             }
-        self.assertTrue(lookup == correct)
+        self.assertEqual(lookup, correct)
 
     def test_lookup_multiple_features(self):
         """
@@ -112,4 +112,4 @@ class TestCreateLookupMatrix(TestCase):
                       }
              }
              }
-        self.assertTrue(lookup == correct)
+        self.assertEqual(lookup, correct)
