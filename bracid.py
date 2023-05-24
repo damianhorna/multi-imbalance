@@ -1085,7 +1085,7 @@ class BRACID:
                 lower_j, upper_j = val_j
                 return np.isclose(lower_i, lower_j, atol=my_vars.PRECISION) \
                     and np.isclose(upper_i, upper_j, atol=my_vars.PRECISION)
-            raise ValueError(f'{val_i} ({type(val_i)}) is neither a int, tuple nor Bound.')
+            raise ValueError(f"{val_i} ({type(val_i)}) is neither a 'int', 'tuple' nor 'Bounds'.")
         
         for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
             # Same feature
