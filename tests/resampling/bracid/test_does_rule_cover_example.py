@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 # from scripts.utils import does_rule_cover_example
-from scripts.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import BRACID
 
 
 class TestDoesRuleCoverExample(TestCase):

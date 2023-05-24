@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from scripts.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import BRACID
 
 
 class TestNormalize(TestCase):

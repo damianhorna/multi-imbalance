@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import BRACID
 
 
 class TestMostSpecificGeneralization(TestCase):

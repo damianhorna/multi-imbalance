@@ -5,9 +5,9 @@ import pandas as pd
 import sklearn
 import numpy as np
 
-from scripts.bracid import cv_multiclass
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestCv(TestCase):
@@ -20,6 +20,7 @@ class TestCv(TestCase):
                                 "Class": [_0, _0, _1, "orange", _1, "orange"]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
+        bracid = BRACID()
         lookup = \
             {
                 "A":
@@ -48,7 +49,7 @@ class TestCv(TestCase):
         k = 3
         folds = 2
         seed = 13
-        micro_f1, class_f1, true_fold, predicted_fold = cv_multiclass(dataset, k, class_col_name, min_max,
+        micro_f1, class_f1, true_fold, predicted_fold = bracid.cv_multiclass(dataset, k, class_col_name, min_max,
                                                                       classes, folds=folds, seed=seed)
 
         # Double check: convert (3,) to 1d array to see if results are correct

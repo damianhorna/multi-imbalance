@@ -3,12 +3,9 @@ from collections import Counter
 
 import pandas as pd
 
-# from utils import bracid, Bounds
-# from scripts.utils import bracid, Bounds
-from scripts.bracid import BRACID, Bounds
-# import vars as my_vars
-from scripts import vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
+from multi_imbalance.resampling.bracid import vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestBracid(TestCase):

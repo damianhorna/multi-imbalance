@@ -1,9 +1,7 @@
 from unittest import TestCase
 from collections import Counter
 
-from scripts.vars import SAFE, NOISY, BORDERLINE
-# from scripts.utils import assign_tag
-from scripts.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import BRACID, ExampleClass
 
 
 class TestAssignTag(TestCase):
@@ -15,7 +13,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "a", "a", "a"])
         tag = bracid.assign_tag(labels, label)
-        self.assertEqual(tag, SAFE)
+        self.assertEqual(tag, ExampleClass.SAFE)
 
     def test_assign_tag_safe(self):
         """Tests if "safe" is assigned correctly"""
@@ -23,7 +21,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "a", "c"])
         tag = bracid.assign_tag(labels, label)
-        self.assertEqual(tag, SAFE)
+        self.assertEqual(tag, ExampleClass.SAFE)
 
     def test_assign_tag_noisy(self):
         """Tests if "safe" is assigned correctly"""
@@ -31,7 +29,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["b", "b", "b", "b"])
         tag = bracid.assign_tag(labels, label)
-        self.assertEqual(tag, NOISY)
+        self.assertEqual(tag, ExampleClass.NOISY)
 
     def test_assign_tag_borderline_tie(self):
         """Tests if "borderline" is assigned correctly in case of ties"""
@@ -39,7 +37,7 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "a", "b"])
         tag = bracid.assign_tag(labels, label)
-        self.assertEqual(tag, BORDERLINE)
+        self.assertEqual(tag, ExampleClass.BORDERLINE)
 
     def test_assign_tag_borderline(self):
         """Tests if "borderline" is assigned correctly"""
@@ -47,4 +45,4 @@ class TestAssignTag(TestCase):
         label = "a"
         labels = Counter(["a", "b", "b", "c"])
         tag = bracid.assign_tag(labels, label)
-        self.assertEqual(tag, BORDERLINE)
+        self.assertEqual(tag, ExampleClass.BORDERLINE)

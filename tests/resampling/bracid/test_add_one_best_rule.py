@@ -4,9 +4,9 @@ from collections import Counter
 import pandas as pd
 
 # from scripts.utils import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
-from scripts.bracid import BRACID, Bounds, Data, ConfusionMatrix
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestAddOneBestRule(TestCase):

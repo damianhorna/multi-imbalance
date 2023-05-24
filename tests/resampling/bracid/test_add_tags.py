@@ -4,10 +4,10 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
-from scripts.bracid import BRACID, Bounds
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.vars import CONDITIONAL, TAG
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, ExampleClass
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestAddTags(TestCase):
@@ -43,7 +43,7 @@ class TestAddTags(TestCase):
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
-                                TAG: [BORDERLINE, BORDERLINE, SAFE, BORDERLINE, BORDERLINE, BORDERLINE]
+                                TAG: [ExampleClass.BORDERLINE, ExampleClass.BORDERLINE, ExampleClass.SAFE, ExampleClass.BORDERLINE, ExampleClass.BORDERLINE, ExampleClass.BORDERLINE]
                                 })
         bracid.closest_rule_per_example = {}
         bracid.closest_examples_per_rule = {}
@@ -103,7 +103,7 @@ class TestAddTags(TestCase):
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _1, _1, _1, _1, _1],
-                                TAG: [NOISY, BORDERLINE, SAFE, SAFE, SAFE, SAFE]
+                                TAG: [ExampleClass.NOISY, ExampleClass.BORDERLINE, ExampleClass.SAFE, ExampleClass.SAFE, ExampleClass.SAFE, ExampleClass.SAFE]
                                 })
         classes = [_0, _1]
         bracid.closest_rule_per_example = {}
@@ -139,8 +139,8 @@ class TestAddTags(TestCase):
                            "B": [np.NaN, 1, np.NaN, 1.5, np.NaN, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         bracid = BRACID()
+        bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         class_col_name = "Class"
         lookup = \
             {
@@ -165,7 +165,7 @@ class TestAddTags(TestCase):
                                 "B": [np.NaN, 1, np.NaN, 1.5, np.NaN, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
-                                TAG: [BORDERLINE, NOISY, SAFE, SAFE, SAFE, SAFE]
+                                TAG: [ExampleClass.BORDERLINE, ExampleClass.NOISY, ExampleClass.SAFE, ExampleClass.SAFE, ExampleClass.SAFE, ExampleClass.SAFE]
                                 })
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
@@ -226,7 +226,7 @@ class TestAddTags(TestCase):
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
-                                TAG: [BORDERLINE, BORDERLINE, SAFE, NOISY, NOISY, BORDERLINE]
+                                TAG: [ExampleClass.BORDERLINE, ExampleClass.BORDERLINE, ExampleClass.SAFE, ExampleClass.NOISY, ExampleClass.NOISY, ExampleClass.BORDERLINE]
                                 })
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
