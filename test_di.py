@@ -6,7 +6,7 @@ import numpy as np
 
 # from scripts.utils import di
 from scripts.bracid import BRACID
-
+from unit_tests.classes_ import _0, _1
 
 class TestDi(TestCase):
     """Test di() in utils.py"""

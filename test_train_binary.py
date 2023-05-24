@@ -3,6 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 from scripts.bracid import BRACID, Bounds, Support
+from unit_tests.classes_ import _0, _1
 
 
 class TestTrain(TestCase):
