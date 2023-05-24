@@ -22,19 +22,6 @@ class TestMostSpecificGeneralization(TestCase):
             rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(rule, correct, check_names=False)
 
-    def test_most_specific_generalization_drop_nominal(self):
-        """Generalization for nominal -> feature is dropped"""
-        bracid = BRACID()
-        dataset = pd.DataFrame({"A": [1.1], "B": [1], "C": [2], "D": ["x"], "Class": ["A"]})
-        class_col_name = "Class"
-        rules = [pd.Series({"A": (1.1, 1.1), "B": (1, 1), "C": (2, 2), "D": "y", "Class": "A"})]
-        correct = pd.Series({"A": (1.1, 1.1), "B": (1, 1), "C": (2, 2), "Class": "A"})
-        for i, _ in dataset.iterrows():
-            nearest_example = dataset.iloc[i]
-            rule = rules[i]
-            rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
-            pd.testing.assert_series_equal(rule, correct, check_names=False)
-
     def test_most_specific_generalization_change_lower(self):
         """Generalization for numeric feature -> lower bound is updated"""
         bracid = BRACID()

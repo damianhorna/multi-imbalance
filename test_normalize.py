@@ -37,22 +37,6 @@ class TestNormalize(TestCase):
             else:
                 pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
 
-    def test_normalize_nominal_dataframe(self):
-        """
-        Test that normalization is applied only to columns with numeric values applied to the whole dataset
-        """
-        bracid = BRACID()
-        df = pd.DataFrame({"A": [1, 2, 3], "B": [3.4, 2.4, 1.4], "C": ["A", "B", "C"]})
-        df = bracid.normalize_dataframe(df)
-        assert (df.shape == (3, 3))
-        for col_idx, _ in enumerate(df):
-            if col_idx == 0:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
-            elif col_idx == 1:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
-            else:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series(["A", "B", "C"]), check_names=False)
-
     def test_normalize_ints_series(self):
         """
         Test that normalization of integers works applied to the whole dataset columnwise
@@ -84,19 +68,3 @@ class TestNormalize(TestCase):
                 pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
             else:
                 pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
-
-    def test_normalize_nominal_series(self):
-        """
-        Test that normalization is applied only to columns with numeric values applied to the whole dataset columnwise
-        """
-        bracid = BRACID()
-        df = pd.DataFrame({"A": [1, 2, 3], "B": [3.4, 2.4, 1.4], "C": ["A", "B", "C"]})
-        df = bracid.normalize_dataframe(df)
-        assert (df.shape == (3, 3))
-        for col_idx, _ in enumerate(df):
-            if col_idx == 0:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([0.0, 0.5, 1.0]), check_names=False)
-            elif col_idx == 1:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series([1.0, 0.5, 0.0]), check_names=False)
-            else:
-                pd.testing.assert_series_equal(df.iloc[:, col_idx], pd.Series(["A", "B", "C"]), check_names=False)

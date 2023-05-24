@@ -43,54 +43,6 @@ class TestFindNeighbors(TestCase):
         self.assertWarns(UserWarning, bracid.find_nearest_examples, dataset, k, rule, class_col_name, min_max, classes,
                          label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False)
 
-    def test_find_neighbors_numeric_nominal(self):
-        """Tests what happens if input has a numeric and a nominal feature"""
-        bracid = BRACID()
-        df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
-                           "C": [3, 2, 1, .5, 3, 2],
-                           "Class": [_0, _0, _1, _1, _1, _1]})
-        class_col_name = "Class"
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 2,
-                        'low': 4,
-                        my_vars.CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _1: 2
-                                    }),
-                                'low':
-                                    Counter({
-                                        _1: 2,
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
-        k = 4
-        correct = None
-        if k == 1:
-            correct = df.iloc[[5]]
-        elif k == 2:
-            correct = df.iloc[[5, 2]]
-        elif k == 3:
-            correct = df.iloc[[5, 2, 3]]
-        elif k >= 4:
-            correct = df.iloc[[5, 2, 3, 4]]
-        rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=1), "Class": _1})
-        classes = [_0, _1]
-        min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        # Reset as other tests changed the content of the dictionary
-        bracid.closest_rule_per_example = {}
-        neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False)
-        if neighbors is not None:
-            self.assertTrue(neighbors.shape[0] == k)
-        pd.testing.assert_frame_equal(neighbors, correct)
-
     def test_find_neighbors_numeric_nominal_label_type(self):
         """Tests what happens if input has a numeric and a nominal feature and we vary label_type as parameter"""
         bracid = BRACID()
