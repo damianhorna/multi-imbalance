@@ -17,7 +17,7 @@ class TestSvdm(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
                            "C": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -29,18 +29,18 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     })
                             }
                     }
             }
-        rule = pd.Series({"A": "high", "B": (1, 1), "C": "bla", "Class": "banana"})
-        classes = ["apple", "banana"]
+        rule = pd.Series({"A": "high", "B": (1, 1), "C": "bla", "Class": _1})
+        classes = [_0, _1]
         correct = [pd.Series([0.0, 1.0, 0.0, 2/3*2/3, 2/3*2/3, 0.0], name="A"),
                    pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], name="A")]
         j = 0
@@ -60,7 +60,7 @@ class TestSvdm(TestCase):
         """Tests that correct svdm is computed if NaNs occur in a rule"""
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -72,19 +72,19 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     })
                             }
                     }
             }
-        rule = pd.Series({"A": np.NaN, "B": (1, 1), "Class": "banana"})
-        classes = ["apple", "banana"]
+        rule = pd.Series({"A": np.NaN, "B": (1, 1), "Class": _1})
+        classes = [_0, _1]
         correct = pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], name="A")
         for i, col_name in enumerate(df):
             if col_name == class_col_name:
@@ -98,7 +98,7 @@ class TestSvdm(TestCase):
         """Tests that correct svdm is computed for 1 nominal feature"""
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -110,22 +110,22 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
         correct = pd.Series({2: 0.0, 3: 1.0, 4: 1.0, 5: 0.0})
-        rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"})
+        rule = pd.Series({"A": "high", "B": (1, 1), "Class": _1})
         dist = None
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         # Only keep rows with the same class label as the rule
-        df = df.loc[df[class_col_name] == "banana"]
+        df = df.loc[df[class_col_name] == _1]
         for i, col_name in enumerate(df):
             if col_name == class_col_name:
                 continue
@@ -138,7 +138,7 @@ class TestSvdm(TestCase):
         """Tests that correct svdm is computed for 1 nominal feature"""
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -150,23 +150,23 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     })
                             }
                     }
             }
         correct = pd.Series({2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0})
-        rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"})
+        rule = pd.Series({"A": "high", "B": (1, 1), "Class": _1})
         dist = None
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         # Only keep rows with the same class label as the rule
-        df = df.loc[df[class_col_name] == "banana"]
+        df = df.loc[df[class_col_name] == _1]
         for i, col_name in enumerate(df):
             if col_name == class_col_name:
                 continue
@@ -179,7 +179,7 @@ class TestSvdm(TestCase):
         """Tests that correct svdm is computed for 2 nominal features"""
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["x", "y", "x", "x", "y", "x"],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -191,13 +191,13 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     })
                             }
                     },
@@ -209,24 +209,24 @@ class TestSvdm(TestCase):
                             {
                                 'x':
                                     Counter({
-                                        'banana': 3,
-                                        'apple': 1
+                                        _1: 3,
+                                        _0: 1
                                     }),
                                 'y':
                                     Counter({
-                                        'banana': 1,
-                                        'apple': 1
+                                        _1: 1,
+                                        _0: 1
                                     })
                             }
                     }
             }
         correct = [pd.Series({2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0}),
                    pd.Series({2: 0.0, 3: 0.0, 4: 0.25, 5: 0.0})]
-        rule = pd.Series({"A": "high", "B": "x", "Class": "banana"})
+        rule = pd.Series({"A": "high", "B": "x", "Class": _1})
         dists = []
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         # Only keep rows with the same class label as the rule
-        df = df.loc[df[class_col_name] == "banana"]
+        df = df.loc[df[class_col_name] == _1]
         for i, col_name in enumerate(df):
             if col_name == class_col_name:
                 continue
@@ -239,7 +239,7 @@ class TestSvdm(TestCase):
         """Tests that correct svdm is computed for 2 nominal features with 2 rules"""
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["x", "y", "x", "x", "y", "x"],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -251,13 +251,13 @@ class TestSvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     })
                             }
                     },
@@ -269,25 +269,25 @@ class TestSvdm(TestCase):
                             {
                                 'x':
                                     Counter({
-                                        'banana': 3,
-                                        'apple': 1
+                                        _1: 3,
+                                        _0: 1
                                     }),
                                 'y':
                                     Counter({
-                                        'banana': 1,
-                                        'apple': 1
+                                        _1: 1,
+                                        _0: 1
                                     })
                             }
                     }
             }
         correct = [pd.Series({2: 0.0, 3: 0.0, 4: 0.0, 5: 0.0}),
                    pd.Series({2: 0.0, 3: 0.0, 4: 0.25, 5: 0.0})]
-        rules = [pd.Series({"A": "high", "B": "x", "Class": "banana"}),
-                pd.Series({"A": "high", "B": "x", "Class": "banana"})]
+        rules = [pd.Series({"A": "high", "B": "x", "Class": _1}),
+                pd.Series({"A": "high", "B": "x", "Class": _1})]
         dists = []
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         # Only keep rows with the same class label as the rule
-        df = df.loc[df[class_col_name] == "banana"]
+        df = df.loc[df[class_col_name] == _1]
         for rule in rules:
             for i, col_name in enumerate(df):
                 if col_name == class_col_name:

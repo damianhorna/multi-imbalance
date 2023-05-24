@@ -3,6 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 from scripts.bracid import BRACID, ConfusionMatrix
 
 
@@ -13,17 +14,17 @@ class TestUpdateConfusionMatrix(TestCase):
         """Tests that TP, FN, FP, TN are updated correctly"""
         bracid = BRACID()
         bracid.conf_matrix = ConfusionMatrix(TP= {0}, FP= {2}, TN= {1}, FN= set())
-        positive_class = "apple"
+        positive_class = _0
         class_col_name = "Class"
         examples = [
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=3),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "banana"}, name=4),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=5),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "banana"}, name=6),
+            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=3),
+            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _1}, name=4),
+            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=5),
+            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _1}, name=6),
         ]
         rules = [
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0),
-            pd.Series({"A": "low", "B": (1, 1), "C": (2, 2), "Class": "banana"}, name=1),
+            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=0),
+            pd.Series({"A": "low", "B": (1, 1), "C": (2, 2), "Class": _1}, name=1),
         ]
         bracid.conf_matrix = bracid.update_confusion_matrix(examples[0], rules[0], positive_class, class_col_name,
                                                       bracid.conf_matrix)  # TP

@@ -18,7 +18,7 @@ class TestBracid(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -30,32 +30,32 @@ class TestBracid(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        minority_label = "banana"
+        minority_label = _1
         k = 3
         correct_rules = {
             0: pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=3.0),
-                          "Class": "apple"}, name=0),
+                          "Class": _0}, name=0),
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
-                          "Class": "banana"}, name=2),
+                          "Class": _1}, name=2),
             3: pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                          "Class": "banana"}, name=3),
+                          "Class": _1}, name=3),
             4: pd.Series({"B": Bounds(lower=0.5, upper=0.875), "C": Bounds(lower=2.0, upper=3.0),
-                          "Class": "banana"}, name=4),
+                          "Class": _1}, name=4),
             5: pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=4.0), "C": Bounds(lower=1.0, upper=2.5),
-                          "Class": "banana"}, name=5),
+                          "Class": _1}, name=5),
         }
         rules = bracid.bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
         all_rules_are_equal = True

@@ -7,6 +7,7 @@ import numpy as np
 # from scripts.utils import cv_binary
 from scripts.bracid import BRACID
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestCv(TestCase):
@@ -17,9 +18,9 @@ class TestCv(TestCase):
         bracid = BRACID()
         dataset = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
-                                "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                                "Class": [_0, _0, _1, _1, _1, _1]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        minority_label = "banana"
+        minority_label = _1
         class_col_name = "Class"
         lookup = \
             {
@@ -31,17 +32,17 @@ class TestCv(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
         k = 3

@@ -16,7 +16,7 @@ class TestHvdm(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -28,12 +28,12 @@ class TestHvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
@@ -41,8 +41,8 @@ class TestHvdm(TestCase):
         correct = pd.DataFrame({"A": [1.0, 1.0, 0.0, 1.0, 1.0, 0.0], "B": [0, 0, 0.09, 0.0025, 0.0025, 0.000625]})
         correct["dist"] = correct.select_dtypes(float).sum(1)
         correct = correct.sort_values("dist", ascending=True)
-        rule = pd.Series({"A": "high", "B": (1, 1), "Class": "banana"})
-        classes = ["apple", "banana"]
+        rule = pd.Series({"A": "high", "B": (1, 1), "Class": _1})
+        classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
@@ -55,7 +55,7 @@ class TestHvdm(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -67,12 +67,12 @@ class TestHvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
@@ -80,8 +80,8 @@ class TestHvdm(TestCase):
         correct = pd.DataFrame({"B": [0, 0, 0.09, 0.0025, 0.0025, 0.000625]})
         correct["dist"] = correct.select_dtypes(float).sum(1)
         correct = correct.sort_values("dist", ascending=True)
-        rule = pd.Series({"B": (1, 1), "Class": "banana"})
-        classes = ["apple", "banana"]
+        rule = pd.Series({"B": (1, 1), "Class": _1})
+        classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
@@ -93,7 +93,7 @@ class TestHvdm(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -105,12 +105,12 @@ class TestHvdm(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
@@ -118,8 +118,8 @@ class TestHvdm(TestCase):
         correct = pd.DataFrame({"A": [1.0, 1.0, 0.0, 1.0, 1.0, 0.0]})
         correct["dist"] = correct.select_dtypes(float).sum(1)
         correct = correct.sort_values("dist", ascending=True)
-        rule = pd.Series({"A": "high", "Class": "banana"})
-        classes = ["apple", "banana"]
+        rule = pd.Series({"A": "high", "Class": _1})
+        classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
