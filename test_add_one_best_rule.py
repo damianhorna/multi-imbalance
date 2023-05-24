@@ -88,11 +88,11 @@ class TestAddOneBestRule(TestCase):
         bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
         k = 3
-        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
         improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
-                                                        class_col_name, lookup, min_max, classes)
+                                                        class_col_name, min_max, classes)
 
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
@@ -200,11 +200,11 @@ class TestAddOneBestRule(TestCase):
         bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
         k = 3
-        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
         improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
-                                                        class_col_name, lookup, min_max, classes)
+                                                        class_col_name, min_max, classes)
 
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
@@ -301,11 +301,11 @@ class TestAddOneBestRule(TestCase):
             rule_hash = bracid.compute_hashable_key(rule)
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
-        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
         improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
-                                                        class_col_name, lookup, min_max, classes)
+                                                        class_col_name, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
@@ -410,11 +410,11 @@ class TestAddOneBestRule(TestCase):
             bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
             initial_f1 = 0.66666
             k = 3
-            neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max,
+            neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max,
                                                         classes, label_type=my_vars.SAME_LABEL_AS_RULE,
                                                         only_uncovered_neighbors=True)
             improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
-                                                            class_col_name, lookup, min_max, classes)
+                                                            class_col_name, min_max, classes)
             correct_closest_rule_per_example = {
                 0: Data(rule_id=1, dist=0.010000000000000002),
                 1: Data(rule_id=6, dist=0.0),

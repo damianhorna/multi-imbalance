@@ -65,9 +65,9 @@ class TestDeleteRuleStatistics(TestCase):
         final_rules = {}
         # Delete entries for rules with IDs 0 and 1 from all statistics
         rule1 = rules.pop()
-        bracid.delete_rule_statistics(df, rule1, rules, final_rules, class_col_name, lookup, min_max, classes)
+        bracid.delete_rule_statistics(df, rule1, rules, final_rules, class_col_name, min_max, classes)
         rule2 = rules.pop()
-        bracid.delete_rule_statistics(df, rule2, rules, final_rules,class_col_name, lookup, min_max, classes)
+        bracid.delete_rule_statistics(df, rule2, rules, final_rules,class_col_name, min_max, classes)
 
         correct_seed_example_rule = {4: {7}}
         correct_seed_rule_example = {5: 0, 7: 4}
@@ -141,9 +141,9 @@ class TestDeleteRuleStatistics(TestCase):
         final_rules = {}
         # Delete entries for rules with IDs 0 and 1 from all statistics
         rule1 = rules.pop()
-        bracid.delete_rule_statistics(df, rule1, rules, final_rules, class_col_name, lookup, min_max, classes)
+        bracid.delete_rule_statistics(df, rule1, rules, final_rules, class_col_name, min_max, classes)
         rule2 = rules.pop()
-        bracid.delete_rule_statistics(df, rule2, rules, final_rules, class_col_name, lookup, min_max, classes)
+        bracid.delete_rule_statistics(df, rule2, rules, final_rules, class_col_name, min_max, classes)
 
         correct_seed_example_rule = {4: {7}}
         correct_seed_rule_example = {5: 0, 7: 4}

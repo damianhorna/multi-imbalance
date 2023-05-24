@@ -66,9 +66,9 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
 
-        # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
+        # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, min_max, classes)
         correct_f1 = 2*1*0.5/1.5
-        f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, min_max, classes)
         correct_closest_rule_per_example = {
             0: (1, 0.010000000000000002),
             1: (0, 0.010000000000000002),

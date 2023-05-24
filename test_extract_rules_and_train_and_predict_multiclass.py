@@ -49,7 +49,7 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
 
         k = 3
         rules, preds_df = \
-            bracid.extract_rules_and_train_and_predict_multiclass(train_set, test_set, lookup, min_max, class_col_name, k)
+            bracid.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max, class_col_name, k)
         correct_preds = pd.DataFrame({
             my_vars.PREDICTED_LABEL: [_1, _0, _1, _0, _0, _1],
             my_vars.PREDICTION_CONFIDENCE: [0.4, 1, 0.4, 1, 1, 0.4]

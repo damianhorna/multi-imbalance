@@ -72,9 +72,9 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
         bracid.conf_matrix = ConfusionMatrix(TP= {0, 1}, FP= {3, 4}, TN= {2, 5}, FN= set())
         new_rule = pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.0), "C": Bounds(lower=3, upper=3),
                               "Class": _1}, name=0)
-        # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, lookup, min_max, classes)
+        # tagged, initial_rules = add_tags_and_extract_rules(df, 2, class_col_name, min_max, classes)
         correct_f1 = 0.8
-        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),
@@ -153,7 +153,7 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
         new_rule = pd.Series({"A": "low", "B": (0.5, 0.5), "C": (3, 3), "Class": _1}, name=4)
         correct_f1 = 2*1*0.5/1.5
 
-        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, lookup, min_max, classes)
+        f1 = bracid.evaluate_f1_update_confusion_matrix(df, new_rule, class_col_name, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),

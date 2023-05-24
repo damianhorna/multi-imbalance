@@ -13,7 +13,7 @@ class TestReadDataset(TestCase):
             os.path.abspath(__file__)), os.pardir))
         src = os.path.join(base_dir, "datasets", "iris_test.csv")
         positive = "Iris-setosa"
-        dataset, lookup, _, _ = bracid.read_dataset(src, positive)
+        dataset, _, _ = bracid.read_dataset(src, positive)
         correct_column_names = ["sepal length in cm", "sepal width in cm", "petal length in cm", "petal width in cm",
                                 "class"]
         self.assertTrue(dataset.columns.tolist() == correct_column_names)
@@ -28,7 +28,7 @@ class TestReadDataset(TestCase):
         src = os.path.join(base_dir, "datasets", "nominal_test.csv")
         # Automatically name the columns
         positive = "Iris-setosa"
-        dataset, lookup, _, _ = bracid.read_dataset(src, positive, header=False)
+        dataset, _, _ = bracid.read_dataset(src, positive, header=False)
         correct = \
             {0: {
                      'd': 2,
@@ -77,4 +77,4 @@ class TestReadDataset(TestCase):
              }
         self.assertTrue(dataset.columns.tolist() == [0, 1, 2, 3, 4])
         self.assertTrue(dataset.shape == (4, 5))
-        self.assertEqual(lookup, correct)
+        self.assertEqual(correct)
