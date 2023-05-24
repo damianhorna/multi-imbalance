@@ -6,6 +6,7 @@ import pandas as pd
 # from scripts.utils import evaluate_f1_initialize_confusion_matrix, Bounds
 from scripts.bracid import BRACID, Bounds, ConfusionMatrix
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestEvaluateF1InitializeConfusionMatrix(TestCase):
@@ -16,7 +17,7 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
         bracid = BRACID()
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         lookup = \
             {
@@ -28,33 +29,33 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
             pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": "banana"}, name=2),
+                       "Class": _1}, name=2),
             pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": "banana"}, name=3),
+                       "Class": _1}, name=3),
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                       "Class": "banana"}, name=4),
+                       "Class": _1}, name=4),
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": "banana"}, name=5)
+                       "Class": _1}, name=5)
         ]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
         # Reset as other tests changed the data
         bracid.closest_rule_per_example = {}
         bracid.closest_examples_per_rule = {}

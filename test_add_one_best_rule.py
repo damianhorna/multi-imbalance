@@ -6,6 +6,7 @@ import pandas as pd
 # from scripts.utils import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
 from scripts.bracid import BRACID, Bounds, Data, ConfusionMatrix
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestAddOneBestRule(TestCase):
@@ -15,7 +16,7 @@ class TestAddOneBestRule(TestCase):
         """Tests that rule set is updated when a generalized rule improves F1"""
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         bracid = BRACID()
         class_col_name = "Class"
         lookup = \
@@ -28,31 +29,31 @@ class TestAddOneBestRule(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
             pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": "banana"}, name=2),
+                       "Class": _1}, name=2),
             pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": "banana"}, name=3),
+                       "Class": _1}, name=3),
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                       "Class": "banana"}, name=4),
+                       "Class": _1}, name=4),
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": "banana"}, name=5),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+                       "Class": _1}, name=5),
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0)  # Current rule is always at the end of the list
         ]
         bracid.closest_examples_per_rule = {
@@ -109,7 +110,7 @@ class TestAddOneBestRule(TestCase):
         correct_f1 = 2 * 0.5 * 1 / 1.5
         self.assertTrue(improved)
         self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
-        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
+        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": _0}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
@@ -126,7 +127,7 @@ class TestAddOneBestRule(TestCase):
         example changes"""
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         bracid = BRACID()
         class_col_name = "Class"
         lookup = \
@@ -139,32 +140,32 @@ class TestAddOneBestRule(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
         test_idx = -1
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
             pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": "banana"}, name=2),
+                       "Class": _1}, name=2),
             pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": "banana"}, name=3),
+                       "Class": _1}, name=3),
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                       "Class": "banana"}, name=4),
+                       "Class": _1}, name=4),
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": "banana"}, name=5),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+                       "Class": _1}, name=5),
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0)  # Current rule is always at the end of the list
         ]
         bracid.closest_examples_per_rule = {
@@ -221,7 +222,7 @@ class TestAddOneBestRule(TestCase):
         correct_f1 = 2 * 0.5 * 1 / 1.5
         self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
         self.assertTrue(improved)
-        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=0)
+        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": _0}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP=set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
@@ -239,7 +240,7 @@ class TestAddOneBestRule(TestCase):
         """Tests that rule set is not updated when no generalized rule improves F1"""
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         bracid = BRACID()
         class_col_name = "Class"
         lookup = \
@@ -252,32 +253,32 @@ class TestAddOneBestRule(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2
+                                        _1: 2
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 2
+                                        _1: 2,
+                                        _0: 2
                                     })
                             }
                     }
             }
         test_idx = -1
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
             pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": "banana"}, name=2),
+                       "Class": _1}, name=2),
             pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": "banana"}, name=3),
+                       "Class": _1}, name=3),
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                       "Class": "banana"}, name=4),
+                       "Class": _1}, name=4),
             pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": "banana"}, name=5),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+                       "Class": _1}, name=5),
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0)   # Current rule is always at the end of the list
         ]
         bracid.closest_rule_per_example = {
@@ -315,7 +316,7 @@ class TestAddOneBestRule(TestCase):
         self.assertFalse(improved)
         correct_f1 = initial_f1
         self.assertAlmostEqual(correct_f1, f1, delta=my_vars.PRECISION)
-        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": "apple"}, name=0)
+        correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=0)
         # correct_confusion_matrix = ConfusionMatrix(TP= {0, 1}, FP= set(), TN= {2, 5}, FN= {3, 4})
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, FP= set(), TN={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
@@ -335,7 +336,7 @@ class TestAddOneBestRule(TestCase):
             statistics if that's not the case"""
             df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                "C": [3, 2, 1, .5, 3, 2],
-                               "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                               "Class": [_0, _0, _1, _1, _1, _1]})
             bracid = BRACID()
             class_col_name = "Class"
             lookup = \
@@ -348,37 +349,37 @@ class TestAddOneBestRule(TestCase):
                                 {
                                     'high':
                                         Counter({
-                                            'banana': 2
+                                            _1: 2
                                         }),
                                     'low':
                                         Counter({
-                                            'banana': 2,
-                                            'apple': 2
+                                            _1: 2,
+                                            _0: 2
                                         })
                                 }
                         }
                 }
             test_idx = -1
-            classes = ["apple", "banana"]
+            classes = [_0, _1]
             min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-            bracid.minority_class = "apple"
+            bracid.minority_class = _0
             # name=6 because this guy already exists in the rules and the new rule with name=0 becomes the same, so
             # it's removed
-            correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": "apple"}, name=6)
+            correct_generalized_rule = pd.Series({"A": "low", "B": (1, 1), "C": (2.0, 3), "Class": _0}, name=6)
             rules = [
-                pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+                pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                           name=1),
                 pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                           "Class": "banana"}, name=2),
+                           "Class": _1}, name=2),
                 pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                           "Class": "banana"}, name=3),
+                           "Class": _1}, name=3),
                 pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                           "Class": "banana"}, name=4),
+                           "Class": _1}, name=4),
                 pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                           "Class": "banana"}, name=5),
+                           "Class": _1}, name=5),
                 pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2.0, upper=3),
-                           "Class": "apple"}, name=6),   # same as best rule
-                pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+                           "Class": _0}, name=6),   # same as best rule
+                pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                           name=0)  # Current rule is always at the end of the list
             ]
             for rule in rules:

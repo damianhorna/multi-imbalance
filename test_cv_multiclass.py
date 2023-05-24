@@ -7,6 +7,7 @@ import numpy as np
 
 from scripts.bracid import cv_multiclass
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestCv(TestCase):
@@ -16,7 +17,7 @@ class TestCv(TestCase):
         """Tests that cross-validation is performed correctly"""
         dataset = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
-                                "Class": ["apple", "apple", "banana", "orange", "banana", "orange"]})
+                                "Class": [_0, _0, _1, "orange", _1, "orange"]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
         lookup = \
@@ -29,19 +30,19 @@ class TestCv(TestCase):
                             {
                                 "high":
                                     Counter({
-                                        "banana": 1,
+                                        _1: 1,
                                         "orange": 1
                                     }),
                                 "low":
                                     Counter({
-                                        "banana": 1,
-                                        "apple": 2,
+                                        _1: 1,
+                                        _0: 2,
                                         "orange": 1
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana", "orange"]
+        classes = [_0, _1, "orange"]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
         k = 3

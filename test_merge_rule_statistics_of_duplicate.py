@@ -4,6 +4,7 @@ import pandas as pd
 
 from scripts.bracid import BRACID, Bounds, Data
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestMergeRuleStatisticsOfDuplicate(TestCase):
@@ -14,9 +15,9 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         step in bracid()"""
         bracid = BRACID()
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=1),  # Duplicate
         ]
 

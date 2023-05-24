@@ -6,6 +6,7 @@ import pandas as pd
 # from scripts.utils import delete_rule_statistics, Bounds, compute_hashable_key, Data
 from scripts.bracid import BRACID, Bounds, Data
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestDeleteRuleStatistics(TestCase):
@@ -15,17 +16,17 @@ class TestDeleteRuleStatistics(TestCase):
         """Deletes a rule with a unique hash"""
         bracid = BRACID()
         extra_rule = pd.Series({"A": "high", "B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
-                                "Class": "apple"}, name=4)
+                                "Class": _0}, name=4)
         rules = [
             extra_rule,
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
         ]
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "apple", "apple", "apple", "apple"]})
+                           "Class": [_0, _0, _0, _0, _0, _0]})
         class_col_name = "Class"
         lookup = \
             {
@@ -37,18 +38,18 @@ class TestDeleteRuleStatistics(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'apple': 1
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'apple': 2
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
 
         for rule in rules:
             hash_val = bracid.compute_hashable_key(rule)
@@ -89,17 +90,17 @@ class TestDeleteRuleStatistics(TestCase):
         """Deletes a rule that shares its hash with other rules"""
         bracid = BRACID()
         extra_rule = pd.Series({"A": "high", "B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
-                                "Class": "apple"}, name=4)
+                                "Class": _0}, name=4)
         rules = [
             extra_rule,
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": "apple"},
+            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=1),  # Duplicate
         ]
         df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
-                           "Class": ["apple", "apple", "apple", "apple", "apple", "apple"]})
+                           "Class": [_0, _0, _0, _0, _0, _0]})
         class_col_name = "Class"
         lookup = \
             {
@@ -111,18 +112,18 @@ class TestDeleteRuleStatistics(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'apple': 1
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'apple': 2
+                                        _0: 2
                                     })
                             }
                     }
             }
-        classes = ["apple", "banana"]
+        classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        bracid.minority_class = "apple"
+        bracid.minority_class = _0
         bracid.unique_rules = {}
         bracid.all_rules = {}
         for rule in rules:

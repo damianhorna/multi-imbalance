@@ -31,7 +31,7 @@ class TestCreateLookupMatrix(TestCase):
         """
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": [3, 2, 1, 1, 1, 2],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         lookup = {}
         class_col_name = "Class"
         for col_name in df:
@@ -49,13 +49,13 @@ class TestCreateLookupMatrix(TestCase):
                             {
                                 'high':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     }),
                                 'low':
                                     Counter({
-                                        'banana': 2,
-                                        'apple': 1
+                                        _1: 2,
+                                        _0: 1
                                     })
                             }
                     }
@@ -68,7 +68,7 @@ class TestCreateLookupMatrix(TestCase):
         """
         bracid = BRACID()
         df = pd.DataFrame({"A": ["high", "low", "high", "low", "low", "high"], "B": ["A", "A", "B", "C", "A", "A"],
-                           "Class": ["apple", "apple", "banana", "banana", "banana", "banana"]})
+                           "Class": [_0, _0, _1, _1, _1, _1]})
         lookup = {}
         class_col_name = "Class"
         for col_name in df:
@@ -84,13 +84,13 @@ class TestCreateLookupMatrix(TestCase):
                     {
                         'high':
                             Counter({
-                                'banana': 2,
-                                'apple': 1
+                                _1: 2,
+                                _0: 1
                             }),
                         'low':
                             Counter({
-                                'banana': 2,
-                                'apple': 1
+                                _1: 2,
+                                _0: 1
                             })
                     }},
              "B": {
@@ -101,13 +101,13 @@ class TestCreateLookupMatrix(TestCase):
                      {
                          'A':
                              Counter({
-                              'apple': 2,
-                              'banana': 2
+                              _0: 2,
+                              _1: 2
                              }),
                          'B': Counter({
-                             'banana': 1
+                             _1: 1
                          }),
-                         'C': Counter({'banana': 1
+                         'C': Counter({_1: 1
                                        })
                       }
              }

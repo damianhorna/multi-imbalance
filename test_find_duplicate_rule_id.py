@@ -4,6 +4,7 @@ import pandas as pd
 
 from scripts.bracid import find_duplicate_rule_id, Bounds, compute_hashable_key
 import scripts.vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestFindDuplicateRuleId(TestCase):
@@ -13,9 +14,9 @@ class TestFindDuplicateRuleId(TestCase):
         """Tests that a duplicate rule is detected properly"""
         rules = [
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                       "Class": "banana"}, name=7),
+                       "Class": _1}, name=7),
             pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                       "Class": "banana"}, name=12)  # Duplicate
+                       "Class": _1}, name=12)  # Duplicate
         ]
         duplicate_idx = 1
         bracid.unique_rules = {compute_hashable_key(rules[0]): {7}}
