@@ -6,6 +6,7 @@ import numpy as np
 
 from scripts.vars import CONDITIONAL
 from scripts.bracid import BRACID
+from unit_tests.classes_ import _0, _1
 
 
 class TestHvdm(TestCase):

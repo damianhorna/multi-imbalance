@@ -8,6 +8,7 @@ import pandas as pd
 from scripts.bracid import BRACID, Bounds
 # import vars as my_vars
 from scripts import vars as my_vars
+from unit_tests.classes_ import _0, _1
 
 
 class TestBracid(TestCase):

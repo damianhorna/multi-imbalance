@@ -4,7 +4,7 @@ import pandas as pd
 
 # from scripts.utils import _are_duplicates, Bounds
 from scripts.bracid import BRACID, Bounds
-
+from unit_tests.classes_ import _0, _1
 
 class TestAreDuplicates(TestCase):
     """Tests _are_duplicates() from utils.py"""
