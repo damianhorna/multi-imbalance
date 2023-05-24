@@ -14,7 +14,7 @@ import numpy as np
 import enum
 import dataclasses
 
-import scripts.vars as my_vars
+from . import vars as my_vars
 
 class ExampleClass:
     SAFE = enum.auto()
@@ -30,6 +30,13 @@ class ConfusionMatrix:
     TN: set = dataclasses.field(default_factory=set)
     FP: set = dataclasses.field(default_factory=set)
     FN: set = dataclasses.field(default_factory=set)
+
+    @property
+    def f1(self) -> float:
+        tp = len(self.TP)
+        fp = len(self.FP)
+        fn = len(self.FN)
+        return 2 * tp / (2 * tp + fp + fn)
 
 # (ID of rule, distance of rule to the closest example) is stored per example in a named tuple
 Data = namedtuple("Data", ["rule_id", "dist"])
@@ -91,7 +98,6 @@ class BRACID:
         else:
             df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values, header=None)
             df.columns = [i for i in range(len(df.columns))]
-        lookup = {}
         # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
         if class_index < 0:
             class_index = len(df.columns) + class_index
@@ -104,14 +110,12 @@ class BRACID:
             if col_name == class_col_name:
                 continue
             col = df[col_name]
-            if is_numeric_dtype(col):
-                if normalize:
-                    df[col_name] = self.normalize_series(col)
-                minmax[col_name] = {"min": col.min(), "max": col.max()}
-            else:
-                lookup[col_name] = self.create_svdm_lookup_column(df, col, class_col_name)
+            assert is_numeric_dtype(col), f'{col_name} {col.dtype} {col}'
+            if normalize:
+                df[col_name] = self.normalize_series(col)
+            minmax[col_name] = {"min": col.min(), "max": col.max()}
         min_max = pd.DataFrame(minmax)
-        return df, lookup, rules, min_max
+        return df, rules, min_max
 
     def extract_initial_rules(self, df, class_col_name):
         """
@@ -138,13 +142,13 @@ class BRACID:
             if col_name == class_col_name:
                 continue
             col = df[col_name]
-            if is_numeric_dtype(col):
-                # Assuming the value is x, we now store named tuples of Bounds(lower=x, upper=x) per row
-                rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name]) for _, row in df.iterrows()]
+            assert is_numeric_dtype(col), f'{col_name}, {col.dtype} {col}'
+            # Assuming the value is x, we now store named tuples of Bounds(lower=x, upper=x) per row
+            rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name]) for _, row in df.iterrows()]
         return rules
 
 
-    def add_tags_and_extract_rules(self, df, k, class_col_name, counts, min_max, classes):
+    def add_tags_and_extract_rules(self, df, k, class_col_name, min_max, classes):
         """
         Extracts initial rules and assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY",
         "BORDERLINE".
@@ -154,7 +158,6 @@ class BRACID:
         df: pd.DataFrame - dataset
         k: int - number of neighbors to consider
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset.
 
@@ -194,12 +197,12 @@ class BRACID:
             # print(converted_rule)
             rules.append(rule)
             self.all_rules[rule_id] = rule
-        tagged = self.add_tags(df, k, rules, class_col_name, counts, min_max, classes)
+        tagged = self.add_tags(df, k, rules, class_col_name, min_max, classes)
         rules = deque(rules)
         return tagged, rules
 
 
-    def add_tags(self, df, k, rules, class_col_name, counts, min_max, classes):
+    def add_tags(self, df, k, rules, class_col_name, min_max, classes):
         """
         Assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY", "BORDERLINE".
         SAFE: example is classified correctly when looking at its k neighbors
@@ -214,7 +217,6 @@ class BRACID:
         k: int - number of neighbors to consider
         rules: list of pd.Series - list of rules
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset.
 
@@ -233,7 +235,7 @@ class BRACID:
             if examples_for_pairwise_distance.shape[0] > 0:
                 # print("pairwise distances for rule {}:".format(rule.name))
                 # print("compute distance to:\n{}".format(examples_for_pairwise_distance))
-                neighbors, _, _ = self.find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name, counts,
+                neighbors, _, _ = self.find_nearest_examples(examples_for_pairwise_distance, k, rule, class_col_name,
                                                         min_max, classes, label_type=my_vars.ALL_LABELS,
                                                         only_uncovered_neighbors=False)
                 # print("neighbors:\n{}".format(neighbors))
@@ -279,64 +281,32 @@ class BRACID:
         # print("tag:", tag)
         return tag
 
+    def _assert_is_numeric_dtype(self, col):
+        if not is_numeric_dtype(col):
+            raise ValueError(f'''{col.name} is not of numeric dtype. Found: {col.dtype}
+{col}
+''')
 
     def normalize_dataframe(self, df):
         """Normalize numeric features (=columns) using min-max normalization"""
         for col_name in df.columns:
             col = df[col_name]
-            if is_numeric_dtype(col):
-                min_val = col.min()
-                max_val = col.max()
-                df[col_name] = (col - min_val) / (max_val - min_val)
+            # assert is_numeric_dtype(col), f'{col_name} {col.dtype} {col}'
+            self._assert_is_numeric_dtype(col)
+            min_val = col.min()
+            max_val = col.max()
+            df[col_name] = (col - min_val) / (max_val - min_val)
         return df
 
 
     def normalize_series(self, col):
         """Normalizes a given series assuming it's data type is numeric"""
-        if is_numeric_dtype(col):
-            min_val = col.min()
-            max_val = col.max()
-            col = (col - min_val) / (max_val - min_val)
+        # assert is_numeric_dtype(col), f'{col.name} {col.dtype} {col}'
+        self._assert_is_numeric_dtype(col)
+        min_val = col.min()
+        max_val = col.max()
+        col = (col - min_val) / (max_val - min_val)
         return col
-
-
-    def create_svdm_lookup_column(self, df, coli, class_col_name):
-        """
-        Create sparse lookup table for the feature representing the current column i.
-
-        N(xi), N(yi), N(xi, Kj), N(yi, Kj), is stored per nominal feature, where N(xi) and N(yi) are the numbers of
-        examples for which the value on i-th feature (coli) is equal to xi and yi respectively, N(xi , Kj) and N(yi,
-        Kj) are the numbers of examples from the decision class Kj , which belong to N(xi) and N(yi), respectively
-
-        Parameters
-        ----------
-        df: pd.DataFrame - dataset.
-        coli: pd.Series - i-th column (= feature) of the dataset
-        class_col_name: str - name of class label in <df>.
-
-        Returns
-        -------
-        dict - sparse dictionary holding the non-zero counts of all values of <coli> with the class labels
-
-        """
-        c = {}
-        nxiyi = Counter(coli.values)
-        c.update(nxiyi)
-        c[my_vars.CONDITIONAL] = {}
-        # print("N(xi/yi)\n", nxiyi)
-        unique_xiyi = nxiyi.keys()
-        # Create all pairwise combinations of two values
-        combinations = itertools.combinations(unique_xiyi, 2)
-        for combo in combinations:
-            for val in combo:
-                # print("current value:\n", val)
-                rows_with_val = df.loc[coli == val]
-                # print("rows with value:\n", rows_with_val)
-                # nxiyikj = Counter(rows_with_val.iloc[:, class_idx].values)
-                nxiyikj = Counter(rows_with_val[class_col_name].values)
-                # print("counts:\n", nxiyikj)
-                c[my_vars.CONDITIONAL][val] = nxiyikj
-        return c
 
 
     def does_rule_cover_example(self, example, rule, dtypes):
@@ -358,17 +328,17 @@ class BRACID:
         is_covered = True
         for (col_name, example_val), dtype in zip(example.items(), dtypes):
             example_dtype = dtype
+            if not is_numeric_dtype(example_dtype):
+                raise ValueError(f'{col_name} is not of a numeric dtype: {example_val}({example_dtype})')
             if col_name in rule:
                 # Cast object to tuple datatype -> this is only automatically done if it's not a string
                 rule_val = (rule[col_name])
                 # print("rule_val", rule_val, "\nrule type:", type(rule_val))
-                if is_string_dtype(example_dtype) and example_val != rule_val:
+                # assert is_numeric_dtype(example_dtype), f'{col_name} {example_dtype}'
+                if isinstance(rule_val, tuple) and not (rule_val[0] <= example_val <= rule_val[1]) \
+                    or rule_val != example_val:
                     is_covered = False
                     break
-                elif is_numeric_dtype(example_dtype):
-                    if rule_val[0] > example_val or rule_val[1] < example_val:
-                        is_covered = False
-                        break
         return is_covered
 
 
@@ -396,13 +366,12 @@ class BRACID:
                 # Cast object to tuple datatype -> this is only automatically done if it's not a string
                 rule_val = (rule[col_name])
                 # print("rule_val", rule_val, "\nrule type:", type(rule_val))
-                if is_string_dtype(example_dtype) and example_val != rule_val:
+                # assert is_numeric_dtype(example_dtype), f'{col_name} {example_dtype}'
+                if not is_numeric_dtype(example_dtype):
+                    raise ValueError(f'{example_dtype} is not a numeric dtype')
+                if rule_val[0] > example_val or rule_val[1] < example_val:
                     is_covered = False
                     break
-                elif is_numeric_dtype(example_dtype):
-                    if rule_val[0] > example_val or rule_val[1] < example_val:
-                        is_covered = False
-                        break
         return is_covered
 
 
@@ -411,7 +380,7 @@ class BRACID:
         return len(df.index) == 0
 
 
-    def find_nearest_examples(self, df, k, rule, class_col_name, counts, min_max, classes, label_type=my_vars.ALL_LABELS,
+    def find_nearest_examples(self, df, k, rule, class_col_name, min_max, classes, label_type=my_vars.ALL_LABELS,
                             only_uncovered_neighbors=True):
         """
         Finds k-nearest examples for a given rule with the same class label as the rule.
@@ -423,7 +392,6 @@ class BRACID:
         k: int - number of neighbors to consider
         rule: pd.Series - rule
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset. It's assumed to be binary.
         label_type: str - consider only examples of the specified type as neighbors. Valid values:
@@ -483,7 +451,7 @@ class BRACID:
         if neighbors < k:
             warnings.warn("Only {} neighbors for\n{}".format(examples_with_same_label.shape[0], examples_with_same_label),
                         UserWarning)
-        dists = self.hvdm(examples_with_same_label, rule, counts, classes, min_max, class_col_name)
+        dists = self.hvdm(examples_with_same_label, rule, classes, min_max, class_col_name)
         neighbor_ids = dists.index[: k]
         is_closer = self._update_data_about_closest_rule(rule, dists)
 
@@ -565,7 +533,7 @@ class BRACID:
         return was_updated
 
 
-    def find_nearest_rule(self, rules, example, class_col_name, counts, min_max, classes, examples_covered_by_rule, label_type,
+    def find_nearest_rule(self, rules, example, class_col_name, min_max, classes, examples_covered_by_rule, label_type,
                         only_uncovered_neighbors):
         """
         Finds the nearest rule for a given example. Certain rules are ignored, namely those for which the example is a
@@ -579,7 +547,6 @@ class BRACID:
         rules: list pd.Series - rules
         example: pd.Series - example
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset.
         examples_covered_by_rule: dict - which rule covers which examples, i.e. {rule ri: set(example ei, example ej)}
@@ -626,7 +593,7 @@ class BRACID:
                     # print("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
                     continue
                 neighbors, dists, is_closest = \
-                    self.find_nearest_examples(example_df, k, rule, class_col_name, counts, min_max, classes,
+                    self.find_nearest_examples(example_df, k, rule, class_col_name, min_max, classes,
                                         label_type=label_type, only_uncovered_neighbors=only_uncovered_neighbors)
                 if neighbors is not None:
                     dist = dists.iloc[0][my_vars.DIST]
@@ -676,20 +643,20 @@ class BRACID:
                 # Cast object to tuple datatype -> this is only automatically done if it's not a string
                 rule_val = (rule[col_name])
                 # print("rule_val", rule_val, "\nrule type:", type(rule_val))
-                if is_string_dtype(example_dtype) and example_val != rule_val:
-                    rule = rule.drop(labels=[col_name])
-                elif is_numeric_dtype(example_dtype):
-                    if example_val > rule_val[1]:
-                        # print("new upper limit", (rule_val[0], example_val))
-                        rule[col_name] = Bounds(lower=rule_val[0], upper=example_val)
-                    elif example_val < rule_val[0]:
-                        # print("new lower limit", (example_val, rule_val[1]))
-                        rule[col_name] = Bounds(lower=example_val, upper=rule_val[1])
-                        # print("updated:", rule)
+                # assert is_numeric_dtype(example_dtype), f'{col_name} {example_dtype}'
+                if not is_numeric_dtype(example_dtype):
+                    raise ValueError(f'{example_dtype} is not a numeric dtype')
+                if example_val > rule_val[1]:
+                    # print("new upper limit", (rule_val[0], example_val))
+                    rule[col_name] = Bounds(lower=rule_val[0], upper=example_val)
+                elif example_val < rule_val[0]:
+                    # print("new lower limit", (example_val, rule_val[1]))
+                    rule[col_name] = Bounds(lower=example_val, upper=rule_val[1])
+                    # print("updated:", rule)
         return rule
 
 
-    def hvdm(self, examples, rule, counts, classes, min_max, class_col_name):
+    def hvdm(self, examples, rule, classes, min_max, class_col_name):
         """
         Computes the distance (Heterogenous Value Difference Metrics) between a rule/example and another example.
         Assumes that there's at least 1 feature shared between <rule> and <examples>.
@@ -698,7 +665,6 @@ class BRACID:
         ----------
         examples: pd.DataFrame - examples
         rule: pd.Series - (m x n) rule
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         classes: list of str - class labels in the dataset.
         min_max: pd: pd.DataFrame - contains min/max values per numeric feature
         class_col_name: str - name of class label
@@ -718,11 +684,9 @@ class BRACID:
                 continue
             # Extract column from both dataframes into numpy array
             example_feature_col = examples[col_name]
-            # Compute nominal/numeric distance
-            if pd.api.types.is_numeric_dtype(example_feature_col):
-                dist_squared = self.di(example_feature_col, rule, min_max)
-            else:
-                dist_squared = self.svdm(example_feature_col, rule, counts, classes)
+            # Compute numeric distance
+            self._assert_is_numeric_dtype(example_feature_col)
+            dist_squared = self.di(example_feature_col, rule, min_max)
             dists.append(dist_squared)
         # Note: this line assumes that there's at least 1 feature
         distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
@@ -730,67 +694,6 @@ class BRACID:
         distances[my_vars.DIST] = distances.select_dtypes(float).sum(1)
         distances = distances.sort_values(my_vars.DIST, ascending=True)
         return distances
-
-
-    def svdm(self, example_feat, rule_feat, counts, classes):
-        """
-        Computes the (squared) Value difference metric for nominal values.
-
-        Parameters
-        ----------
-        example_feat: pd.Series - column (=feature) containing all examples.
-        rule_feat: pd.Series - column (=feature) of the rule.
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
-        classes: list of str - class labels in the dataset.
-
-        Returns
-        -------
-        pd.Series.
-        (squared) distance of each example.
-
-        """
-        col_name = example_feat.name
-        rule_val = rule_feat[col_name]
-        dists = []
-        # Feature is NaN in rule -> all distances will become 1 automatically by definition
-        if pd.isnull(rule_val):
-            print("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
-            dists = [(idx, 1.0) for idx, _ in example_feat.items()]
-            zlst = list(zip(*dists))
-            out = pd.Series(zlst[1], index=zlst[0], name=col_name)
-            return out
-        n_rule = counts[col_name][rule_val]
-        # For every row/example
-        for idx, example_val in example_feat.items():
-            if pd.isnull(example_val):
-                print("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
-                dist = 1.0
-            else:
-                # print("compute example", idx)
-                # print("------------------")
-                # print(example_val)
-                dist = 0.
-                if example_val != rule_val:
-                    for k in classes:
-                        # print("processing class", k)
-                        n_example = counts[col_name][example_val]
-                        nk_example = counts[col_name][my_vars.CONDITIONAL][example_val][k]
-                        nk_rule = counts[col_name][my_vars.CONDITIONAL][rule_val][k]
-                        # print("n_example", n_example)
-                        # print("nk_example", nk_example)
-                        # print("n_rule", n_rule)
-                        # print("nk_rule", nk_rule)
-                        res = abs(nk_example/n_example - nk_rule/n_rule)
-                        dist += res
-                        # print("|{}/{}-{}/{}| = {}".format(nk_example, n_example, nk_rule, n_rule, res))
-                        # print("d={}".format(dist))
-                # else:
-                #     print("same val ({}) in row {}".format(example_val, idx))
-            dists.append((idx, dist*dist))
-        # Split tuples into 2 separate lists, one containing the indices and the other one containing the values
-        zlst = list(zip(*dists))
-        out = pd.Series(zlst[1], index=zlst[0], name=col_name)
-        return out
 
 
     def di(self, example_feat, rule_feat, min_max):
@@ -846,7 +749,7 @@ class BRACID:
         return out
 
 
-    def evaluate_f1_initialize_confusion_matrix(self, df, rules, class_col_name, counts, min_max, classes):
+    def evaluate_f1_initialize_confusion_matrix(self, df, rules, class_col_name, min_max, classes):
         """
         Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
         Builds the initial confusion matrix.
@@ -856,7 +759,6 @@ class BRACID:
         df: pd.DataFrame - examples
         rules: list of pd.Series - list of rules
         class_col_name: str - name of the column in the series holding the class label
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         min_max: pd.DataFrame - min and max value per numeric feature.
         classes: list of str - class labels in the dataset.
 
@@ -876,7 +778,7 @@ class BRACID:
         # Problem: rules can't be stored in dataFrame because they might contain different features
         for row_id, example in df.iterrows():
             # print("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
-            rule, rule_dist, _ = self.find_nearest_rule(rules, example, class_col_name, counts, min_max, classes,
+            rule, rule_dist, _ = self.find_nearest_rule(rules, example, class_col_name, min_max, classes,
                                                 self.examples_covered_by_rule,
                                                 label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
 
@@ -888,7 +790,7 @@ class BRACID:
         return self.f1(self.conf_matrix)
 
 
-    def evaluate_f1_update_confusion_matrix(self, df, new_rule, class_col_name, counts, min_max, classes):
+    def evaluate_f1_update_confusion_matrix(self, df, new_rule, class_col_name, min_max, classes):
         """
         Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
         Assumes that the initial confusion matrix already exists, hence evaluate_f1_initialize_confusion_matrix() should
@@ -899,7 +801,6 @@ class BRACID:
         df: pd.DataFrame - examples
         new_rule: pd.Series - new rule whose effect on the F1 score should be evaluated
         class_col_name: str - name of the column in the series holding the class label
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         min_max: pd.DataFrame - min and max value per numeric feature.
         classes: list of str - class labels in the dataset.
 
@@ -922,7 +823,7 @@ class BRACID:
             # print("Potentially update nearest rule for example {}:\n{}"
             #       .format(example.name, "------------------------------------"))
 
-            _, new_dist, is_closest = self.find_nearest_rule([new_rule], example, class_col_name, counts, min_max, classes,
+            _, new_dist, is_closest = self.find_nearest_rule([new_rule], example, class_col_name, min_max, classes,
                                                         self.examples_covered_by_rule, label_type=my_vars.ALL_LABELS,
                                                         only_uncovered_neighbors=False)
             if new_dist is not None:
@@ -954,7 +855,7 @@ class BRACID:
         return self.f1(self.conf_matrix)
 
 
-    def evaluate_f1_temporarily(self, df, new_rule, new_rule_id, class_col_name, counts, min_max, classes):
+    def evaluate_f1_temporarily(self, df, new_rule, new_rule_id, class_col_name, min_max, classes):
         """
         Same as evaluate_f1_update_confusion_matrix(), with the difference that the actual confusion matrix isn't updated,
         but a copy of it.
@@ -967,7 +868,6 @@ class BRACID:
         or it could replace an existing rule or nothing happens. Note that if <new_rule>.name is passed as the value for
         <new_rule_id>, it has no effect on the results at all.
         class_col_name: str - name of the column in the series holding the class label
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         min_max: pd.DataFrame - min and max value per numeric feature.
         classes: list of str - class labels in the dataset.
 
@@ -1003,7 +903,7 @@ class BRACID:
         for example_id, example in df.iterrows():
             # print("Potentially update nearest rule for example {}:\n{}".format(example_id,
             #                                                                    "------------------------------------"))
-            _, new_dist, was_updated = self.find_nearest_rule([new_rule], example, class_col_name, counts, min_max, classes,
+            _, new_dist, was_updated = self.find_nearest_rule([new_rule], example, class_col_name, min_max, classes,
                                                         self.examples_covered_by_rule, label_type=my_vars.ALL_LABELS,
                                                         only_uncovered_neighbors=False)
             if was_updated:
@@ -1170,35 +1070,30 @@ class BRACID:
     def _are_duplicates(self, rule_i, rule_j):
         """Returns True if two rules are duplicates (= all values of the rules are identical) of each other and
         False otherwise"""
-        are_identical = True
         # Same number of features in both rules
-        if len(rule_i) == len(rule_j):
-            for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
-                # Same feature
-                if idx_i == idx_j:
-                    # Strings
-                    if isinstance(val_i, str):
-                        if val_i != val_j:
-                            are_identical = False
-                            break
-                    # Tuples
-                    elif isinstance(val_i, Bounds):
-                        lower_i, upper_i = val_i
-                        lower_j, upper_j = val_j
-                        if abs(lower_i - lower_j) > my_vars.PRECISION or abs(upper_i - upper_j > my_vars.PRECISION):
-                            are_identical = False
-                            break
-                    # Numbers
-                    else:
-                        if abs(val_i - val_j) > my_vars.PRECISION:
-                            are_identical = False
-                            break
-                else:
-                    are_identical = False
-                    break
-        else:
-            are_identical = False
-        return are_identical
+        if len(rule_i) != len(rule_j):
+            return False
+        
+        def _compare(val_i, val_j):
+            # Numbers
+            if isinstance(val_i, int):
+                return val_i == val_j
+            # Tuples/Bounds
+            assert issubclass(Bounds, tuple)
+            if isinstance(val_i, tuple):
+                lower_i, upper_i = val_i
+                lower_j, upper_j = val_j
+                return np.isclose(lower_i, lower_j, atol=my_vars.PRECISION) \
+                    and np.isclose(upper_i, upper_j, atol=my_vars.PRECISION)
+            raise ValueError(f'{val_i} ({type(val_i)}) is neither a int, tuple nor Bound.')
+        
+        for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
+            # Same feature
+            if idx_i != idx_j:
+                return False
+            if not _compare(val_i, val_j):
+                return False
+        return True
 
 
     def find_duplicate_rule_id(self, generalized_rule, rule_hash):
@@ -1322,7 +1217,7 @@ class BRACID:
         self._delete_old_rule_hash(duplicate_rule)
 
 
-    def add_one_best_rule(self, df, neighbors, rule, rules, f1,  class_col_name, counts, min_max, classes):
+    def add_one_best_rule(self, df, neighbors, rule, rules, f1,  class_col_name, min_max, classes):
         """
         Implements AddOneBestRule() from the paper, i.e. Algorithm 3.
 
@@ -1332,7 +1227,6 @@ class BRACID:
         rule: pd.Series - rule whose effect on the F1 score should be evaluated
         rules: list of pd.Series - list of all rules in the rule set RS and <rule> is at the end in that list
         class_col_name: str - name of the column in the series holding the class label
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         min_max: pd.DataFrame - min and max value per numeric feature.
         classes: list of str - class labels in the dataset.
 
@@ -1368,7 +1262,7 @@ class BRACID:
             generalized_rule = self.most_specific_generalization(example, rule, class_col_name, dtypes)
             # print("generalized rule:\n{}".format(generalized_rule))
             current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _\
-                = self.evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, counts, min_max,
+                = self.evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, min_max,
                                         classes)
             print(current_f1, best_f1)
             if current_f1 >= best_f1:
@@ -1428,7 +1322,7 @@ class BRACID:
         return improved, rules, best_f1
 
 
-    def add_all_good_rules(self, df, neighbors, rule, rules, f1, class_col_name, counts, min_max, classes):
+    def add_all_good_rules(self, df, neighbors, rule, rules, f1, class_col_name, min_max, classes):
         """
         Implements AddAllGoodRules() from the paper, i.e. Algorithm 3.
 
@@ -1439,7 +1333,6 @@ class BRACID:
         rule: pd.Series - rule whose effect on the F1 score should be evaluated
         rules: list of pd.Series - list of all rules in the rule set RS
         class_col_name: str - name of the column in the series holding the class label
-        counts: dict of Counters - contains for nominal classes how often the value of an co-occurs with each class label
         min_max: pd.DataFrame - min and max value per numeric feature.
         classes: list of str - class labels in the dataset.
 
@@ -1495,7 +1388,7 @@ class BRACID:
                 if duplicate_rule_id == my_vars.UNIQUE_RULE:
                     current_f1, current_conf_matrix, current_closest_rule, current_closest_examples, current_covered, \
                         updated_example_ids = \
-                        self.evaluate_f1_temporarily(df, generalized_rule, self.latest_rule_id, class_col_name, counts,
+                        self.evaluate_f1_temporarily(df, generalized_rule, self.latest_rule_id, class_col_name,
                                                 min_max, classes)
                     # Generalized rule is better
                     if current_f1 >= best_f1:
@@ -1601,7 +1494,7 @@ class BRACID:
                             # Otherwise no distance will be returned for examples with other labels than <generalized_rule>
                             dists = []
                             for neighbor_id, neighbor in neighbors.iterrows():
-                                _, dist, _ = self.find_nearest_rule([generalized_rule], neighbor, class_col_name, counts,
+                                _, dist, _ = self.find_nearest_rule([generalized_rule], neighbor, class_col_name,
                                                             min_max, classes, self.examples_covered_by_rule,
                                                             label_type=my_vars.ALL_LABELS,
                                                             only_uncovered_neighbors=False)
@@ -1758,7 +1651,7 @@ class BRACID:
         return improved, rules, best_f1
 
 
-    def extend_rule(self, df, k, rule, class_col_name, counts, min_max, classes):
+    def extend_rule(self, df, k, rule, class_col_name, min_max, classes):
         """
         Extends a rule in terms of numeric features according to algorithm 4 of the paper, i.e. extend().
 
@@ -1768,7 +1661,6 @@ class BRACID:
         k: int - number of neighbors with opposite label of <rule> to consider
         rule: pd.Series - rule
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset. It's assumed to be binary.
 
@@ -1778,7 +1670,7 @@ class BRACID:
         Extended rule.
 
         """
-        neighbors, _, _ = self.find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
+        neighbors, _, _ = self.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
                                                 label_type=my_vars.OPPOSITE_LABEL_TO_RULE, only_uncovered_neighbors=True)
         # print("neighbors")
         # print(neighbors)
@@ -1822,7 +1714,7 @@ class BRACID:
         return df
 
 
-    def delete_rule_statistics(self, df, rule, rules, final_rules, class_col_name, counts, min_max, classes):
+    def delete_rule_statistics(self, df, rule, rules, final_rules, class_col_name, min_max, classes):
         """
         Deletes all statistics related to a specific rule.
 
@@ -1833,7 +1725,6 @@ class BRACID:
         rules: list of pd.Series - list of candidate rules
         final_rules: dict - dictionary of final rules with rule IDs as keys and rules (pd.Series) as value
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset.
 
@@ -1880,12 +1771,12 @@ class BRACID:
                 example = df.loc[example_id]
                 print("example: {} old rule: {}".format(example[class_col_name], rule[class_col_name]))
                 # Closest rule
-                rem_rule, rem_dist, rem_is_updated = self.find_nearest_rule(rules, example, class_col_name, counts, min_max,
+                rem_rule, rem_dist, rem_is_updated = self.find_nearest_rule(rules, example, class_col_name, min_max,
                                                                     classes, self.examples_covered_by_rule,
                                                                     label_type=my_vars.SAME_LABEL_AS_RULE,
                                                                     only_uncovered_neighbors=False)
                 fin_rule, fin_dist, fin_is_updated = self.find_nearest_rule(final_rules.values(), example, class_col_name,
-                                                                    counts, min_max, classes,
+                                                                    min_max, classes,
                                                                     self.examples_covered_by_rule,
                                                                     label_type=my_vars.SAME_LABEL_AS_RULE,
                                                                     only_uncovered_neighbors=False)
@@ -1935,7 +1826,7 @@ class BRACID:
                 .format(rule.name))
 
 
-    def bracid(self, df, k, class_col_name, counts, min_max, classes, minority_label):
+    def bracid(self, df, k, class_col_name, min_max, classes, minority_label):
         """
         Implements the actual BRACID algorithm according to Algorithm 1 in the paper.
 
@@ -1944,7 +1835,6 @@ class BRACID:
         df: pd.DataFrame - dataset
         k: int - number of neighbors with opposite label of the current example to consider
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset. It's assumed to be binary.
         minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
@@ -1960,7 +1850,7 @@ class BRACID:
         self.minority_class = minority_label
         self.init_statistics(df)
         print("minority class label:", self.minority_class)
-        df, rules = self.add_tags_and_extract_rules(df, k, class_col_name, counts, min_max, classes)
+        df, rules = self.add_tags_and_extract_rules(df, k, class_col_name, min_max, classes)
         print("initial rules")
         print(rules)
         # {rule_id: rule}
@@ -1971,7 +1861,7 @@ class BRACID:
             rule_hash = self.compute_hashable_key(rule)
             print("rule/ hash:", rule_hash)
             self.unique_rules.setdefault(rule_hash, set()).add(rule.name)
-        f1 = self.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, counts, min_max, classes)
+        f1 = self.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, min_max, classes)
         while keep_running:
             improved = False
             while len(rules) > 0:
@@ -1997,29 +1887,29 @@ class BRACID:
                 print("covered examples", self.examples_covered_by_rule)
                 # Minority class label
                 if seed_label == minority_label:
-                    neighbors, dists, _ = self.find_nearest_examples(df, k, rule, class_col_name, counts, min_max, classes,
+                    neighbors, dists, _ = self.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
                                                                 label_type=my_vars.SAME_LABEL_AS_RULE,
                                                                 only_uncovered_neighbors=True)
                     # Neighbors exist
                     # if neighbors is not None:
                     if seed_tag == ExampleClass.SAFE:
                         improved, generalized_rules, f1 = self.add_one_best_rule(df, neighbors, rule, rules, f1,
-                                                                            class_col_name, counts, min_max, classes)
+                                                                            class_col_name, min_max, classes)
                     else:
                         if rule.name == 3:
                             print("final rules so far")
                             print(final_rules)
                         improved, generalized_rules, f1 = self.add_all_good_rules(df, neighbors, rule, rules, f1,
-                                                                            class_col_name, counts, min_max, classes)
+                                                                            class_col_name, min_max, classes)
                     if not improved:
                         # Don't extend for outlier
                         if iteration != 0:
-                            extended_rule = self.extend_rule(df, k, rule, class_col_name, counts, min_max, classes)
+                            extended_rule = self.extend_rule(df, k, rule, class_col_name, min_max, classes)
                             final_rules[extended_rule.name] = extended_rule
                             # Delete rule
                             removed = rules.pop()
                             print("removed rule after extension:\n{}".format(removed))
-                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
+                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, min_max,
                                                 classes)
                     else:
                         # Use updated rules
@@ -2029,13 +1919,13 @@ class BRACID:
                     n = k
                     if seed_tag == ExampleClass.SAFE:
                         n = 1
-                    neighbors, dists, _ = self.find_nearest_examples(df, n, rule, class_col_name, counts, min_max, classes,
+                    neighbors, dists, _ = self.find_nearest_examples(df, n, rule, class_col_name, min_max, classes,
                                                                 label_type=my_vars.SAME_LABEL_AS_RULE,
                                                                 only_uncovered_neighbors=True)
                     # Neighbors exist
                     # if neighbors is not None:
                     improved, generalized_rules, f1 = self.add_one_best_rule(df, neighbors, rule, rules, f1, class_col_name,
-                                                                        counts, min_max, classes)
+                                                                min_max, classes)
                     if not improved:
                         # Treat as noise
                         if iteration == 0:
@@ -2046,7 +1936,7 @@ class BRACID:
                             # Delete rule
                             removed = rules.pop()
                             print("removed rule after adding majority final rule:\n{}".format(removed))
-                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, counts, min_max,
+                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, min_max,
                                                 classes)
                     else:
                         # Use updated rules
@@ -2157,7 +2047,7 @@ class BRACID:
         return model
 
 
-    def predict_binary(self, model, test_examples, rules, classes, class_col_name, counts, min_max, for_multiclass=False):
+    def predict_binary(self, model, test_examples, rules, classes, class_col_name, min_max, for_multiclass=False):
         """
         Predicts the binary class labels of unknown examples. Sums up the support of (potentially multiple) rules that are
         closest to an example.
@@ -2171,7 +2061,6 @@ class BRACID:
         rules: dict - rules for the dataset, where rule IDs are keys and the rules (pd.Series) are values
         classes: list of str - list of class labels - only 2 are considered though, namely minority label and rest
         class_col_name: str - name of the column with the class label in <training_examples>
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         for_multiclass: bool - True if the binary classification will be used for predicting multiclass labels. In this case
         the label for the minority class will always be returned (because we need to choose the minority label across all
@@ -2191,7 +2080,7 @@ class BRACID:
         # {example_id: Predictions(...)}
         preds = {}
         # Compute support and predicted label
-        supports = self.compute_rule_support_per_example(rules, test_examples, model, class_col_name, counts, min_max, classes)
+        supports = self.compute_rule_support_per_example(rules, test_examples, model, class_col_name, min_max, classes)
         majority_label = classes[0]
         if self.minority_class == classes[0]:
             majority_label = classes[1]
@@ -2219,7 +2108,7 @@ class BRACID:
         return test_examples
 
 
-    def compute_rule_support_per_example(self, rules, examples, model, class_col_name, counts, min_max, classes):
+    def compute_rule_support_per_example(self, rules, examples, model, class_col_name, min_max, classes):
         """
         Computes the support of the various rules for each unlabeled example. Even if class labels exist, they are ignored.
         Support computation takes into account that multiple rules might cover an example or that multiple rules are
@@ -2233,7 +2122,6 @@ class BRACID:
         indicating the support (= % of covered examples whose labels are predicted correctly) for the minority and majority
         labels respectively
         class_col_name: str - name of the column with the class label in <training_examples>
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset
 
@@ -2290,7 +2178,7 @@ class BRACID:
                 # TODO: write as a class and don't update in find_nearest_rule (or nearest_examples), but return the
                 #         # updated entries to decide depending on the scenario whether to update the data or not
                 neighbors, dists, is_closest = \
-                    self.find_nearest_examples(remaining_examples, k, rule, class_col_name, counts, min_max, classes,
+                    self.find_nearest_examples(remaining_examples, k, rule, class_col_name, min_max, classes,
                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
                 if neighbors is not None:
                     for example_id, row in dists.iterrows():
@@ -2353,7 +2241,7 @@ class BRACID:
         max_example_id = df.index.max()
         self.latest_rule_id = max_example_id
 
-    def extract_rules_and_train_and_predict_multiclass(self, train_set, test_set, counts, min_max, class_col_name, k):
+    def extract_rules_and_train_and_predict_multiclass(self, train_set, test_set, min_max, class_col_name, k):
         """
         Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
         labels for a multiclass classification task. Converts a multiclass problem into a one-vs-all scheme.
@@ -2362,7 +2250,6 @@ class BRACID:
         ----------
         train_set: pd.DataFrame - training set where each row represents a training example
         test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         class_col_name: str - name of the column with the class label in <training_examples>
         k: int - number of neighbors with opposite label of the current example to consider
@@ -2401,9 +2288,9 @@ class BRACID:
             print("classes to be used in current run", train[class_col_name].unique())
             print("####test set######")
             print(test)
-            rules = self.bracid(train, k, class_col_name, counts, min_max, classes, minority_label)
+            rules = self.bracid(train, k, class_col_name, min_max, classes, minority_label)
             model = self.train_binary(rules, train, minority_label, class_col_name)
-            preds_df = self.predict_binary(model, test, rules, classes, class_col_name, counts, min_max, for_multiclass=True)
+            preds_df = self.predict_binary(model, test, rules, classes, class_col_name, min_max, for_multiclass=True)
             all_rules[minority_label] = rules
             # Update predicted label and confidence if confidence is higher than the currently best confidence
             res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
@@ -2417,7 +2304,7 @@ class BRACID:
             # print("bla")
         return all_rules, res
 
-    def extract_rules_and_train_and_predict_binary(self, train_set, test_set, counts, min_max, classes, minority_label,
+    def extract_rules_and_train_and_predict_binary(self, train_set, test_set, min_max, classes, minority_label,
                                                 class_col_name, k):
         """
         Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
@@ -2427,7 +2314,6 @@ class BRACID:
         ----------
         train_set: pd.DataFrame - training set where each row represents a training example
         test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset. It's assumed to be binary.
         minority_label: str - label of the minority class
@@ -2444,9 +2330,9 @@ class BRACID:
         Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
 
         """
-        rules = self.bracid(train_set, k, class_col_name, counts, min_max, classes, minority_label)
+        rules = self.bracid(train_set, k, class_col_name, min_max, classes, minority_label)
         model = self.train_binary(rules, train_set, minority_label, class_col_name)
-        preds_df = self.predict_binary(model, test_set, rules, classes, class_col_name, counts, min_max)
+        preds_df = self.predict_binary(model, test_set, rules, classes, class_col_name, min_max)
         return rules, preds_df
 
 
@@ -2537,7 +2423,7 @@ class BRACID:
             # print("bla")
         return all_rules, res
 
-    def cv_binary(self, dataset, k, class_col_name, counts, min_max, classes, minority_label, folds=10, seed=13):
+    def cv_binary(self, dataset, k, class_col_name, min_max, classes, minority_label, folds=10, seed=13):
         """
         Performs cross-validation on a given binary dataset.
 
@@ -2546,7 +2432,6 @@ class BRACID:
         dataset: pd.DataFrame - dataset
         k: int - number of neighbors with opposite label of <rule> to consider
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset. It's assumed to be binary
         minority_label: str - class label of the minority class. Note that all other labels are grouped into another class
@@ -2578,7 +2463,7 @@ class BRACID:
             train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
             # print("training set: {}".format(train_set.shape))
             # print(train_set)
-            _, preds_df = self.extract_rules_and_train_and_predict_binary(train_set, test_set, counts, min_max, classes,
+            _, preds_df = self.extract_rules_and_train_and_predict_binary(train_set, test_set, min_max, classes,
                                                                     minority_label, class_col_name, k)
             predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
             true.extend(preds_df[class_col_name].values)
@@ -2590,7 +2475,7 @@ class BRACID:
         return micro_f1, classwise_f1
 
 
-    def cv_multiclass(self, dataset, k, class_col_name, counts, min_max, classes, folds=10, seed=13):
+    def cv_multiclass(self, dataset, k, class_col_name, min_max, classes, folds=10, seed=13):
         """
         Performs cross-validation on a given dataset, but handles multiclass
         problems using the one-vs-all scheme, i.e. if there are m classes in the dataset, m classifiers are trained
@@ -2605,7 +2490,6 @@ class BRACID:
         dataset: pd.DataFrame - dataset
         k: int - number of neighbors with opposite label of <rule> to consider
         class_col_name: str - name of class label
-        counts: dict - lookup table for SVDM
         min_max: pd:DataFrame - contains min/max values per numeric feature
         classes: list of str - class labels in the dataset.
         folds: int - number of folds in cross-validation
@@ -2634,7 +2518,7 @@ class BRACID:
         for i in range(folds):
             test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
             train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
-            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(train_set, test_set, counts, min_max,
+            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max,
                                                                         class_col_name, k)
             preds = preds_df[my_vars.PREDICTED_LABEL].values
             true = preds_df[class_col_name].values
@@ -2661,8 +2545,7 @@ if __name__ == "__main__":
     k = 3
     classes = ["Iris-setosa", "Iris-virginica", "Iris-versicolor"]
     bracid = BRACID()
-    dataset, lookup, rules, min_max = bracid.read_dataset(src, positive_class=classes[0])
+    dataset, rules, min_max = bracid.read_dataset(src, positive_class=classes[0])
     print("own function")
     print(dataset)
     print(dataset.columns)
-    print(lookup)
