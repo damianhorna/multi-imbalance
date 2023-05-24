@@ -35,7 +35,7 @@ class RBO(BaseSampler):
         :param k:
             number of neighbors used for potential approximation
         :param distance_function:
-            vectorized function that calculates distance between two vectors
+            vectorized function that calculates distance between an example and array of examples, defaults to L1 norm
         """
         super().__init__()
         self.gamma = gamma
@@ -54,54 +54,59 @@ class RBO(BaseSampler):
         :return:
             resampled X, resampled y
         """
-
         minority_class = min(list(Counter(y).items()), key=lambda x: x[1])[0]
 
         minority_examples = X[y == minority_class]
         majority_examples = X[y != minority_class]
 
-        S = self._generate_examples(minority_examples, majority_examples, minority_class)
+        synthetic_examples = self._generate_examples(minority_examples, majority_examples, minority_class)
 
-        return np.vstack([X, S]), np.hstack([y, np.full((len(S),), minority_class)])
+        return np.vstack([X, synthetic_examples]), np.hstack([y, np.full((len(synthetic_examples),), minority_class)])
 
     def _generate_examples(self, minority_examples: np.ndarray, majority_examples: np.ndarray, minority_class: Any) -> \
             np.ndarray:
-        S = []
+        synthetic_examples = []
 
         X = np.vstack([minority_examples, majority_examples])
         y = np.hstack([np.full((len(minority_examples),), minority_class),
                        np.full((len(majority_examples),), 1 - minority_class)])
-        feature_count = X.shape[1]
+        self.feature_count = X.shape[1]
 
-        minority_nearest = [np.argsort((abs(minority - X)).sum(1))[1:self.k + 1] for minority in minority_examples]
+        minority_nearest_index = [np.argsort(self.distance_function(minority, X))[1:self.k + 1] for minority in
+                                  minority_examples]
 
-        while len(minority_examples) + len(S) < len(majority_examples):
+        while len(minority_examples) + len(synthetic_examples) < len(majority_examples):
             random_minority_index = random.randint(0, len(minority_examples) - 1)
             current_x = minority_examples[random_minority_index].copy()
-            nearest_index = minority_nearest[random_minority_index]
+            nearest_index = minority_nearest_index[random_minority_index]
             nearest_classes = y[nearest_index]
-            x_majority = X[nearest_index[nearest_classes != minority_class]]
-            x_minority = X[nearest_index[nearest_classes == minority_class]]
+            X_nearest_majority = X[nearest_index[nearest_classes != minority_class]]
+            X_nearest_minority = X[nearest_index[nearest_classes == minority_class]]
 
-            mutual_potential = self.mutual_class_potential(current_x, x_majority, x_minority)
+            current_x = self._generate_minority_example(current_x, X_nearest_majority, X_nearest_minority)
+            synthetic_examples.append(current_x)
 
-            for i in range(self.iterations):
-                direction = np.zeros(feature_count)
-                direction[np.random.randint(feature_count)] = 1
-                sign = -1 if random.randint(0, 1) else 1
-                new_x = current_x + direction * sign * self.step
-                new_potential = self.mutual_class_potential(new_x, x_majority, x_minority)
-                if new_potential < mutual_potential:
-                    current_x = new_x
-                    mutual_potential = self._potential(current_x, x_majority) - self._potential(
-                        current_x, x_minority)
+        return np.array(synthetic_examples)
 
-            S.append(current_x)
-        return np.array(S)
+    def _generate_minority_example(self, current_x, x_majority, x_minority):
+        mutual_potential = self._mutual_class_potential(current_x, x_majority, x_minority)
+        for i in range(self.iterations):
+            new_x = self._perturb_x(current_x, self.feature_count)
+            new_mutual_potential = self._mutual_class_potential(new_x, x_majority, x_minority)
+            if new_mutual_potential < mutual_potential:
+                current_x = new_x
+                mutual_potential = new_mutual_potential
+        return current_x
 
-    def mutual_class_potential(self, x, x_majority, x_minority):
-        return self._potential(x, x_majority) - self._potential(
-            x, x_minority)
+    def _perturb_x(self, current_x, feature_count):
+        direction = np.zeros(feature_count)
+        direction[np.random.randint(feature_count)] = 1
+        sign = -1 if random.randint(0, 1) else 1
+        new_x = current_x + direction * sign * self.step
+        return new_x
+
+    def _mutual_class_potential(self, x, x_majority, x_minority):
+        return self._potential(x, x_majority) - self._potential(x, x_minority)
 
     def _potential(self, x: np.ndarray, collection: np.ndarray) -> float:
         distances = self.distance_function(x, collection)

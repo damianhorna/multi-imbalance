@@ -50,34 +50,6 @@ def test_mcrbo_resampling_counts():
     assert cnt[2] == cnt[3]
 
 
-def distance(x, y, p_norm=1):
-    return np.sum(np.abs(x - y) ** p_norm) ** (1 / p_norm)
-
-
-def rbf(d, gamma):
-    # print("d:", d)
-    if gamma == 0.0:
-        return 0.0
-    else:
-        return np.exp(-(d / gamma) ** 2)
-
-
-def mutual_class_potential(point, majority_points, minority_points, gamma):
-    result = 0.0
-    weights = []
-    for majority_point in majority_points:
-        print(rbf(distance(point, majority_point), gamma))
-        weights.append(rbf(distance(point, majority_point), gamma))
-        result += rbf(distance(point, majority_point), gamma)
-
-    print("orig_weights:", weights)
-    print("orig_total:", result)
-    for minority_point in minority_points:
-        result -= rbf(distance(point, minority_point), gamma)
-
-    return result
-
-
 def test_mutual_potential_function():
     clf = RBO(gamma=1000, step=2, iterations=10, k=3)
 
@@ -93,4 +65,4 @@ def test_mutual_potential_function():
 
     x = np.array([0, 0])
 
-    assert clf.mutual_class_potential(x, X_majority, X_minority) == pytest.approx(0)
+    assert clf._mutual_class_potential(x, X_majority, X_minority) == pytest.approx(0)
