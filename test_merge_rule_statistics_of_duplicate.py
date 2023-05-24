@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import merge_rule_statistics_of_duplicate, Bounds, compute_hashable_key, Data
+from scripts.bracid import merge_rule_statistics_of_duplicate, Bounds, compute_hashable_key, Data
 import scripts.vars as my_vars
 
 

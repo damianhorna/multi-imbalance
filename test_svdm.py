@@ -6,7 +6,7 @@ from pandas.api.types import is_string_dtype
 import numpy as np
 
 from scripts.vars import CONDITIONAL
-from scripts.utils import svdm
+from scripts.bracid import svdm
 
 
 class TestSvdm(TestCase):

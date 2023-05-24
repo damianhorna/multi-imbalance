@@ -4,7 +4,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 
-from scripts.utils import di
+from scripts.bracid import di
 
 
 class TestDi(TestCase):

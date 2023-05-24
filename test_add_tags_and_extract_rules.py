@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 
 from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
-from scripts.utils import add_tags_and_extract_rules, Bounds
+from scripts.bracid import add_tags_and_extract_rules, Bounds
 import scripts.vars as my_vars
 
 

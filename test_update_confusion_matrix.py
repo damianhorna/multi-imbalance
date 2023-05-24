@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 import scripts.vars as my_vars
-from scripts.utils import update_confusion_matrix
+from scripts.bracid import update_confusion_matrix
 
 
 class TestUpdateConfusionMatrix(TestCase):

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import train_binary, Bounds, Support
+from scripts.bracid import train_binary, Bounds, Support
 
 
 class TestTrain(TestCase):

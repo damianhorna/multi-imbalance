@@ -2,7 +2,7 @@ from unittest import TestCase
 from collections import Counter
 
 from scripts.vars import SAFE, NOISY, BORDERLINE
-from scripts.utils import assign_tag
+from scripts.bracid import assign_tag
 
 
 class TestAssignTag(TestCase):

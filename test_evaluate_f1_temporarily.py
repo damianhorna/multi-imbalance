@@ -4,7 +4,7 @@ import copy
 
 import pandas as pd
 
-from scripts.utils import evaluate_f1_temporarily, Data, Bounds
+from scripts.bracid import evaluate_f1_temporarily, Data, Bounds
 import scripts.vars as my_vars
 
 

@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.utils import extract_rules_and_train_and_predict_multiclass
+from scripts.bracid import extract_rules_and_train_and_predict_multiclass
 import scripts.vars as my_vars
 
 

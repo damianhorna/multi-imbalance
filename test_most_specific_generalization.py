@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import most_specific_generalization
+from scripts.bracid import most_specific_generalization
 
 
 class TestMostSpecificGeneralization(TestCase):

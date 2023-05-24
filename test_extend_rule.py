@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.utils import extend_rule, Bounds
+from scripts.bracid import extend_rule, Bounds
 import scripts.vars as my_vars
 
 

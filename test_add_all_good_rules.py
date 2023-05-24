@@ -3,7 +3,7 @@ from collections import Counter, deque
 
 import pandas as pd
 
-from scripts.utils import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
+from scripts.bracid import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
     Bounds, compute_hashable_key
 import scripts.vars as my_vars
 

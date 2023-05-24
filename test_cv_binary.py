@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.utils import cv_binary
+from scripts.bracid import cv_binary
 import scripts.vars as my_vars
 
 

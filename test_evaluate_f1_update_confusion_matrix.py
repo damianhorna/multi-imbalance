@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.utils import evaluate_f1_update_confusion_matrix, Data, Bounds
+from scripts.bracid import evaluate_f1_update_confusion_matrix, Data, Bounds
 import scripts.vars as my_vars
 
 
