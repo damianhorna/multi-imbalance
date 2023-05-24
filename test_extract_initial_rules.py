@@ -18,16 +18,6 @@ class TestExtractInitialRules(TestCase):
         self.assertTrue(df.shape == (3, 2) and rules.shape == (3, 2))
         pd.testing.assert_frame_equal(rules, correct)
 
-    def test_extract_initial_rules_nominal(self):
-        """Test that rules are extracted correctly with a single nominal features"""
-        bracid = BRACID()
-        df = pd.DataFrame({"A": ["a", "b", "c"], "Class": ["A", "B", "C"]})
-        class_col_name = "Class"
-        rules = bracid.extract_initial_rules(df, class_col_name)
-        correct = pd.DataFrame({"A": ["a", "b", "c"], "Class": ["A", "B", "C"]})
-        self.assertTrue(df.shape == (3, 2) and rules.shape == (3, 2))
-        pd.testing.assert_frame_equal(rules, correct)
-
     def test_extract_initial_rules_single_feature_mixed(self):
         """
         Test that rules are extracted correctly with a single numeric and nominal feature

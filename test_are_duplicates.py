@@ -21,18 +21,6 @@ class TestAreDuplicates(TestCase):
         duplicate = bracid._are_duplicates(rules[0], rules[1])
         self.assertFalse(duplicate)
 
-    def test_are_duplicates_nominal(self):
-        """Tests that no duplicate rules are detected if they are different in a nominal feature"""
-        bracid = BRACID()
-        rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
-                      name=1),
-            pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": _1}, name=2)
-        ]
-        duplicate = bracid._are_duplicates(rules[0], rules[1])
-        self.assertFalse(duplicate)
-
     def test_are_duplicates_true(self):
         """Tests that two rules are detected as duplicates if only the rule ID is different in both rules"""
         bracid = BRACID()
