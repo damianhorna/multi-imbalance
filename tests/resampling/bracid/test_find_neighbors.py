@@ -3,9 +3,9 @@ from collections import Counter
 
 import pandas as pd
 
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
-from scripts.bracid import BRACID, Data, Bounds
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds
 
 
 class TestFindNeighbors(TestCase):

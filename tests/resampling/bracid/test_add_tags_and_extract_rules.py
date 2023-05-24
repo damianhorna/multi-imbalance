@@ -3,11 +3,11 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
+from multi_imbalance.resampling.bracid.vars import CONDITIONAL, TAG
 # from scripts.utils import add_tags_and_extract_rules, Bounds
-from scripts.bracid import BRACID, Bounds
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, ExampleClass
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestAddTagsAndExtractRules(TestCase):
@@ -45,7 +45,7 @@ class TestAddTagsAndExtractRules(TestCase):
         correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
-                                TAG: [BORDERLINE, BORDERLINE, SAFE, NOISY, NOISY, BORDERLINE]
+                                TAG: [ExampleClass.BORDERLINE, ExampleClass.BORDERLINE, ExampleClass.SAFE, ExampleClass.NOISY, ExampleClass.NOISY, ExampleClass.BORDERLINE]
                                 })
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})

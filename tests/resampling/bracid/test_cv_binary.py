@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 
 # from scripts.utils import cv_binary
-from scripts.bracid import BRACID
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestCv(TestCase):

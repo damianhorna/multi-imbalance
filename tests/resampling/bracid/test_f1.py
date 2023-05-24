@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from scripts.bracid import BRACID, ConfusionMatrix
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, ConfusionMatrix
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestF1(TestCase):

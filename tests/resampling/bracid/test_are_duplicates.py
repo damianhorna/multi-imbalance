@@ -3,8 +3,8 @@ from unittest import TestCase
 import pandas as pd
 
 # from scripts.utils import _are_duplicates, Bounds
-from scripts.bracid import BRACID, Bounds
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
+from tests.resampling.bracid.classes_ import _0, _1
 
 class TestAreDuplicates(TestCase):
     """Tests _are_duplicates() from utils.py"""

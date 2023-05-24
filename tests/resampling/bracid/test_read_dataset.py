@@ -2,7 +2,7 @@ from unittest import TestCase
 import os
 from collections import Counter
 
-from scripts.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import BRACID
 
 
 class TestReadDataset(TestCase):

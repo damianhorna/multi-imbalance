@@ -4,9 +4,9 @@ from collections import Counter
 import pandas as pd
 
 # from scripts.utils import delete_rule_statistics, Bounds, compute_hashable_key, Data
-from scripts.bracid import BRACID, Bounds, Data
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestDeleteRuleStatistics(TestCase):

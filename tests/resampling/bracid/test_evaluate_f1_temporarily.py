@@ -4,9 +4,9 @@ import copy
 
 import pandas as pd
 
-from scripts.bracid import BRACID, Data, Bounds, ConfusionMatrix
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds, ConfusionMatrix
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestEvaluateF1Temporarily(TestCase):

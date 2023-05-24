@@ -4,9 +4,9 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.vars import CONDITIONAL
-from scripts.bracid import BRACID
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.vars import CONDITIONAL
+from multi_imbalance.resampling.bracid.bracid import BRACID
+from tests.resampling.bracid.classes_ import _0, _1
 
 
 class TestHvdm(TestCase):

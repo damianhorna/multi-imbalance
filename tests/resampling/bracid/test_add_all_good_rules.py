@@ -6,9 +6,9 @@ import pandas as pd
 # from scripts.utils import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
 #     Bounds, compute_hashable_key
 
-from scripts.bracid import BRACID, Bounds, Data, ConfusionMatrix
-import scripts.vars as my_vars
-from unit_tests.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix
+import multi_imbalance.resampling.bracid.vars as my_vars
+from tests.resampling.bracid.classes_ import _0, _1
 
 class TestAddAllGoodRules(TestCase):
     """Tests add_all_good_rules() in utils.py"""
