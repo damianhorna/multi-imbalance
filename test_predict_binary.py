@@ -100,7 +100,7 @@ class TestPredict(TestCase):
         correct_examples_per_rule = {}
         correct_rule_per_example = {}
 
-        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max, for_multiclass=False)
+        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, min_max, for_multiclass=False)
         correct = pd.DataFrame(
             {
                 my_vars.PREDICTED_LABEL: [_0, _0, _0, _1, _1, _0],
@@ -176,7 +176,7 @@ class TestPredict(TestCase):
                                4: Predictions(label=_1, confidence=0.9),
                                5: Predictions(label=_0, confidence=1.0)}
 
-        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, lookup, min_max,
+        df = bracid.predict_binary(model, test_set, rules, classes, class_col_name, min_max,
                                    for_multiclass=False)
         correct = pd.DataFrame(
             {

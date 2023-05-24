@@ -48,7 +48,7 @@ class TestCv(TestCase):
         k = 3
         folds = 2
         seed = 135
-        micro_f1, classwise_f1 = bracid.cv_binary(dataset, k, class_col_name, lookup, min_max, classes, minority_label,
+        micro_f1, classwise_f1 = bracid.cv_binary(dataset, k, class_col_name, min_max, classes, minority_label,
                                            folds=folds, seed=seed)
 
         correct_micro = 1/3

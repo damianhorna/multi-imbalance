@@ -69,7 +69,7 @@ class TestAddTags(TestCase):
                        "Class": _1}, name=5)
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, min_max, classes)
         # Due to floating point precision, use approximate comparison
         pd.testing.assert_frame_equal(tagged, correct)
 
@@ -129,7 +129,7 @@ class TestAddTags(TestCase):
                        "Class": _1}, name=5)
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, min_max, classes)
         # Due to floating point precision, use approximate comparison
         pd.testing.assert_frame_equal(tagged, correct)
 
@@ -191,7 +191,7 @@ class TestAddTags(TestCase):
         bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
-        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, min_max, classes)
         # Due to floating point precision, use approximate comparison
         pd.testing.assert_frame_equal(tagged, correct)
 
@@ -252,5 +252,5 @@ class TestAddTags(TestCase):
         bracid.seed_example_rule = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
-        tagged = bracid.add_tags(df, k, rules, class_col_name, lookup, min_max, classes)
+        tagged = bracid.add_tags(df, k, rules, class_col_name, min_max, classes)
         pd.testing.assert_frame_equal(tagged, correct)

@@ -58,7 +58,7 @@ class TestBracid(TestCase):
             5: pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=4.0), "C": Bounds(lower=1.0, upper=2.5),
                           "Class": _1}, name=5),
         }
-        rules = bracid.bracid(df, k, class_col_name, lookup, min_max, classes, minority_label)
+        rules = bracid.bracid(df, k, class_col_name, min_max, classes, minority_label)
         all_rules_are_equal = True
         for r in rules:
             if not rules[r].equals(correct_rules[r]):

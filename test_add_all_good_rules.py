@@ -76,7 +76,7 @@ class TestAddAllGoodRules(TestCase):
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
             5: Data(rule_id=2, dist=0.67015625)}
-        initial_f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, lookup, min_max, classes)
+        initial_f1 = bracid.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, min_max, classes)
         correct_confusion_matrix = ConfusionMatrix(TP={2, 5}, FP=set(), TN={0, 1}, FN={3, 4})
         correct_rules = 8
         self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
@@ -90,11 +90,11 @@ class TestAddAllGoodRules(TestCase):
         correct_initial_f1 = 2 * 0.5 * 1 / 1.5
         self.assertEqual(initial_f1, correct_initial_f1)
         k = 3
-        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, lookup, min_max, classes,
+        neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
         improved, updated_rules, f1 = bracid.add_all_good_rules(df, neighbors, rules[test_idx], rules, initial_f1,
-                                                         class_col_name, lookup, min_max, classes)
+                                                         class_col_name, min_max, classes)
         self.assertTrue(improved)
         print("f1", f1)
         correct_covered = {6: {0, 1, 2, 4, 5}, 7: {3}}

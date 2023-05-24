@@ -84,7 +84,7 @@ class TestEvaluateF1Temporarily(TestCase):
         correct_f1 = 0.8
 
         f1, conf_matrix, closest_rules, closest_examples, covered, updated_example_ids = \
-            bracid.evaluate_f1_temporarily(df, new_rule, new_rule.name, class_col_name, lookup, min_max, classes)
+            bracid.evaluate_f1_temporarily(df, new_rule, new_rule.name, class_col_name, min_max, classes)
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.010000000000000002),

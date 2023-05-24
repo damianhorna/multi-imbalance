@@ -59,7 +59,7 @@ class TestFindNearestRule(TestCase):
         bracid.unique_rules = {}
         bracid.conf_matrix = {}
         for example_id, example in df.iterrows():
-            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
+            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, min_max, classes,
                                                         bracid.examples_covered_by_rule,
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))
@@ -133,7 +133,7 @@ class TestFindNearestRule(TestCase):
         bracid.conf_matrix = {}
 
         for example_id, example in df.iterrows():
-            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, lookup, min_max, classes,
+            rule, dist, was_updated = bracid.find_nearest_rule(rules, example, class_col_name, min_max, classes,
                                                         bracid.examples_covered_by_rule,
                                                         label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
             # print("eid: {} rule:\n{}\ndist: {} updated: {}".format(example_id, rule, dist, was_updated))

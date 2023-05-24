@@ -45,7 +45,7 @@ class TestHvdm(TestCase):
         rule = pd.Series({"A": "high", "B": (1, 1), "Class": _1})
         classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         np.testing.assert_allclose(correct["A"], dist["A"])
         np.testing.assert_allclose(correct["B"], dist["B"])
@@ -84,7 +84,7 @@ class TestHvdm(TestCase):
         rule = pd.Series({"B": (1, 1), "Class": _1})
         classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         np.testing.assert_allclose(correct["B"], dist["B"])
         np.testing.assert_allclose(correct["dist"], dist["dist"])
@@ -122,7 +122,7 @@ class TestHvdm(TestCase):
         rule = pd.Series({"A": "high", "Class": _1})
         classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        dist = bracid.hvdm(df, rule, lookup, classes, min_max, class_col_name)
+        dist = bracid.hvdm(df, rule, classes, min_max, class_col_name)
         # Due to floating point precision, use approximate comparison
         np.testing.assert_allclose(correct["A"], dist["A"])
         np.testing.assert_allclose(correct["dist"], dist["dist"])
