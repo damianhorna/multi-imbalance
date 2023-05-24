@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.utils import find_nearest_rule, Data
+from scripts.bracid import find_nearest_rule, Data
 import scripts.vars as my_vars
 
 

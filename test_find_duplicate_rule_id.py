@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import find_duplicate_rule_id, Bounds, compute_hashable_key
+from scripts.bracid import find_duplicate_rule_id, Bounds, compute_hashable_key
 import scripts.vars as my_vars
 
 

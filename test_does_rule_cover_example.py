@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import does_rule_cover_example
+from scripts.bracid import does_rule_cover_example
 
 
 class TestDoesRuleCoverExample(TestCase):

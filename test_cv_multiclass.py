@@ -5,7 +5,7 @@ import pandas as pd
 import sklearn
 import numpy as np
 
-from scripts.utils import cv_multiclass
+from scripts.bracid import cv_multiclass
 import scripts.vars as my_vars
 
 

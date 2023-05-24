@@ -2,7 +2,7 @@ from unittest import TestCase
 import os
 from collections import Counter
 
-from scripts.utils import read_dataset
+from scripts.bracid import read_dataset
 
 
 class TestReadDataset(TestCase):

@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 
 import scripts.vars as my_vars
-from scripts.utils import find_nearest_examples, Data, Bounds
+from scripts.bracid import find_nearest_examples, Data, Bounds
 
 
 class TestFindNeighbors(TestCase):

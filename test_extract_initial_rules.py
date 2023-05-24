@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import extract_initial_rules
+from scripts.bracid import extract_initial_rules
 
 
 class TestExtractInitialRules(TestCase):

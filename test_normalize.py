@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from scripts.utils import normalize_dataframe, normalize_series
+from scripts.bracid import normalize_dataframe, normalize_series
 
 
 class TestNormalize(TestCase):

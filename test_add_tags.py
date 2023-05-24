@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from scripts.vars import CONDITIONAL, TAG, BORDERLINE, SAFE, NOISY
-from scripts.utils import add_tags, Bounds
+from scripts.bracid import add_tags, Bounds
 import scripts.vars as my_vars
 
 

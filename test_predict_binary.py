@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 
-from scripts.utils import predict_binary, Bounds, Support, Predictions
+from scripts.bracid import predict_binary, Bounds, Support, Predictions
 import scripts.vars as my_vars
 
 

@@ -5,7 +5,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
 from scripts.vars import CONDITIONAL
-from scripts.utils import create_svdm_lookup_column
+from scripts.bracid import create_svdm_lookup_column
 
 
 class TestCreateLookupMatrix(TestCase):

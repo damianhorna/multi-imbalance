@@ -4,7 +4,7 @@ from collections import Counter
 import pandas as pd
 
 # from utils import bracid, Bounds
-from scripts.utils import bracid, Bounds
+from scripts.bracid import bracid, Bounds
 # import vars as my_vars
 from scripts import vars as my_vars
 

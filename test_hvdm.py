@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from scripts.vars import CONDITIONAL
-from scripts.utils import hvdm
+from scripts.bracid import hvdm
 
 
 class TestHvdm(TestCase):

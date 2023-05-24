@@ -3,7 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-from scripts.utils import is_duplicate, Bounds
+from scripts.bracid import is_duplicate, Bounds
 import scripts.vars as my_vars
 
 

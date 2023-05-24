@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from scripts.utils import f1
+from scripts.bracid import f1
 import scripts.vars as my_vars
 
 

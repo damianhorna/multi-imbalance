@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from scripts.utils import _are_duplicates, Bounds
+from scripts.bracid import _are_duplicates, Bounds
 
 
 class TestAreDuplicates(TestCase):
