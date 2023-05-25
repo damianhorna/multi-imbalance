@@ -15,38 +15,19 @@ class TestDeleteRuleStatistics(TestCase):
     def test_delete_rule_statistics_unique_hash(self):
         """Deletes a rule with a unique hash"""
         bracid = BRACID()
-        extra_rule = pd.Series({"A": "high", "B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
+        extra_rule = pd.Series({"B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
                                 "Class": _0}, name=4)
         rules = [
             extra_rule,
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
         ]
-        df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _0, _0, _0, _0]})
         class_col_name = "Class"
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 1,
-                        'low': 2,
-                        my_vars.CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _0: 1
-                                    }),
-                                'low':
-                                    Counter({
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
         bracid.minority_class = _0
@@ -89,16 +70,16 @@ class TestDeleteRuleStatistics(TestCase):
     def test_delete_rule_statistics_collision(self):
         """Deletes a rule that shares its hash with other rules"""
         bracid = BRACID()
-        extra_rule = pd.Series({"A": "high", "B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
+        extra_rule = pd.Series({"B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
                                 "Class": _0}, name=4)
         rules = [
             extra_rule,
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=1),  # Duplicate
         ]
-        df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _0, _0, _0, _0]})
         class_col_name = "Class"
