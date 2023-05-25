@@ -3,7 +3,6 @@ from unittest import TestCase
 import pandas as pd
 
 from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data
-import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
 
 
@@ -15,9 +14,9 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         step in bracid()"""
         bracid = BRACID()
         rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=1),  # Duplicate
         ]
 
@@ -52,10 +51,10 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         correct_closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
                                             4: Data(rule_id=0, dist=0.13), 5: Data(rule_id=76, dist=3)}
         correct_covered_by_rule = {2: {3}, 0: {43, 12, 7}}
-        self.assertEqual(bracid.seed_rule_example, correct_seed_rule_example)
-        self.assertEqual(bracid.seed_example_rule, correct_seed_example_rule)
-        self.assertEqual(bracid.unique_rules, correct_unique_rules)
-        self.assertEqual(bracid.all_rules, correct_all_rules)
-        self.assertEqual(bracid.closest_examples_per_rule, correct_closest_examples_per_rule)
-        self.assertEqual(bracid.closest_rule_per_example, correct_closest_rule_per_example)
-        self.assertEqual(bracid.examples_covered_by_rule, correct_covered_by_rule)
+        self.assertDictEqual(bracid.seed_rule_example, correct_seed_rule_example)
+        self.assertDictEqual(bracid.seed_example_rule, correct_seed_example_rule)
+        self.assertDictEqual(bracid.unique_rules, correct_unique_rules)
+        self.assertDictEqual(bracid.all_rules, correct_all_rules)
+        self.assertDictEqual(bracid.closest_examples_per_rule, correct_closest_examples_per_rule)
+        self.assertDictEqual(bracid.closest_rule_per_example, correct_closest_rule_per_example)
+        self.assertDictEqual(bracid.examples_covered_by_rule, correct_covered_by_rule)
