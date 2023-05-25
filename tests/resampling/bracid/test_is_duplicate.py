@@ -15,12 +15,12 @@ class TestIsDuplicate(TestCase):
         """Tests if the duplicate rule is detected"""
         bracid = BRACID()
         rules = [
-            pd.Series({"A": "high", "B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "high", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=1, upper=1),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=1, upper=1),
                        "Class": _0}, name=1)
         ]
-        new_rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3),
+        new_rule = pd.Series({"B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3),
                               "Class": _0}, name=2)
         bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
@@ -30,12 +30,12 @@ class TestIsDuplicate(TestCase):
         """Tests if no duplicate rule is detected"""
         bracid = BRACID()
         rules = [
-            pd.Series({"A": "high", "B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "high", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=1, upper=1),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=1, upper=1),
                        "Class": _0}, name=1)
         ]
-        new_rule = pd.Series({"A": "high", "B": Bounds(lower=1, upper=3), "C": Bounds(lower=1, upper=3),
+        new_rule = pd.Series({"B": Bounds(lower=1, upper=3), "C": Bounds(lower=1, upper=3),
                               "Class": _0}, name=2)
         bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
