@@ -17,7 +17,7 @@ from collections import defaultdict
 
 from . import vars as my_vars
 
-class ExampleClass:
+class ExampleClass(enum.Enum):
     SAFE = enum.auto()
     NOISY = enum.auto()
     BORDERLINE = enum.auto()
