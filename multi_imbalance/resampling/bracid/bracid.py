@@ -63,7 +63,7 @@ class BRACID:
         # {example ei: tuple(rule ri, distance di)}
         self.closest_rule_per_example = {}
         # {rule ri: set(example ei, example ej)}
-        self.closest_examples_per_rule = defaultdict(set)
+        self._closest_examples_per_rule = defaultdict(set)
         self.conf_matrix = ConfusionMatrix()
         # {hash of rule ri: set(ID of rule ri, ID of rule rj)}
         self.unique_rules = {}
@@ -2236,12 +2236,29 @@ class BRACID:
         self.seed_example_rule = {}
         self.seed_rule_example = {}
         self.closest_rule_per_example = {}
-        self.closest_examples_per_rule = defaultdict(set)
+        self._closest_examples_per_rule = defaultdict(set)
         self.conf_matrix = ConfusionMatrix()
         self.examples_covered_by_rule = {}
         # Initial rule (with the highest index) will be derived from seed examples, so we already know the maximum ID now
         max_example_id = df.index.max()
         self.latest_rule_id = max_example_id
+
+    @property
+    def closest_examples_per_rule(self):
+        return self._closest_examples_per_rule
+    @closest_examples_per_rule.setter
+    def closest_examples_per_rule(self, v):
+        if v is None:
+            self._closest_examples_per_rule = None
+            return
+        if not isinstance(v, dict):
+            raise ValueError(f'closest_examples_per_rule cannot be assigned a non-dict object of type {type(v)}: {v}')
+        if self._closest_examples_per_rule is None:
+            self._closest_examples_per_rule = defaultdict(set, v)
+            return
+        assert isinstance(self._closest_examples_per_rule, defaultdict)
+        self._closest_examples_per_rule.clear()
+        self._closest_examples_per_rule.update(v)
 
     def extract_rules_and_train_and_predict_multiclass(self, train_set, test_set, min_max, class_col_name, k):
         """
