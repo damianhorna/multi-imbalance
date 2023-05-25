@@ -4,7 +4,6 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 
-# from scripts.utils import di
 from multi_imbalance.resampling.bracid.bracid import BRACID
 from tests.resampling.bracid.classes_ import _0, _1
 
@@ -18,7 +17,7 @@ class TestDi(TestCase):
                            "C": [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        rule = pd.Series({"A": "high", "B": (1, 2), "C":(1, np.NaN), "Class": _1})
+        rule = pd.Series({"B": (1, 2), "C":(1, np.NaN), "Class": _1})
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}})
         correct = [pd.Series([1/4*1/4, 0.0, 0.0, 1.0, 1/8*1/8, 0.0], name="A"),
                    pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], name="A")]
@@ -38,7 +37,7 @@ class TestDi(TestCase):
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, np.nan, 1, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        rule = pd.Series({"A": "high", "B": (np.NaN, 2), "Class": _1})
+        rule = pd.Series({"B": (np.NaN, 2), "Class": _1})
         min_max = pd.DataFrame({"B": {"min": 1, "max": 2}})
         correct = pd.Series([1.0, 1.0, 1.0, 1.0, 1.0, 1.0], name="A")
         for i, col_name in enumerate(df):
@@ -55,7 +54,7 @@ class TestDi(TestCase):
         df = pd.DataFrame({"A": ["high", np.nan, "high", "low", "low", "high"], "B": [3, 2, 1, .5, 1, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        rule = pd.Series({"A": "high", "B": (1, 2), "Class": _1})
+        rule = pd.Series({"B": (1, 2), "Class": _1})
         dist = None
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}})
         correct = pd.Series({0: 0.25*0.25, 1: 0, 2: 0, 3: 0.125*0.125, 4: 0, 5: 0.0})
