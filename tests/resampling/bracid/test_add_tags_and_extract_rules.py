@@ -15,53 +15,37 @@ class TestAddTagsAndExtractRules(TestCase):
 
     def test_add_tags_all_tags(self):
         """Add tags when using nominal and numeric features and assigning noisy, borderline and safe as tags"""
-        df = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         bracid = BRACID()
         bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 2,
-                        'low': 4,
-                        CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _1: 2
-                                    }),
-                                'low':
-                                    Counter({
-                                        _1: 2,
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
         bracid.latest_rule_id = 5
-        correct = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
+        correct = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
-                                TAG: [ExampleClass.BORDERLINE, ExampleClass.BORDERLINE, ExampleClass.SAFE, ExampleClass.NOISY, ExampleClass.NOISY, ExampleClass.BORDERLINE]
+                                TAG: [ExampleClass.BORDERLINE,
+                                      ExampleClass.BORDERLINE,
+                                      ExampleClass.BORDERLINE, ExampleClass.BORDERLINE,
+                                      ExampleClass.BORDERLINE,
+                                      ExampleClass.NOISY]
                                 })
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         k = 2
         correct_rules = [
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
-            pd.Series({"A": "low", "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
-            pd.Series({"A": "high", "B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
+            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
                        "Class": _1}, name=2),
-            pd.Series({"A": "low", "B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
+            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
                        "Class": _1}, name=3),
-            pd.Series({"A": "low", "B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
+            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
                        "Class": _1}, name=4),
-            pd.Series({"A": "high", "B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
+            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": _1}, name=5)
         ]
         bracid.all_rules = {}
@@ -81,7 +65,7 @@ class TestAddTagsAndExtractRules(TestCase):
         pd.testing.assert_frame_equal(tagged, correct)
         self.assertEqual(bracid.seed_example_rule, correct_seed_example_rule)
         self.assertEqual(bracid.seed_rule_example, correct_seed_rule_example)
-        self.assertTrue(bracid.all_rules.keys() == correct_all_rules.keys())
+        self.assertEqual(bracid.all_rules.keys(),  correct_all_rules.keys())
         self.assertEqual(bracid.latest_rule_id, correct_latest_id)
         for idx, rule in enumerate(rules):
             pd.testing.assert_series_equal(rule, correct_all_rules[idx])
