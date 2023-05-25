@@ -13,6 +13,7 @@ from sklearn.metrics import f1_score
 import numpy as np
 import enum
 import dataclasses
+from collections import defaultdict
 
 from . import vars as my_vars
 
@@ -59,7 +60,7 @@ class BRACID:
         # {example ei: tuple(rule ri, distance di)}
         self.closest_rule_per_example = {}
         # {rule ri: set(example ei, example ej)}
-        self.closest_examples_per_rule = {}
+        self.closest_examples_per_rule = defaultdict(set)
         self.conf_matrix = ConfusionMatrix()
         # {hash of rule ri: set(ID of rule ri, ID of rule rj)}
         self.unique_rules = {}
@@ -2234,7 +2235,7 @@ class BRACID:
         self.seed_example_rule = {}
         self.seed_rule_example = {}
         self.closest_rule_per_example = {}
-        self.closest_examples_per_rule = {}
+        self.closest_examples_per_rule = defaultdict(set)
         self.conf_matrix = ConfusionMatrix()
         self.examples_covered_by_rule = {}
         # Initial rule (with the highest index) will be derived from seed examples, so we already know the maximum ID now

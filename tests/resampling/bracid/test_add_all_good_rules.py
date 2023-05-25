@@ -9,6 +9,7 @@ import pandas as pd
 from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix
 import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
+from tests.resampling.bracid.assertions import assert_almost_equal
 
 class TestAddAllGoodRules(TestCase):
     """Tests add_all_good_rules() in utils.py"""
@@ -62,16 +63,7 @@ class TestAddAllGoodRules(TestCase):
         correct_rules = 7
         self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
 
-        def assert_almost_equal(bracid_closest_rule_per_example, initial_correct_rules):
-            # Make sure confusion matrix, closest rule per example are correct at the beginning
-            for example_id in bracid_closest_rule_per_example:
-                rule_id, dist = bracid_closest_rule_per_example[example_id]
-                with self.subTest(f'{example_id}: rule_id'):
-                    self.assertEqual(rule_id, initial_correct_rules[example_id].rule_id)
-                with self.subTest(f'{example_id}: dist'):
-                    self.assertAlmostEqual(dist, initial_correct_rules[example_id].dist, delta=0.001)
-
-        assert_almost_equal(bracid.closest_rule_per_example, initial_correct_closest_rule_per_example)
+        assert_almost_equal(self, bracid.closest_rule_per_example, initial_correct_closest_rule_per_example)
 
         # bracid_closest_rule_per_example = {example_id: Data(*bracid.closest_rule_per_example[example_id]) for example_id in bracid.closest_rule_per_example}
         # self.assertDictEqual(initial_correct_closest_rule_per_example, bracid_closest_rule_per_example)
@@ -96,7 +88,7 @@ class TestAddAllGoodRules(TestCase):
         correct_covered = {2: {3}, 6: {1, 2, 5}}
         correct_f1 = 0.888
         self.assertAlmostEqual(correct_f1, f1, delta=0.001)
-        assert_almost_equal(
+        assert_almost_equal(self, 
             bracid.closest_rule_per_example,
             correct_closest_rule_per_example)
 
