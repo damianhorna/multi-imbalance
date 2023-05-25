@@ -17,14 +17,14 @@ class TestUpdateConfusionMatrix(TestCase):
         positive_class = _0
         class_col_name = "Class"
         examples = [
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=3),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _1}, name=4),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=5),
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _1}, name=6),
+            pd.Series({"B": (1, 1), "C": (3, 3), "Class": _0}, name=3),
+            pd.Series({"B": (1, 1), "C": (3, 3), "Class": _1}, name=4),
+            pd.Series({"B": (1, 1), "C": (3, 3), "Class": _0}, name=5),
+            pd.Series({"B": (1, 1), "C": (3, 3), "Class": _1}, name=6),
         ]
         rules = [
-            pd.Series({"A": "low", "B": (1, 1), "C": (3, 3), "Class": _0}, name=0),
-            pd.Series({"A": "low", "B": (1, 1), "C": (2, 2), "Class": _1}, name=1),
+            pd.Series({"B": (1, 1), "C": (3, 3), "Class": _0}, name=0),
+            pd.Series({"B": (1, 1), "C": (2, 2), "Class": _1}, name=1),
         ]
         bracid.conf_matrix = bracid.update_confusion_matrix(examples[0], rules[0], positive_class, class_col_name,
                                                       bracid.conf_matrix)  # TP
