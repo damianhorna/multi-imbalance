@@ -22,6 +22,9 @@ class ExampleClass(enum.Enum):
     NOISY = enum.auto()
     BORDERLINE = enum.auto()
 
+class Labels(str, enum.Enum):
+    REST = "rest"
+
 class MyException(Exception):
     pass
 
@@ -1076,18 +1079,16 @@ class BRACID:
             return False
         
         def _compare(val_i, val_j):
-            # Numbers
-            if isinstance(val_i, int):
-                return val_i == val_j
             # Tuples/Bounds
-            assert issubclass(Bounds, tuple)
             if isinstance(val_i, tuple):
+                assert issubclass(Bounds, tuple)
                 lower_i, upper_i = val_i
                 lower_j, upper_j = val_j
                 return np.isclose(lower_i, lower_j, atol=my_vars.PRECISION) \
                     and np.isclose(upper_i, upper_j, atol=my_vars.PRECISION)
-            raise ValueError(f"{val_i} ({type(val_i)}) is neither a 'int', 'tuple' nor 'Bounds'.")
-        
+
+            return val_i == val_j
+
         for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
             # Same feature
             if idx_i != idx_j:
@@ -2272,18 +2273,17 @@ class BRACID:
         """
         minority_labels = train_set[class_col_name].unique()
         print("one-vs-all labels in the order they'll be processed", minority_labels)
-        rest_label = "rest"
         res = test_set.copy()
         # Negative confidence because even if confidence for the first label is 0, it should be used instead of no label
         res[my_vars.PREDICTION_CONFIDENCE] = -1
         res[my_vars.PREDICTED_LABEL] = ""
         all_rules = {}
         for minority_label in minority_labels:
-            classes = [minority_label, rest_label]
+            classes = [minority_label, Labels.REST]
             # Convert to a binary problem
             train = train_set.copy()
             test = test_set.copy()
-            train = self.to_binary_classification_task(train, class_col_name, minority_label, merged_label=rest_label)
+            train = self.to_binary_classification_task(train, class_col_name, minority_label, merged_label=Labels.REST)
             print("####training set#####")
             print(train)
             print("classes to be used in current run", train[class_col_name].unique())
@@ -2295,10 +2295,10 @@ class BRACID:
             all_rules[minority_label] = rules
             # Update predicted label and confidence if confidence is higher than the currently best confidence
             res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
-                    (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
+                    (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)),
                     my_vars.PREDICTED_LABEL] = preds_df[my_vars.PREDICTED_LABEL]
             res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
-                    (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
+                    (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)),
                     my_vars.PREDICTION_CONFIDENCE] = preds_df[my_vars.PREDICTION_CONFIDENCE]
             # print("predicted when using {} as class".format(minority_label))
             # print(res[res.columns[-3:]])
@@ -2359,70 +2359,6 @@ class BRACID:
         labels_to_merge = dict((label, merged_label) for label in unique_class_labels)
         df[class_col_name] = df[class_col_name].replace(labels_to_merge)
         return df
-
-    def extract_rules_and_train_and_predict_multiclass(self, train_set, test_set, counts, min_max, class_col_name, k):
-        """
-        Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
-        labels for a multiclass classification task. Converts a multiclass problem into a one-vs-all scheme.
-
-        Parameters
-        ----------
-        train_set: pd.DataFrame - training set where each row represents a training example
-        test_set: pd.DataFrame - test set where each row represents a test example for which the label should be predicted
-        counts: dict - lookup table for SVDM
-        min_max: pd:DataFrame - contains min/max values per numeric feature
-        class_col_name: str - name of the column with the class label in <training_examples>
-        k: int - number of neighbors with opposite label of the current example to consider
-
-        Returns
-        -------
-        dict of dict of pd.Series, pd.dataFrame.
-        Dictionary of rules that classify the training data most accurately according to F1 score. Keys are the class
-        labels and values are dicts with the keys being the rule IDs and values the corresponding rules.
-        DataFrame contains 2 additional columns in <test_examples>, namely PREDICTED_LABEL and PREDICTION_CONFIDENCE
-        containing the predicted label and BRACID's confidence for assigning it.
-        Confidence = max (support for minority) / (support for minority + support for majority)
-        Final label per example is calculated according to the maximum confidence.
-        For example, if there are 3 classes A, B, C, and we have an instance e for which to predict the label,
-        we choose the label according to:
-        max_{i in |{A, B, C}|} sup(K_i, e)
-        , where sup() is defined in the paper.
-
-        """
-        minority_labels = train_set[class_col_name].unique()
-        print("one-vs-all labels in the order they'll be processed", minority_labels)
-        rest_label = "rest"
-        res = test_set.copy()
-        # Negative confidence because even if confidence for the first label is 0, it should be used instead of no label
-        res[my_vars.PREDICTION_CONFIDENCE] = -1
-        res[my_vars.PREDICTED_LABEL] = ""
-        all_rules = {}
-        for minority_label in minority_labels:
-            classes = [minority_label, rest_label]
-            # Convert to a binary problem
-            train = train_set.copy()
-            test = test_set.copy()
-            train = self.to_binary_classification_task(train, class_col_name, minority_label, merged_label=rest_label)
-            print("####training set#####")
-            print(train)
-            print("classes to be used in current run", train[class_col_name].unique())
-            print("####test set######")
-            print(test)
-            rules = self.bracid(train, k, class_col_name, counts, min_max, classes, minority_label)
-            model = self.train_binary(rules, train, minority_label, class_col_name)
-            preds_df = self.predict_binary(model, test, rules, classes, class_col_name, counts, min_max, for_multiclass=True)
-            all_rules[minority_label] = rules
-            # Update predicted label and confidence if confidence is higher than the currently best confidence
-            res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
-                    (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
-                    my_vars.PREDICTED_LABEL] = preds_df[my_vars.PREDICTED_LABEL]
-            res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE]) &
-                    (preds_df[my_vars.PREDICTED_LABEL] != rest_label)),
-                    my_vars.PREDICTION_CONFIDENCE] = preds_df[my_vars.PREDICTION_CONFIDENCE]
-            # print("predicted when using {} as class".format(minority_label))
-            # print(res[res.columns[-3:]])
-            # print("bla")
-        return all_rules, res
 
     def cv_binary(self, dataset, k, class_col_name, min_max, classes, minority_label, folds=10, seed=13):
         """
@@ -2519,8 +2455,7 @@ class BRACID:
         for i in range(folds):
             test_set = df.iloc[i*examples_per_fold: i*examples_per_fold + examples_per_fold]
             train_set = df.drop(df.index[i*examples_per_fold: i*examples_per_fold + examples_per_fold])
-            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max,
-                                                                        class_col_name, k)
+            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max, class_col_name, k)
             preds = preds_df[my_vars.PREDICTED_LABEL].values
             true = preds_df[class_col_name].values
             # print("true labels:", true)
