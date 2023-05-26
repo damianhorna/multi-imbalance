@@ -6,6 +6,7 @@ from operator import itemgetter
 import math
 
 import pandas as pd
+from imblearn.base import BaseSampler
 from pandas.api.types import is_numeric_dtype
 import sklearn.datasets
 from sklearn.metrics import f1_score
@@ -513,7 +514,7 @@ def to_binary_classification_task(df, class_col_name, minority_label,
     return df
 
 
-class BRACID:
+class BRACID(BaseSampler):
 
     def __init__(self):
         # {example ei: set(rule ri for which ei is the seed)}
@@ -533,6 +534,7 @@ class BRACID:
         self.all_rules = {}
         self.latest_rule_id = 0
         self.minority_class = ""
+        self._sampling_type = "over-sampling"
 
     def read_dataset(self, src, positive_class, excluded=[], skip_rows=0,
                      na_values=[], normalize=False, class_index=-1,
