@@ -1,22 +1,18 @@
 from collections import Counter, deque, namedtuple
-import os
 import warnings
 import copy
 from operator import itemgetter
 import math
 
 import pandas as pd
-from imblearn.base import BaseSampler
 from pandas.api.types import is_numeric_dtype
 import sklearn.datasets
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import f1_score
 import numpy as np
 import enum
 import dataclasses
 from collections import defaultdict
-
-from sklearn.preprocessing import MinMaxScaler
 
 from . import vars as my_vars
 
@@ -60,6 +56,7 @@ Predictions = namedtuple("Predictions", ["label", "confidence"])
 Duplicates = namedtuple("Duplicates",
                         ["original", "duplicate", "duplicate_idx"])
 
+
 def get_min_max(df: pd.DataFrame):
     min_max = {}
     for column in df.columns:
@@ -69,6 +66,7 @@ def get_min_max(df: pd.DataFrame):
             "max": np.nanmax(values)
         }
     return pd.DataFrame(min_max)
+
 
 def assign_tag(labels, label):
     """
@@ -286,12 +284,12 @@ def di(example_feat, rule_feat, min_max):
                 # logger.info("example > upper")
                 # logger.info("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
                 dist = (example_val - upper_rule_val) / (
-                            max_rule_val - min_rule_val)
+                        max_rule_val - min_rule_val)
             elif example_val < lower_rule_val:
                 # logger.info("example < lower")
                 # logger.info("({} - {}) / ({} - {})".format(lower_rule_val, example_val, max_rule_val, min_rule_val))
                 dist = (lower_rule_val - example_val) / (
-                            max_rule_val - min_rule_val)
+                        max_rule_val - min_rule_val)
             else:
                 dist = 0
         dists.append((idx, dist * dist))
@@ -525,9 +523,20 @@ def to_binary_classification_task(df, class_col_name, minority_label,
     return df
 
 
-class BRACID(BaseEstimator):
+class BRACID(BaseEstimator, ClassifierMixin):
 
-    def __init__(self, minority_class, k: int = 5, normalize: bool = False):
+    def __init__(self, k: int = 5, minority_class=None):
+        """
+        Parameters
+        ----------
+        k: int - number of neighbors to consider
+        minority_class: int, str or None - minority class in binary classification task
+
+        Returns
+        -------
+        pd.DataFrame, list of pd.Series.
+        Dataset with an additional column containing the tag, initially extracted rules.
+        """
         # {example ei: set(rule ri for which ei is the seed)}
         self.seed_example_rule = {}
         # {rule ri: example ei is seed for ri}
@@ -544,14 +553,15 @@ class BRACID(BaseEstimator):
         # {ID of rule ri: rule ri (=pd.Series)}
         self.all_rules = {}
         self.latest_rule_id = 0
-        if not isinstance(minority_class, (str, int)):
-            raise ValueError(f'minority_class={minority_class} should be an int or str but is {type(minority_class)}')
+        if (minority_class is not None
+                and not isinstance(minority_class, (str, int))):
+            raise ValueError(
+                f'minority_class={minority_class} should be an int or str '
+                f'but is {type(minority_class)}')
         self._minority_class = str(minority_class)
         self.k = k
         self._class_column_name = "Class"
         self._rules = None
-        self._normalize = normalize
-
 
     def read_dataset(self, src, positive_class, excluded=[], skip_rows=0,
                      na_values=[], normalize=False, class_index=-1,
@@ -747,7 +757,7 @@ class BRACID(BaseEstimator):
             examples_with_same_label = df.copy()
         elif label_type == my_vars.OPPOSITE_LABEL_TO_RULE:
             opposite_label = classes[0] if classes[0] != class_label else \
-            classes[1]
+                classes[1]
             logger.info("opposite class label:", opposite_label)
             examples_with_same_label = df.loc[
                 df[class_col_name] == opposite_label]
@@ -786,9 +796,9 @@ class BRACID(BaseEstimator):
         if neighbors < k:
             warnings.warn("Only {} neighbors for\n{}".format(
                 examples_with_same_label.shape[0], examples_with_same_label),
-                          UserWarning)
+                UserWarning)
         dists = hvdm(examples_with_same_label, rule, classes, min_max,
-                          class_col_name)
+                     class_col_name)
         neighbor_ids = dists.index[: k]
         is_closer = self._update_data_about_closest_rule(rule, dists)
 
@@ -1015,9 +1025,9 @@ class BRACID(BaseEstimator):
             self.closest_rule_per_example[example.name] = Data(
                 rule_id=rule.name, dist=rule_dist)
             self.conf_matrix = update_confusion_matrix(example, rule,
-                                                            self._minority_class,
-                                                            class_col_name,
-                                                            self.conf_matrix)
+                                                       self._minority_class,
+                                                       class_col_name,
+                                                       self.conf_matrix)
         return f1(self.conf_matrix)
 
     def evaluate_f1_update_confusion_matrix(self, df, new_rule, class_col_name,
@@ -1091,10 +1101,10 @@ class BRACID(BaseEstimator):
                     # logger.info("new examples per rule", self.closest_examples_per_rule)
                     # logger.info("old confusion matrix:", self.conf_matrix)
                     self.conf_matrix = update_confusion_matrix(example,
-                                                                    new_rule,
-                                                                    self._minority_class,
-                                                                    class_col_name,
-                                                                    self.conf_matrix)
+                                                               new_rule,
+                                                               self._minority_class,
+                                                               class_col_name,
+                                                               self.conf_matrix)
                     # logger.info("new confusion matrix:", self.conf_matrix)
         return f1(self.conf_matrix)
 
@@ -1188,10 +1198,10 @@ class BRACID(BaseEstimator):
                     # logger.info("new closest examples per rule", closest_examples_per_rule)
                     # logger.info("old confusion matrix:", conf_matrix)
                     conf_matrix = update_confusion_matrix(example,
-                                                               new_rule,
-                                                               self._minority_class,
-                                                               class_col_name,
-                                                               conf_matrix)
+                                                          new_rule,
+                                                          self._minority_class,
+                                                          class_col_name,
+                                                          conf_matrix)
                     # logger.info("new confusion matrix:", conf_matrix)
                     # logger.info("new distance", new_dist)
                     if new_dist == 0:
@@ -1416,8 +1426,8 @@ class BRACID(BaseEstimator):
             logger.info(
                 "add_1 generalize rule for example {}".format(example.name))
             generalized_rule = most_specific_generalization(example, rule,
-                                                                 class_col_name,
-                                                                 dtypes)
+                                                            class_col_name,
+                                                            dtypes)
             # logger.info("generalized rule:\n{}".format(generalized_rule))
             current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _ \
                 = self.evaluate_f1_temporarily(df, generalized_rule,
@@ -1462,7 +1472,8 @@ class BRACID(BaseEstimator):
                 self.all_rules[best_generalization.name] = best_generalization
                 logger.info("updated best rule per example for example {}:\n{}"
                             .format(best_generalization.name, (
-                rule.name, best_closest_rule_dist[best_generalization.name])))
+                    rule.name,
+                    best_closest_rule_dist[best_generalization.name])))
                 self.closest_rule_per_example = best_closest_rule_dist
                 logger.info("closest rule per example updated",
                             self.closest_rule_per_example)
@@ -1546,9 +1557,9 @@ class BRACID(BaseEstimator):
 
                 # logger.info("old rule:\n{}".format(rule))
                 generalized_rule = most_specific_generalization(example,
-                                                                     rule,
-                                                                     class_col_name,
-                                                                     dtypes)
+                                                                rule,
+                                                                class_col_name,
+                                                                dtypes)
 
                 # Remove current example
                 neighbors.drop(example_id, inplace=True)
@@ -1800,8 +1811,8 @@ class BRACID(BaseEstimator):
                                             generalized_rule.name)
                                 logger.info("added rule for example {}:\n{}"
                                             .format(example_id, (
-                                generalized_rule.name,
-                                current_closest_rule[example_id])))
+                                    generalized_rule.name,
+                                    current_closest_rule[example_id])))
                                 logger.info("covered:",
                                             self.examples_covered_by_rule)
                                 logger.info("closest rule per example",
@@ -2082,7 +2093,7 @@ class BRACID(BaseEstimator):
         else:
             logger.info(
                 "Rule that was deleted, but added to final rules earlier - hence, it's not deleted: \n{}\n\n\n"
-                .format(rule.name))
+                    .format(rule.name))
 
     def _in_final_rules(self, rule, final_rules, final_rules_hashes):
         rule_hash = compute_hashable_key(rule)
@@ -2093,39 +2104,33 @@ class BRACID(BaseEstimator):
                 return True
         return False
 
-    def _normalize_df(self, df):
-        normalized_df = df.copy()
-        if self._scalers is None:
-            self._scalers = {
-                MinMaxScaler().fit(df[column]) for column in df
-            }
-        for column in df.columns:
-            normalized_df[column] = self._scalers[column].transform(df[column])
-        return normalized_df
-
+    def _fit_binary(self, df):
+        self._rules = self.bracid(df, self.k, self._class_column_name,
+                                  self._min_max, self._classes,
+                                  self._minority_class)
+        self._model = self.train_binary(self._rules, df, self._minority_class,
+                                        self._class_column_name)
 
     def fit(self, X, y):
         X, y = np.asarray(X), np.asarray(y)
         assert y.shape[0] > 0, 'y cannot be empty'
         if not isinstance(y[0], (str, int)):
-            raise ValueError(f'y should contain integers but is of dtype: {type(y)}')
+            raise ValueError(
+                f'y should contain integers but is of dtype: {type(y)}')
         y_nominal = [str(v) for v in y]
         self._classes = list(set(y_nominal))
+        self._is_binary_classification = len(self._classes) <= 2
         self._columns = [f'Column_{i}' for i in range(X.shape[1])]
         df = pd.DataFrame(X, columns=self._columns)
-        if self._normalize:
-            df = self._normalize_df(df)
-        self._min_max = get_min_max(df)
         df[self._class_column_name] = y_nominal
-        self._rules = self.bracid(df, self.k, self._class_column_name, self._min_max, self._classes, self._minority_class)
-        self._model = self.train_binary(self._rules, df, self._minority_class,
-                                  self._class_column_name)
+        self._min_max = get_min_max(df)
+        if self._is_binary_classification:
+            return self._fit_binary(df)
+        return self._fit_multiclass(df)
 
-    def _predict(self, X, y=None, predict_proba=False):
-        df = pd.DataFrame(X, columns=self._columns)
-        if self._normalize:
-            df = self._normalize_df(df)
-        preds_df = self.predict_binary(self._model, df, self._rules, self._classes,
+    def _predict_binary(self, df, predict_proba=False):
+        preds_df = self.predict_binary(self._model, df, self._rules,
+                                       self._classes,
                                        self._class_column_name, self._min_max)
         if predict_proba:
             preds = preds_df[my_vars.PREDICTION_CONFIDENCE].values
@@ -2133,12 +2138,81 @@ class BRACID(BaseEstimator):
             preds = preds_df[my_vars.PREDICTED_LABEL].values
         return preds
 
-    def predict(self, X):
-        return self._predict(X, predict_proba=False)
+    def _fit_multiclass(self, df):
+        minority_labels = self._classes
+        logger.info("one-vs-all labels in the order they'll be processed",
+                    minority_labels)
+        multiclass_fit_data = {}
+        for minority_label in minority_labels:
+            classes = [minority_label, Labels.REST]
+            # Convert to a binary problem
+            train = df.copy()
+            train = to_binary_classification_task(train,
+                                                  self._class_column_name,
+                                                  minority_label,
+                                                  merged_label=Labels.REST)
+            logger.info("####training set#####"
+                        f"{train}"
+                        "classes to be used in current run"
+                        f"{train[self._class_column_name].unique()}"
+                        )
+            rules = self.bracid(train, self.k, self._class_column_name,
+                                self._min_max, classes,
+                                minority_label)
+            model = self.train_binary(rules, train, minority_label,
+                                      self._class_column_name)
+            multiclass_fit_data[minority_label] = {
+                "rules": rules,
+                "model": model,
+                "classes": classes
+            }
+        self._multiclass_fit_data = multiclass_fit_data
 
-    def predict_proba(self, X):
-        return self._predict(X, predict_proba=True)
+    def _predict_multiclass(self, df, predict_proba=False):
+        minority_labels = self._classes
+        # Create empty DataFrame with the same number of rows as df
+        res = pd.DataFrame(index=df.index)
+        # Negative confidence because even if confidence for the first label is 0, it should be used instead of no label
+        res[my_vars.PREDICTION_CONFIDENCE] = -1
+        res[my_vars.PREDICTED_LABEL] = ""
+        all_rules = {}
+        for minority_label in minority_labels:
+            fit_data = self._multiclass_fit_data[minority_label]
+            rules = fit_data["rules"]
+            model = fit_data["model"]
+            classes = fit_data["classes"]
+            preds_df = self.predict_binary(model, df, rules, classes,
+                                           self._class_column_name,
+                                           self._min_max,
+                                           for_multiclass=True)
+            all_rules[minority_label] = rules
+            # Update predicted label and confidence if confidence is higher than the currently best confidence
+            PC = my_vars.PREDICTION_CONFIDENCE
+            PL = my_vars.PREDICTED_LABEL
+            conf_lower = res[PC] < preds_df[PC]
+            not_rest = preds_df[PL] != Labels.REST
+            conf_lower_not_rest = conf_lower & not_rest
+            res.loc[conf_lower_not_rest, PL] = preds_df[PL]
+            res.loc[conf_lower_not_rest, PC] = preds_df[PC]
 
+        if predict_proba:
+            prediction = res[my_vars.PREDICTION_CONFIDENCE]
+        else:
+            prediction = res[my_vars.PREDICTED_LABEL]
+        return prediction.values
+
+    def _predict(self, X, y=None, predict_proba=False):
+        df = pd.DataFrame(X, columns=self._columns)
+        if self._is_binary_classification:
+            return self._predict_binary(df, predict_proba=predict_proba)
+        else:
+            return self._predict_multiclass(df, predict_proba=predict_proba)
+
+    def predict(self, X, y=None):
+        return self._predict(X, y, predict_proba=False)
+
+    def predict_proba(self, X, y=None):
+        return self._predict(X, y, predict_proba=True)
 
     def bracid(self, df, k, class_col_name, min_max, classes, minority_label):
         """
@@ -2460,13 +2534,13 @@ class BRACID(BaseEstimator):
                 has_minority = False
             if has_minority or for_multiclass:
                 confidence = supports[example_id].minority / (
-                            supports[example_id].minority + supports[
-                        example_id].majority)
+                        supports[example_id].minority + supports[
+                    example_id].majority)
                 predicted_label = minority_label
             else:
                 confidence = supports[example_id].majority / (
-                            supports[example_id].minority + supports[
-                        example_id].majority)
+                        supports[example_id].minority + supports[
+                    example_id].majority)
             preds[example_id] = Predictions(label=predicted_label,
                                             confidence=confidence)
         # Store confidence and predicted label in data frame
@@ -2680,8 +2754,8 @@ class BRACID(BaseEstimator):
             train = train_set.copy()
             test = test_set.copy()
             train = to_binary_classification_task(train, class_col_name,
-                                                       minority_label,
-                                                       merged_label=Labels.REST)
+                                                  minority_label,
+                                                  merged_label=Labels.REST)
             logger.info("####training set#####")
             logger.info(train)
             logger.info("classes to be used in current run",

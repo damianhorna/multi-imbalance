@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds
-from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.classes_ import _0, _1, _2
 
 
 class TestBracid(TestCase):
@@ -41,16 +41,32 @@ class TestBracid(TestCase):
                 expected = correct_rules[key]
                 pd.testing.assert_series_equal(expected, rule)
 
-    def test_bracid_fit(self):
+    def test_bracid_fit_predict(self):
         """Tests that the bracid.fit() stops"""
         k = 3
-        minority_label = _1
-        bracid = BRACID(k=k, minority_class=minority_label)
-        X = np.array([
-            [1, 1, 4, 1.5, 0.5, 0.75],
-            [3, 2, 1, .5, 3, 2],
-        ]).T
-        y = [_0, _0, _1, _1, _1, _1]
-        bracid.fit(X, y)
-        prediction = bracid.predict(X)
-        self.assertEqual(np.asarray(y).shape, prediction.shape)
+        with self.subTest("binary_task"):
+            minority_label = _1
+            bracid = BRACID(k=k, minority_class=minority_label)
+            X = np.array([
+                [1, 1, 4, 1.5, 0.5, 0.75],
+                [3, 2, 1, .5, 3, 2],
+            ]).T
+            y = [_0, _0, _1, _1, _1, _1]
+            bracid.fit(X, y)
+            prediction = bracid.predict(X)
+            predict_proba = bracid.predict_proba(X)
+            self.assertTrue(bracid._is_binary_classification)
+            self.assertEqual(np.asarray(y).shape, prediction.shape)
+            np.testing.assert_array_less(predict_proba, 1.0)
+            np.testing.assert_array_less(0.0, predict_proba)
+
+        with self.subTest("multiclass_task"):
+            bracid = BRACID(k=k, minority_class=None)
+            y = [_0, _0, _1, _1, _1, _2]
+            bracid.fit(X, y)
+            prediction = bracid.predict(X)
+            predict_proba = bracid.predict_proba(X)
+            self.assertFalse(bracid._is_binary_classification)
+            self.assertEqual(np.asarray(y).shape, prediction.shape)
+            np.testing.assert_array_less(predict_proba, 1.0)
+            np.testing.assert_array_less(0.0, predict_proba)
