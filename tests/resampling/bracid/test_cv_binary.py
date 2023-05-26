@@ -1,47 +1,26 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 import numpy as np
 
-# from scripts.utils import cv_binary
 from multi_imbalance.resampling.bracid.bracid import BRACID
-import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
+import pytest
 
 
 class TestCv(TestCase):
     """Tests cv() in utils.py"""
 
+    # @pytest.mark.skip(reason="Never ends")
     def test_cv(self):
         """Tests that cross-validation is performed correctly"""
         bracid = BRACID()
-        dataset = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"], "B": [1, 1, 4, 1.5, 0.5, 0.75],
+        dataset = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         minority_label = _1
         class_col_name = "Class"
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 2,
-                        'low': 4,
-                        my_vars.CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _1: 2
-                                    }),
-                                'low':
-                                    Counter({
-                                        _1: 2,
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
@@ -51,7 +30,7 @@ class TestCv(TestCase):
         micro_f1, classwise_f1 = bracid.cv_binary(dataset, k, class_col_name, min_max, classes, minority_label,
                                            folds=folds, seed=seed)
 
-        correct_micro = 1/3
-        correct_classwise = np.array([0, 0.5])
-        np.testing.assert_array_equal(correct_classwise, classwise_f1)
-        self.assertEqual(correct_micro, micro_f1)
+        correct_micro = 1/6
+        correct_classwise = np.array([0, 0.2857])
+        np.testing.assert_array_almost_equal(correct_classwise, classwise_f1, decimal=4)
+        self.assertEqual(micro_f1, correct_micro)

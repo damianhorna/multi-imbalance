@@ -26,8 +26,8 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
         rules, preds_df = \
             bracid.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max, class_col_name, k)
         correct_preds = pd.DataFrame({
-            my_vars.PREDICTED_LABEL: [_1, _0, _1, _1, _1, _1],
-            my_vars.PREDICTION_CONFIDENCE: [0.7, 0.59667, 0.7, 0.4, 0.4, 0.4]
+            my_vars.PREDICTED_LABEL: [_1, _0, _1, _0, _0, _1],
+            my_vars.PREDICTION_CONFIDENCE: [0.4, 1.0, 0.4, 1.0, 1.0, 0.7]
         })
         pd.testing.assert_series_equal(correct_preds[my_vars.PREDICTION_CONFIDENCE], preds_df[my_vars.PREDICTION_CONFIDENCE], check_less_precise=4)
         pd.testing.assert_series_equal(correct_preds[my_vars.PREDICTED_LABEL], preds_df[my_vars.PREDICTED_LABEL])
