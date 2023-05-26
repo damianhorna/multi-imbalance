@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from multi_imbalance.resampling.bracid.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import normalize_dataframe, normalize_series
 
 
 class TestNormalize(TestCase):
@@ -13,9 +13,8 @@ class TestNormalize(TestCase):
         """
         Test that normalization of integers works applied to the whole dataset
         """
-        bracid = BRACID()
         df = pd.DataFrame({"A": [1, 2, 3], "B": [3, 2, 1]})
-        df = bracid.normalize_dataframe(df)
+        df = normalize_dataframe(df)
         assert(df.shape == (3, 2))
         for col_name in df:
             if col_name == "A":
@@ -27,9 +26,8 @@ class TestNormalize(TestCase):
         """
         Test that normalization of floats works applied to the whole dataset
         """
-        bracid = BRACID()
         df = pd.DataFrame({"A": [1.4, 2.4, 3.4], "B": [3.4, 2.4, 1.4]})
-        df = bracid.normalize_dataframe(df)
+        df = normalize_dataframe(df)
         assert(df.shape == (3, 2))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:
@@ -41,14 +39,13 @@ class TestNormalize(TestCase):
         """
         Test that normalization of integers works applied to the whole dataset columnwise
         """
-        bracid = BRACID()
         df = pd.DataFrame({"A": [1, 2, 3], "B": [3, 2, 1]})
         assert(df.shape == (3, 2))
 
         for col_name in df:
             col = df[col_name]
             if is_numeric_dtype(col):
-                df[col_name] = bracid.normalize_series(col)
+                df[col_name] = normalize_series(col)
         for col_name in df.columns:
             if col_name == "A":
                 pd.testing.assert_series_equal(df["A"], pd.Series([0.0, 0.5, 1.0]), check_names=False)
@@ -59,9 +56,8 @@ class TestNormalize(TestCase):
         """
         Test that normalization of floats works applied to the whole dataset columnwise
         """
-        bracid = BRACID()
         df = pd.DataFrame({"A": [1.4, 2.4, 3.4], "B": [3.4, 2.4, 1.4]})
-        df = bracid.normalize_dataframe(df)
+        df = normalize_dataframe(df)
         assert(df.shape == (3, 2))
         for col_idx, _ in enumerate(df):
             if col_idx == 0:

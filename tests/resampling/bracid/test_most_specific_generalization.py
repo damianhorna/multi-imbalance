@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.resampling.bracid.bracid import BRACID, most_specific_generalization
+from tests.resampling.bracid.classes_ import _0
 
 class TestMostSpecificGeneralization(TestCase):
     """Tests most_specific_generalization() from utils.py"""
@@ -18,7 +18,7 @@ class TestMostSpecificGeneralization(TestCase):
         for i, _ in dataset.iterrows():
             nearest_example = dataset.iloc[i]
             rule = rules[i]
-            rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
+            rule = most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_lower(self):
@@ -32,7 +32,7 @@ class TestMostSpecificGeneralization(TestCase):
         for i, _ in dataset.iterrows():
             nearest_example = dataset.iloc[i]
             rule = rules[i]
-            rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
+            rule = most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_upper(self):
@@ -46,7 +46,7 @@ class TestMostSpecificGeneralization(TestCase):
         for i, _ in dataset.iterrows():
             nearest_example = dataset.iloc[i]
             rule = rules[i]
-            rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
+            rule = most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_change_multiple(self):
@@ -61,7 +61,7 @@ class TestMostSpecificGeneralization(TestCase):
         for i, _ in dataset.iterrows():
             nearest_example = dataset.iloc[i]
             rule = rules[i]
-            rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
+            rule = most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(rule, correct, check_names=False)
 
     def test_most_specific_generalization_multiple_rules(self):
@@ -79,5 +79,5 @@ class TestMostSpecificGeneralization(TestCase):
         for i, _ in dataset.iterrows():
             nearest_example = dataset.iloc[i]
             rule = rules[i]
-            updated_rule = bracid.most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
+            updated_rule = most_specific_generalization(nearest_example, rule, class_col_name, dataset.dtypes)
             pd.testing.assert_series_equal(updated_rule, correct[i], check_names=False)

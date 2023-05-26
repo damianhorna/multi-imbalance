@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, compute_hashable_key
 from tests.resampling.bracid.classes_ import _0, _1
 
 
@@ -19,9 +19,9 @@ class TestFindDuplicateRuleId(TestCase):
                        "Class": _1}, name=12)  # Duplicate
         ]
         duplicate_idx = 1
-        bracid.unique_rules = {bracid.compute_hashable_key(rules[0]): {7}}
+        bracid.unique_rules = {compute_hashable_key(rules[0]): {7}}
         bracid.all_rules = {7: rules[0]}
-        duplicate_hash = bracid.compute_hashable_key(rules[duplicate_idx])
+        duplicate_hash = compute_hashable_key(rules[duplicate_idx])
         duplicate_id = bracid.find_duplicate_rule_id(rules[duplicate_idx], duplicate_hash)
         print("duplicate ID:", duplicate_id)
         self.assertTrue(duplicate_id == rules[0].name)

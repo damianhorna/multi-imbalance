@@ -1,12 +1,8 @@
 from unittest import TestCase
-from collections import Counter, deque
 
 import pandas as pd
 
-# from scripts.utils import add_all_good_rules, find_nearest_examples, evaluate_f1_initialize_confusion_matrix, Data, \
-#     Bounds, compute_hashable_key
-
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
 import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
 from tests.resampling.bracid.assertions import assert_almost_equal
@@ -47,7 +43,7 @@ class TestAddAllGoodRules(TestCase):
         bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         bracid.unique_rules = {}
         for rule in rules:
-            hash_val = bracid.compute_hashable_key(rule)
+            hash_val = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
 
         initial_correct_closest_rule_per_example = {

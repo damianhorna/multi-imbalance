@@ -3,8 +3,7 @@ from collections import Counter
 
 import pandas as pd
 
-# from scripts.utils import delete_rule_statistics, Bounds, compute_hashable_key, Data
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
 import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
 
@@ -33,7 +32,7 @@ class TestDeleteRuleStatistics(TestCase):
         bracid.minority_class = _0
 
         for rule in rules:
-            hash_val = bracid.compute_hashable_key(rule)
+            hash_val = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
             bracid.all_rules[rule.name] = rule
         # Some random values
@@ -52,7 +51,7 @@ class TestDeleteRuleStatistics(TestCase):
 
         correct_seed_example_rule = {4: {7}}
         correct_seed_rule_example = {5: 0, 7: 4}
-        correct_unique_rules = {bracid.compute_hashable_key(extra_rule): {4}}
+        correct_unique_rules = {compute_hashable_key(extra_rule): {4}}
         correct_all_rules = {4: extra_rule}
         # extra_rule now also covers the 3 examples to which the 2 deleted rules were closest
         correct_closest_examples_per_rule = {4: {8, 0, 3, 4}}
@@ -108,7 +107,7 @@ class TestDeleteRuleStatistics(TestCase):
         bracid.unique_rules = {}
         bracid.all_rules = {}
         for rule in rules:
-            hash_val = bracid.compute_hashable_key(rule)
+            hash_val = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
             bracid.all_rules[rule.name] = rule
         print("hashes", bracid.unique_rules)
@@ -128,7 +127,7 @@ class TestDeleteRuleStatistics(TestCase):
 
         correct_seed_example_rule = {4: {7}}
         correct_seed_rule_example = {5: 0, 7: 4}
-        correct_unique_rules = {bracid.compute_hashable_key(extra_rule): {4}}
+        correct_unique_rules = {compute_hashable_key(extra_rule): {4}}
         correct_all_rules = {4: extra_rule}
         # extra_rule now also covers the 3 examples to which the 2 deleted rules were closest
         correct_closest_examples_per_rule = {4: {8, 0, 3, 4}}

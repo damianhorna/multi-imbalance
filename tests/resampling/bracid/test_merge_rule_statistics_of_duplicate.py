@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
 from tests.resampling.bracid.classes_ import _0, _1
 
 
@@ -25,7 +25,7 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         bracid.unique_rules = {}
         bracid.all_rules = {}
         for rule in rules:
-            hash_val = bracid.compute_hashable_key(rule)
+            hash_val = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)
             bracid.all_rules[rule.name] = rule
         print("hashes", bracid.unique_rules)
@@ -44,7 +44,7 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         correct_seed_example_rule = {0: {5}, 10: {0}, 4: {7}}
         # Read: rule with ID 5 has as seed example the one with ID 0...
         correct_seed_rule_example = {5: 0, 0: 10, 7: 4}
-        correct_unique_rules = {bracid.compute_hashable_key(rules[orig_idx]): {0}}
+        correct_unique_rules = {compute_hashable_key(rules[orig_idx]): {0}}
         correct_all_rules = {0: rules[orig_idx]}
         # extra_rule now also covers the 3 examples to which the 2 deleted rules were closest
         correct_closest_examples_per_rule = {0: {0, 3, 4}, 4: {8}}

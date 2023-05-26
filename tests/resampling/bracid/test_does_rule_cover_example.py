@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID
+from multi_imbalance.resampling.bracid.bracid import does_rule_cover_example
 from tests.resampling.bracid.classes_ import _0, _1
 
 
@@ -11,7 +11,6 @@ class TestDoesRuleCoverExample(TestCase):
 
     def test_does_rule_cover_example_single(self):
         """Tests if a rule covers an example in both numeric and nominal features"""
-        bracid = BRACID()
         dataset = pd.DataFrame(
             {"A": [1.1, 2, 1.1, 1.1, 1.1, 1.1], "B": [1, 1, 2, 1, 1, 1],
              "C": [2, 2, 2, 3, 2, 2], "Class": [_0, _0, _0, _0, _0, _1]})
@@ -19,7 +18,7 @@ class TestDoesRuleCoverExample(TestCase):
             {"A": (1.1, 1.1), "B": (1, 1), "C": (2, 2), "Class": _0})]
         rule = rules[0]
         dataset["is_covered"] = dataset.loc[:, :].apply(
-            bracid.does_rule_cover_example, axis=1,
+            does_rule_cover_example, axis=1,
             args=(rule, dataset.dtypes))
         df = dataset.loc[dataset["is_covered"]]
         self.assertEqual(len(df.index), 2)

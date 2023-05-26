@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 
 # from scripts.utils import _are_duplicates, Bounds
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, _are_duplicates
 from tests.resampling.bracid.classes_ import _0, _1
 
 class TestAreDuplicates(TestCase):
@@ -18,7 +18,7 @@ class TestAreDuplicates(TestCase):
             pd.Series({"B": Bounds(lower=0.8, upper=1), "C": Bounds(lower=1, upper=1),
                        "Class": _0}, name=2)
             ]
-        duplicate = bracid._are_duplicates(rules[0], rules[1])
+        duplicate = _are_duplicates(rules[0], rules[1])
         self.assertFalse(duplicate)
 
     def test_are_duplicates_true(self):
@@ -30,7 +30,7 @@ class TestAreDuplicates(TestCase):
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=1, upper=1),
                        "Class": _0}, name=2)
             ]
-        duplicate = bracid._are_duplicates(rules[0], rules[1])
+        duplicate = _are_duplicates(rules[0], rules[1])
         self.assertTrue(duplicate)
 
     def test_are_duplicates_length(self):
@@ -41,5 +41,5 @@ class TestAreDuplicates(TestCase):
                       name=1),
             pd.Series({"B": Bounds(lower=1, upper=1), "Class": _0}, name=2)
             ]
-        duplicate = bracid._are_duplicates(rules[0], rules[1])
+        duplicate = _are_duplicates(rules[0], rules[1])
         self.assertFalse(duplicate)

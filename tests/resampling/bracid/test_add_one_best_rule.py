@@ -1,12 +1,10 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 
-# from scripts.utils import add_one_best_rule, find_nearest_examples, compute_hashable_key, Data, Bounds
 import pytest
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix
+from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
 import multi_imbalance.resampling.bracid.vars as my_vars
 from tests.resampling.bracid.classes_ import _0, _1
 from tests.resampling.bracid.assertions import assert_almost_equal
@@ -60,7 +58,7 @@ class TestAddOneBestRule(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.unique_rules = {}
         for rule in rules:
-            rule_hash = bracid.compute_hashable_key(rule)
+            rule_hash = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
@@ -139,7 +137,7 @@ class TestAddOneBestRule(TestCase):
         bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 8}
         bracid.seed_example_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         for rule in rules:
-            rule_hash = bracid.compute_hashable_key(rule)
+            rule_hash = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         # Actually, correctly it should've been
@@ -216,7 +214,7 @@ class TestAddOneBestRule(TestCase):
         k = 3
         bracid.unique_rules = {}
         for rule in rules:
-            rule_hash = bracid.compute_hashable_key(rule)
+            rule_hash = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(rule_hash, set()).add(rule.name)
 
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
@@ -272,9 +270,9 @@ class TestAddOneBestRule(TestCase):
                           name=0)  # Current rule is always at the end of the list
             ]
             for rule in rules:
-                rule_hash = bracid.compute_hashable_key(rule)
+                rule_hash = compute_hashable_key(rule)
                 bracid.unique_rules[rule_hash] = {rule.name}
-            correct_generalized_rule_hash = bracid.compute_hashable_key(correct_generalized_rule)
+            correct_generalized_rule_hash = compute_hashable_key(correct_generalized_rule)
 
             bracid.examples_covered_by_rule = {}
             bracid.all_rules = {0: rules[test_idx], 1: rules[0], 2: rules[1], 3: rules[2], 4: rules[3], 5: rules[4],
