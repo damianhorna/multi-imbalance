@@ -11,13 +11,12 @@ from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds
 class TestFindNeighbors(TestCase):
     """Test find_neighbors() from utils.py"""
 
-    @pytest.mark.skip(reason="TODO: fix this test")
     def test_find_neighbors_too_few(self):
         """Test that warning is thrown if too few neighbors exist"""
         bracid = BRACID()
-        dataset = pd.DataFrame({"A": [1, 2], "B": [1, 2], "C": [2, 2], "D": ["x", "y"], "Class": [_0, _1]})
-        rule = pd.Series({"A": (0.1, 1), "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "D": "x",
-                          "Class": "A"})
+        dataset = pd.DataFrame({"A": [1, 2], "B": [1, 2], "C": [2, 2], "Class": [_0, _1]})
+        rule = pd.Series({"A": (0.1, 1), "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2),
+                          "Class": _0})
         k = 3
         classes = [_0, _1]
         class_col_name = "Class"
