@@ -4,9 +4,9 @@ import copy
 import pandas as pd
 import pytest
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds, ConfusionMatrix
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Data, Bounds, ConfusionMatrix
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 class TestEvaluateF1Temporarily(TestCase):
     """Tests evaluate_f1_temporarily() in utils.py"""

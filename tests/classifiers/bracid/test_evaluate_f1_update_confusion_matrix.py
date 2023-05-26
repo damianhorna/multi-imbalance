@@ -2,9 +2,9 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds, ConfusionMatrix
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Data, Bounds, ConfusionMatrix
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 
 class TestEvaluateF1UpdateConfusionMatrix(TestCase):
@@ -13,14 +13,13 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
     def test_evaluate_f1_update_confusion_matrix_updated(self):
         """Tests what happens if input has a numeric and a nominal feature and a rule that predicts an example is
         updated"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
 
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
@@ -69,14 +68,13 @@ class TestEvaluateF1UpdateConfusionMatrix(TestCase):
     def test_evaluate_f1_update_confusion_matrix_not_updated(self):
         """Tests what happens if input has a numeric and a nominal feature and a rule that predicts an example is
         not updated as F1 score doesn't improve"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
 
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},

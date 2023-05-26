@@ -3,7 +3,7 @@ from unittest import TestCase
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from multi_imbalance.resampling.bracid.bracid import normalize_dataframe, normalize_series
+from multi_imbalance.classifiers.bracid.bracid import normalize_dataframe, normalize_series
 
 
 class TestNormalize(TestCase):

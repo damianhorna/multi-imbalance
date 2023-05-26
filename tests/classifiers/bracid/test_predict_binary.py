@@ -2,9 +2,9 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Support, Predictions
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Support
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestPredict(TestCase):
@@ -16,10 +16,9 @@ class TestPredict(TestCase):
                                  "C": [3, 2, 1, .5, 3, 2],
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        bracid = BRACID()
         classes = [_0, _1]
+        bracid = BRACID(k=-1, minority_class = classes[0])
         class_col_name = "Class"
-        bracid.minority_class = classes[0]
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": _1}, name=2),
@@ -47,17 +46,16 @@ class TestPredict(TestCase):
         """Predict the class labels of uncovered examples with handling ties (2 rules are equally distant) for
         example 4, namely rules 0 and 6"""
         # Assumptions: these are the data for the training set NOT for the test set
-        bracid = BRACID()
+        classes = [_0, _1]
+        bracid = BRACID(k=-1, minority_class = classes[0])
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
-        classes = [_0, _1]
         test_set = pd.DataFrame({"A": ["low", "high", "high", "low", "low", "high"],
                                  "B": [4.1, 6.1, 5.4, 0.15, 0.05, 0.075],
                                  "C": [0.3, 4, 0.1, .4, 0.3, 5],
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
-        bracid.minority_class = classes[0]
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": _1}, name=2),
@@ -93,20 +91,16 @@ class TestPredict(TestCase):
     def test_predict_mixed(self):
         """Predict the class labels of uncovered and covered examples while handling ties"""
         # Assumptions: these are the data for the training set NOT for the test set
-        bracid = BRACID()
+        classes = [_0, _1]
+        bracid = BRACID(k=-1, minority_class = classes[0])
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
-        classes = [_0, _1]
         test_set = pd.DataFrame({"A": ["low", "low", "high", "low", "low", "high"],
                                  "B": [4.1, 1, 5.4, 0.15, 0.05, 0.075],
                                  "C": [0.3, 2, 0.1, .4, 0.3, 5],
                                  "Class": ["", "", "", "", "", ""]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
-        bracid.minority_class = classes[0]
-        bracid.examples_covered_by_rule = {}
-        bracid.closest_examples_per_rule = {}
-        bracid.closest_rule_per_example = {}
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),
                           "Class": _1}, name=2),

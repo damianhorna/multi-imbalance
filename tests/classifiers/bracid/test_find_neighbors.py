@@ -1,11 +1,10 @@
 from unittest import TestCase
 
 import pandas as pd
-import pytest
 
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
-from multi_imbalance.resampling.bracid.bracid import BRACID, Data, Bounds
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Data, Bounds
 
 
 class TestFindNeighbors(TestCase):
@@ -13,11 +12,11 @@ class TestFindNeighbors(TestCase):
 
     def test_find_neighbors_too_few(self):
         """Test that warning is thrown if too few neighbors exist"""
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         dataset = pd.DataFrame({"A": [1, 2], "B": [1, 2], "C": [2, 2], "Class": [_0, _1]})
         rule = pd.Series({"A": (0.1, 1), "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2),
                           "Class": _0})
-        k = 3
         classes = [_0, _1]
         class_col_name = "Class"
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}, "C": {"min": 1, "max": 2}})
@@ -26,12 +25,12 @@ class TestFindNeighbors(TestCase):
 
     def test_find_neighbors_numeric_nominal_label_type(self):
         """Tests what happens if input has a numeric and a nominal feature and we vary label_type as parameter"""
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        k = 3
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
@@ -73,37 +72,36 @@ class TestFindNeighbors(TestCase):
     def test_find_neighbors_numeric_nominal_covered(self):
         """Tests what happens if input has a numeric and a nominal feature and some examples are already covered
         by the rule"""
-        bracid = BRACID()
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                             "C": [3, 2, 1, .5, 3, 2],
                             "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        k = 4
-        bracid.closest_rule_per_example = {}
-        correct = None
-        if k == 1:
-            correct = df.iloc[[5]]
-        elif k == 2:
-            correct = df.iloc[[5, 2]]
-        elif k == 3:
-            correct = df.iloc[[5, 2, 3]]
-        elif k >= 4:
-            # Examples at indices 2 and 4 are already covered by the rule, so don't return them as neighbors
-            bracid.examples_covered_by_rule = {0: {2, 4}}
-            correct = df.iloc[[5, 3]]
-        bracid.all_rules = {}
-        rule = pd.Series({"B": Bounds(lower=1, upper=1), "Class": _1}, name=0)
-        classes = [_0, _1]
-        min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
+        for k in [1, 2, 3, 4]:
+            with self.subTest(f'k={k}'):
+                bracid = BRACID(k=k, minority_class=-1)
+                if k == 1:
+                    correct = df.iloc[[5]]
+                elif k == 2:
+                    correct = df.iloc[[5, 3]]
+                elif k == 3:
+                    correct = df.iloc[[5, 3, 4]]
+                elif k >= 4:
+                    # Examples at indices 2 and 4 are already covered by the rule, so don't return them as neighbors
+                    bracid.examples_covered_by_rule = {0: {2, 4}}
+                    correct = df.iloc[[5, 3]]
+                rule = pd.Series({"B": Bounds(lower=1, upper=1), "Class": _1}, name=0)
+                classes = [_0, _1]
+                min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
 
-        neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
-                                                True)
-        pd.testing.assert_frame_equal(neighbors, correct)
+                neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
+                                                        label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
+                                                        True)
+                pd.testing.assert_frame_equal(correct, neighbors)
 
     def test_find_neighbors_numeric_nominal_stats(self):
         """Tests that global statistics are updated accordingly"""
-        bracid = BRACID()
+        k = 4
+        bracid = BRACID(k=k, minority_class=-1)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                             "C": [3, 2, 1, .5, 3, 2],
                             "Class": [_0, _0, _1, _1, _1, _1]})
@@ -118,8 +116,6 @@ class TestFindNeighbors(TestCase):
             5: Data(rule_id=2, dist=0.67015625)}
         # Reset because other tests added data, so if you only run this test it would work, but not if other
         # tests are run prior to that
-        bracid.examples_covered_by_rule = {}
-        bracid.closest_examples_per_rule = {}
         bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
@@ -136,7 +132,6 @@ class TestFindNeighbors(TestCase):
                         "Class": _1}, name=5)
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
-        k = 4
         correct = df.iloc[[5, 3, 4, 2]]
 
         classes = [_0, _1]
@@ -169,7 +164,8 @@ class TestFindNeighbors(TestCase):
     def test_find_neighbors_numeric_nominal_covers(self):
         """Tests that the stats for a newly covered rule are updated (dist = 0)"""
         """Tests that global statistics are updated accordingly"""
-        bracid = BRACID()
+        k = 4
+        bracid = BRACID(k=k, minority_class = _1)
         df = pd.DataFrame({"B": [1, 1, 1, 1, 0.5, 0.75],
                             "C": [3, 2, 1, .5, 3, 2],
                             "Class": [_0, _0, _1, _1, _1, _1]})
@@ -197,11 +193,9 @@ class TestFindNeighbors(TestCase):
             4: (0, 0.015625),
             5: (2, 0.67015625)}
         bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
-        k = 4
         correct = df.iloc[[2, 3, 5, 4]]
         rule = pd.Series({"B": (1, 1), "Class": _1}, name=0)
         classes = [_0, _1]
-        bracid.minority_class = _1
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
         bracid.examples_covered_by_rule = {1: {2}}
         correct_covered = {1: {2}, 0: {2, 3}}

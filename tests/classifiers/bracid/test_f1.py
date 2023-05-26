@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from multi_imbalance.resampling.bracid.bracid import ConfusionMatrix, f1
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import ConfusionMatrix, f1
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestF1(TestCase):

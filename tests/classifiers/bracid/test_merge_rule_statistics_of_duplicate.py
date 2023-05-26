@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
+from tests.classifiers.bracid.classes_ import _0
 
 
 class TestMergeRuleStatisticsOfDuplicate(TestCase):
@@ -12,7 +12,7 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
     def test_merge_rule_statistics_of_duplicate(self):
         """Checks that the statistics are updated correctly if a duplicate rule is generated during the generalization
         step in bracid()"""
-        bracid = BRACID()
+        bracid = BRACID(k=0, minority_class=-1)
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),

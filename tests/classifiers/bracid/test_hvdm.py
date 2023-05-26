@@ -3,8 +3,8 @@ from unittest import TestCase
 import pandas as pd
 import numpy as np
 
-from multi_imbalance.resampling.bracid.bracid import hvdm
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import hvdm
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestHvdm(TestCase):

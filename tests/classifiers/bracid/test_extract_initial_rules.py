@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import extract_initial_rules
-from tests.resampling.bracid.classes_ import _0, _1, _2
+from multi_imbalance.classifiers.bracid.bracid import extract_initial_rules
+from tests.classifiers.bracid.classes_ import _0, _1, _2
 
 class TestExtractInitialRules(TestCase):
     """Tests test_extract_initial_rules() from utils"""

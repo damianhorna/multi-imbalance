@@ -4,8 +4,8 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 import numpy as np
 
-from multi_imbalance.resampling.bracid.bracid import di
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import di
+from tests.classifiers.bracid.classes_ import _0, _1
 
 class TestDi(TestCase):
     """Test di() in utils.py"""

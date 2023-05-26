@@ -2,9 +2,9 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1, _2
+from multi_imbalance.classifiers.bracid.bracid import BRACID
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1, _2
 
 
 class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
@@ -18,11 +18,11 @@ class TestExtractRulesAndTrainAndPredictMulticlass(TestCase):
         test_set = pd.DataFrame({"B": [4.1, 1, 5.4, 0.15, 0.05, 0.075],
                                  "C": [0.3, 2, 0.1, .4, 0.3, 5],
                                  "Class": ["", "", "", "", "", ""]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class="")
         class_col_name = "Class"
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
-        k = 3
         rules, preds_df = \
             bracid.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max, class_col_name, k)
         correct_preds = pd.DataFrame({

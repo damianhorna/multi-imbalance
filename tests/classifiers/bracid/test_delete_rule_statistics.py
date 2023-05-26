@@ -3,9 +3,9 @@ from collections import Counter
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Data, compute_hashable_key
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestDeleteRuleStatistics(TestCase):
@@ -13,7 +13,7 @@ class TestDeleteRuleStatistics(TestCase):
 
     def test_delete_rule_statistics_unique_hash(self):
         """Deletes a rule with a unique hash"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         extra_rule = pd.Series({"B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
                                 "Class": _0}, name=4)
         rules = [
@@ -29,7 +29,6 @@ class TestDeleteRuleStatistics(TestCase):
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        bracid.minority_class = _0
 
         for rule in rules:
             hash_val = compute_hashable_key(rule)
@@ -68,7 +67,7 @@ class TestDeleteRuleStatistics(TestCase):
 
     def test_delete_rule_statistics_collision(self):
         """Deletes a rule that shares its hash with other rules"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         extra_rule = pd.Series({"B": Bounds(lower=0.1, upper=1), "C": Bounds(lower=1, upper=2),
                                 "Class": _0}, name=4)
         rules = [
@@ -82,30 +81,8 @@ class TestDeleteRuleStatistics(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _0, _0, _0, _0]})
         class_col_name = "Class"
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 1,
-                        'low': 2,
-                        my_vars.CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _0: 1
-                                    }),
-                                'low':
-                                    Counter({
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 0.1, "max": 1}, "C": {"min": 1, "max": 3}})
-        bracid.minority_class = _0
-        bracid.unique_rules = {}
-        bracid.all_rules = {}
         for rule in rules:
             hash_val = compute_hashable_key(rule)
             bracid.unique_rules.setdefault(hash_val, set()).add(rule.name)

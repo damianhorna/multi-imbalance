@@ -1,48 +1,27 @@
 from unittest import TestCase
-from collections import Counter
 
+import numpy as np
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
-from multi_imbalance.resampling.bracid import vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
-import pytest
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds
+from tests.classifiers.bracid.classes_ import _0, _1
+
 
 class TestBracid(TestCase):
     """Tests bracid() from utils.py"""
 
     def test_bracid_stops(self):
         """Tests that the method stops"""
-        bracid = BRACID()
+        k = 3
+        minority_label = _1
+        bracid = BRACID(k=k, minority_class=minority_label)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        lookup = \
-            {
-                "A":
-                    {
-                        'high': 2,
-                        'low': 4,
-                        my_vars.CONDITIONAL:
-                            {
-                                'high':
-                                    Counter({
-                                        _1: 2
-                                    }),
-                                'low':
-                                    Counter({
-                                        _1: 2,
-                                        _0: 2
-                                    })
-                            }
-                    }
-            }
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        minority_label = _1
-        k = 3
         correct_rules = {
             0: pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=3.0),
                           "Class": _0}, name=0),
@@ -61,3 +40,17 @@ class TestBracid(TestCase):
             with self.subTest(f'rule_{key}'):
                 expected = correct_rules[key]
                 pd.testing.assert_series_equal(expected, rule)
+
+    def test_bracid_fit(self):
+        """Tests that the bracid.fit() stops"""
+        k = 3
+        minority_label = _1
+        bracid = BRACID(k=k, minority_class=minority_label)
+        X = np.array([
+            [1, 1, 4, 1.5, 0.5, 0.75],
+            [3, 2, 1, .5, 3, 2],
+        ]).T
+        y = [_0, _0, _1, _1, _1, _1]
+        bracid.fit(X, y)
+        prediction = bracid.predict(X)
+        self.assertEqual(np.asarray(y).shape, prediction.shape)

@@ -1,11 +1,9 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds
+from tests.classifiers.bracid.classes_ import _0
 
 
 class TestIsDuplicate(TestCase):
@@ -13,7 +11,7 @@ class TestIsDuplicate(TestCase):
 
     def test_is_duplicate_true(self):
         """Tests if the duplicate rule is detected"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class=-1)
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
                       name=0),
@@ -28,7 +26,7 @@ class TestIsDuplicate(TestCase):
 
     def test_is_duplicate_false(self):
         """Tests if no duplicate rule is detected"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class=-1)
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=2), "C": Bounds(lower=1, upper=3), "Class": _0},
                       name=0),
@@ -39,4 +37,4 @@ class TestIsDuplicate(TestCase):
                               "Class": _0}, name=2)
         bracid.all_rules = {0: rules[0], 1: rules[1]}
         rule_id = bracid.is_duplicate(new_rule, existing_rule_ids=[0, 1])
-        self.assertTrue(rule_id == -1)
+        self.assertEqual(rule_id,  -1)

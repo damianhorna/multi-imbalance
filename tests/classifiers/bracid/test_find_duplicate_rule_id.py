@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, compute_hashable_key
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, compute_hashable_key
+from tests.classifiers.bracid.classes_ import _1
 
 
 class TestFindDuplicateRuleId(TestCase):
@@ -11,7 +11,7 @@ class TestFindDuplicateRuleId(TestCase):
 
     def test_find_duplicate_rule_id(self):
         """Tests that a duplicate rule is detected properly"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class=-1)
         rules = [
             pd.Series({"B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
                        "Class": _1}, name=7),

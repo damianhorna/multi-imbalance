@@ -4,10 +4,10 @@ import pandas as pd
 
 import pytest
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 class TestAddOneBestRule(TestCase):
     """Tests add_one_best_rule() from utils.py"""
@@ -17,11 +17,11 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class = _0)
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
@@ -64,7 +64,6 @@ class TestAddOneBestRule(TestCase):
         # Actually, correctly it should've been
         bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
-        k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
@@ -97,12 +96,12 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class = _0)
         class_col_name = "Class"
         test_idx = -1
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
@@ -143,7 +142,6 @@ class TestAddOneBestRule(TestCase):
         # Actually, correctly it should've been
         bracid.conf_matrix = ConfusionMatrix(TP={0}, FP=set(), TN={1, 2, 5}, FN={3, 4})
         initial_f1 = 0.1
-        k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)
@@ -175,12 +173,12 @@ class TestAddOneBestRule(TestCase):
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=_0)
         class_col_name = "Class"
         test_idx = -1
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
                       name=1),
@@ -211,7 +209,6 @@ class TestAddOneBestRule(TestCase):
         # F1 is actually 0.666(6), but setting it to 0.8 makes it not update any rule
         initial_f1 = 0.8
         _f1 = bracid.conf_matrix.f1
-        k = 3
         bracid.unique_rules = {}
         for rule in rules:
             rule_hash = compute_hashable_key(rule)

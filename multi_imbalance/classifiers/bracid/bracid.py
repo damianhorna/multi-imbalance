@@ -9,11 +9,14 @@ import pandas as pd
 from imblearn.base import BaseSampler
 from pandas.api.types import is_numeric_dtype
 import sklearn.datasets
+from sklearn.base import BaseEstimator
 from sklearn.metrics import f1_score
 import numpy as np
 import enum
 import dataclasses
 from collections import defaultdict
+
+from sklearn.preprocessing import MinMaxScaler
 
 from . import vars as my_vars
 
@@ -57,6 +60,15 @@ Predictions = namedtuple("Predictions", ["label", "confidence"])
 Duplicates = namedtuple("Duplicates",
                         ["original", "duplicate", "duplicate_idx"])
 
+def get_min_max(df: pd.DataFrame):
+    min_max = {}
+    for column in df.columns:
+        values = df[column].values
+        min_max[column] = {
+            "min": np.nanmin(values),
+            "max": np.nanmax(values)
+        }
+    return pd.DataFrame(min_max)
 
 def assign_tag(labels, label):
     """
@@ -121,7 +133,7 @@ def normalize_series(col):
     return col
 
 
-def does_rule_cover_example(example, rule, dtypes):
+def does_rule_cover_example(example, rule):
     """
     Tests if a rule covers a given example.
 
@@ -137,8 +149,7 @@ def does_rule_cover_example(example, rule, dtypes):
     True if the rule covers the example else False.
 
     """
-    for (col_name, example_val), dtype in zip(example.items(), dtypes):
-        example_dtype = dtype
+    for col_name, example_val in example.items():
         if col_name not in rule:
             continue
         rule_val = rule[col_name]
@@ -514,9 +525,9 @@ def to_binary_classification_task(df, class_col_name, minority_label,
     return df
 
 
-class BRACID(BaseSampler):
+class BRACID(BaseEstimator):
 
-    def __init__(self):
+    def __init__(self, minority_class, k: int = 5, normalize: bool = False):
         # {example ei: set(rule ri for which ei is the seed)}
         self.seed_example_rule = {}
         # {rule ri: example ei is seed for ri}
@@ -533,8 +544,14 @@ class BRACID(BaseSampler):
         # {ID of rule ri: rule ri (=pd.Series)}
         self.all_rules = {}
         self.latest_rule_id = 0
-        self.minority_class = ""
-        self._sampling_type = "over-sampling"
+        if not isinstance(minority_class, (str, int)):
+            raise ValueError(f'minority_class={minority_class} should be an int or str but is {type(minority_class)}')
+        self._minority_class = str(minority_class)
+        self.k = k
+        self._class_column_name = "Class"
+        self._rules = None
+        self._normalize = normalize
+
 
     def read_dataset(self, src, positive_class, excluded=[], skip_rows=0,
                      na_values=[], normalize=False, class_index=-1,
@@ -560,7 +577,7 @@ class BRACID(BaseSampler):
         numeric column
 
         """
-        self.minority_class = positive_class
+        self._minority_class = positive_class
         # Add column names
         if header:
             df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values)
@@ -755,7 +772,7 @@ class BRACID(BaseSampler):
             examples_with_same_label[
                 my_vars.COVERED] = examples_with_same_label.loc[:, :] \
                 .apply(does_rule_cover_example, axis=1,
-                       args=(rule, examples_with_same_label.dtypes))
+                       args=(rule,))
             # Only keep the uncovered examples
             examples_with_same_label = examples_with_same_label.loc[
                 examples_with_same_label[my_vars.COVERED] == False]
@@ -998,7 +1015,7 @@ class BRACID(BaseSampler):
             self.closest_rule_per_example[example.name] = Data(
                 rule_id=rule.name, dist=rule_dist)
             self.conf_matrix = update_confusion_matrix(example, rule,
-                                                            self.minority_class,
+                                                            self._minority_class,
                                                             class_col_name,
                                                             self.conf_matrix)
         return f1(self.conf_matrix)
@@ -1075,7 +1092,7 @@ class BRACID(BaseSampler):
                     # logger.info("old confusion matrix:", self.conf_matrix)
                     self.conf_matrix = update_confusion_matrix(example,
                                                                     new_rule,
-                                                                    self.minority_class,
+                                                                    self._minority_class,
                                                                     class_col_name,
                                                                     self.conf_matrix)
                     # logger.info("new confusion matrix:", self.conf_matrix)
@@ -1172,7 +1189,7 @@ class BRACID(BaseSampler):
                     # logger.info("old confusion matrix:", conf_matrix)
                     conf_matrix = update_confusion_matrix(example,
                                                                new_rule,
-                                                               self.minority_class,
+                                                               self._minority_class,
                                                                class_col_name,
                                                                conf_matrix)
                     # logger.info("new confusion matrix:", conf_matrix)
@@ -2076,6 +2093,53 @@ class BRACID(BaseSampler):
                 return True
         return False
 
+    def _normalize_df(self, df):
+        normalized_df = df.copy()
+        if self._scalers is None:
+            self._scalers = {
+                MinMaxScaler().fit(df[column]) for column in df
+            }
+        for column in df.columns:
+            normalized_df[column] = self._scalers[column].transform(df[column])
+        return normalized_df
+
+
+    def fit(self, X, y):
+        X, y = np.asarray(X), np.asarray(y)
+        assert y.shape[0] > 0, 'y cannot be empty'
+        if not isinstance(y[0], (str, int)):
+            raise ValueError(f'y should contain integers but is of dtype: {type(y)}')
+        y_nominal = [str(v) for v in y]
+        self._classes = list(set(y_nominal))
+        self._columns = [f'Column_{i}' for i in range(X.shape[1])]
+        df = pd.DataFrame(X, columns=self._columns)
+        if self._normalize:
+            df = self._normalize_df(df)
+        self._min_max = get_min_max(df)
+        df[self._class_column_name] = y_nominal
+        self._rules = self.bracid(df, self.k, self._class_column_name, self._min_max, self._classes, self._minority_class)
+        self._model = self.train_binary(self._rules, df, self._minority_class,
+                                  self._class_column_name)
+
+    def _predict(self, X, y=None, predict_proba=False):
+        df = pd.DataFrame(X, columns=self._columns)
+        if self._normalize:
+            df = self._normalize_df(df)
+        preds_df = self.predict_binary(self._model, df, self._rules, self._classes,
+                                       self._class_column_name, self._min_max)
+        if predict_proba:
+            preds = preds_df[my_vars.PREDICTION_CONFIDENCE].values
+        else:
+            preds = preds_df[my_vars.PREDICTED_LABEL].values
+        return preds
+
+    def predict(self, X):
+        return self._predict(X, predict_proba=False)
+
+    def predict_proba(self, X):
+        return self._predict(X, predict_proba=True)
+
+
     def bracid(self, df, k, class_col_name, min_max, classes, minority_label):
         """
         Implements the actual BRACID algorithm according to Algorithm 1 in the paper.
@@ -2097,9 +2161,9 @@ class BRACID(BaseSampler):
         values the corresponding rules.
 
         """
-        self.minority_class = minority_label
+        self._minority_class = minority_label
         self.init_statistics(df)
-        logger.info("minority class label:", self.minority_class)
+        logger.info("minority class label:", self._minority_class)
         df, rules = self.add_tags_and_extract_rules(df, k, class_col_name,
                                                     min_max, classes)
         logger.info("initial rules")
@@ -2301,14 +2365,14 @@ class BRACID(BaseSampler):
         labels, respectively
 
         """
-        self.minority_class = minority_label
+        self._minority_class = minority_label
         model = {}
         logger.info("closest rule per example in train():",
                     self.closest_rule_per_example)
         for rule_id in rules:
             rule = rules[rule_id]
             logger.info(rule)
-            if self.minority_class == rule[class_col_name]:
+            if self._minority_class == rule[class_col_name]:
                 logger.info(
                     "rule {} predicts minority label '{}'".format(rule.name,
                                                                   rule[
@@ -2340,7 +2404,7 @@ class BRACID(BaseSampler):
             logger.info(
                 "support(rule {}) = {}/{} = {}".format(rule_id, counts, total,
                                                        support))
-            if rule[class_col_name] == self.minority_class:
+            if rule[class_col_name] == self._minority_class:
                 model[rule_id] = Support(minority=support, majority=rest)
             else:
                 model[rule_id] = Support(minority=rest, majority=support)
@@ -2384,9 +2448,9 @@ class BRACID(BaseSampler):
                                                          model, class_col_name,
                                                          min_max, classes)
         majority_label = classes[0]
-        if self.minority_class == classes[0]:
+        if self._minority_class == classes[0]:
             majority_label = classes[1]
-        minority_label = self.minority_class
+        minority_label = self._minority_class
         # Compute confidence based on support
         for example_id in supports:
             predicted_label = minority_label

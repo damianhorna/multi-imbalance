@@ -1,13 +1,11 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 import numpy as np
 
-from multi_imbalance.resampling.bracid.vars import CONDITIONAL, TAG
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, ExampleClass
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.vars import TAG
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, ExampleClass
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestAddTags(TestCase):
@@ -19,7 +17,8 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         correct = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _0, _1, _1, _1, _1],
@@ -38,7 +37,6 @@ class TestAddTags(TestCase):
         bracid.examples_covered_by_rule = {}
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        k = 3
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
@@ -64,7 +62,8 @@ class TestAddTags(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _1, _1, _1, _1, _1]})
         class_col_name = "Class"
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         correct = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                                 "C": [3, 2, 1, .5, 3, 2],
                                 "Class": [_0, _1, _1, _1, _1, _1],
@@ -78,7 +77,6 @@ class TestAddTags(TestCase):
         # Note: examples_covered_by_rule implicitly includes the seeds of all rules
         bracid.examples_covered_by_rule = {}
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        k = 3
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
@@ -103,7 +101,8 @@ class TestAddTags(TestCase):
         df = pd.DataFrame({"B": [np.NaN, 1, np.NaN, 1.5, np.NaN, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         class_col_name = "Class"
         correct = pd.DataFrame(
@@ -131,7 +130,6 @@ class TestAddTags(TestCase):
             pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
                        "Class": _1}, name=5)
         ]
-        k = 3
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         bracid.closest_rule_per_example = {}
         bracid.closest_examples_per_rule = {}
@@ -145,7 +143,8 @@ class TestAddTags(TestCase):
 
     def test_add_tags_all_tags(self):
         """Add tags when using nominal and numeric features and assigning noisy, borderline and safe as tags"""
-        bracid = BRACID()
+        k = 2
+        bracid = BRACID(k=k, minority_class=-1)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
@@ -162,7 +161,6 @@ class TestAddTags(TestCase):
 
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        k = 2
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),

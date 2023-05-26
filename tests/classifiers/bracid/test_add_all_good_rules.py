@@ -2,10 +2,10 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Data, ConfusionMatrix, compute_hashable_key
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 class TestAddAllGoodRules(TestCase):
     """Tests add_all_good_rules() in utils.py"""
@@ -15,12 +15,12 @@ class TestAddAllGoodRules(TestCase):
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=_1)
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        bracid.minority_class = _1
         rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),
@@ -66,7 +66,6 @@ class TestAddAllGoodRules(TestCase):
 
         correct_initial_f1 = correct_confusion_matrix.f1
         self.assertAlmostEqual(initial_f1, correct_initial_f1)
-        k = 3
         neighbors, dists, _ = bracid.find_nearest_examples(df, k, rules[test_idx], class_col_name, min_max, classes,
                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
                                                     True)

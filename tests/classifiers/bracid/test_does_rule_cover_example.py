@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import does_rule_cover_example
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import does_rule_cover_example
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestDoesRuleCoverExample(TestCase):
@@ -19,7 +19,7 @@ class TestDoesRuleCoverExample(TestCase):
         rule = rules[0]
         dataset["is_covered"] = dataset.loc[:, :].apply(
             does_rule_cover_example, axis=1,
-            args=(rule, dataset.dtypes))
+            args=(rule,))
         df = dataset.loc[dataset["is_covered"]]
         self.assertEqual(len(df.index), 2)
         self.assertEqual(df.index[0], 0)

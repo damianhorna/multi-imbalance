@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from tests.resampling.bracid.classes_ import _0, _1
-from multi_imbalance.resampling.bracid.bracid import ConfusionMatrix, update_confusion_matrix
+from tests.classifiers.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import ConfusionMatrix, update_confusion_matrix
 
 
 class TestUpdateConfusionMatrix(TestCase):

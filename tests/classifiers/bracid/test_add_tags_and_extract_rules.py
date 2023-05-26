@@ -1,13 +1,11 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.vars import CONDITIONAL, TAG
+from multi_imbalance.classifiers.bracid.vars import TAG
 # from scripts.utils import add_tags_and_extract_rules, Bounds
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, ExampleClass
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, ExampleClass
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestAddTagsAndExtractRules(TestCase):
@@ -19,7 +17,8 @@ class TestAddTagsAndExtractRules(TestCase):
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
-        bracid = BRACID()
+        k = 2
+        bracid = BRACID(k=k, minority_class=-1)
         bracid.examples_covered_by_rule = {0: {0}, 1: {1}, 2: {2}, 3: {3}, 4: {4}, 5: {5}}
         bracid.latest_rule_id = 5
         correct = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
@@ -33,7 +32,6 @@ class TestAddTagsAndExtractRules(TestCase):
                                 })
         classes = [_0, _1]
         min_max = pd.DataFrame({"C": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        k = 2
         correct_rules = [
             pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
                       name=0),

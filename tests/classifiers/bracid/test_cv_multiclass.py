@@ -1,13 +1,11 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 import sklearn
 import numpy as np
 
-from multi_imbalance.resampling.bracid.bracid import BRACID
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1, _2
+from multi_imbalance.classifiers.bracid.bracid import BRACID
+from tests.classifiers.bracid.classes_ import _0, _1, _2
 
 
 class TestCv(TestCase):
@@ -20,11 +18,11 @@ class TestCv(TestCase):
                                 "Class": [_0, _0, _1, _2, _1, _2]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
         class_col_name = "Class"
-        bracid = BRACID()
+        k = 3
+        bracid = BRACID(k=k, minority_class=-1)
         classes = [_0, _1, _2]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
 
-        k = 3
         folds = 2
         seed = 13
         micro_f1, class_f1, true_fold, predicted_fold = bracid.cv_multiclass(dataset, k, class_col_name, min_max,

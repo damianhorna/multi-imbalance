@@ -1,11 +1,10 @@
 from unittest import TestCase
-from collections import Counter
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, ConfusionMatrix, Data
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, ConfusionMatrix, Data
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 
 class TestEvaluateF1InitializeConfusionMatrix(TestCase):
@@ -13,7 +12,7 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
 
     def test_evaluate_f1_initialize_confusion_matrix(self):
         """Tests what happens if input has a numeric and a nominal feature"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
@@ -34,7 +33,6 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
                        "Class": _1}, name=5)
         ]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         bracid.all_rules = {i: rule for i, rule in enumerate(rules)}
 
         bracid.seed_rule_example = {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5}

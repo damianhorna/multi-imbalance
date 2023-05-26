@@ -2,24 +2,23 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Data
-import multi_imbalance.resampling.bracid.vars as my_vars
-from tests.resampling.bracid.classes_ import _0, _1
-from tests.resampling.bracid.assertions import assert_almost_equal
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Data
+import multi_imbalance.classifiers.bracid.vars as my_vars
+from tests.classifiers.bracid.classes_ import _0, _1
+from tests.classifiers.bracid.assertions import assert_almost_equal
 
 class TestFindNearestRule(TestCase):
     """Tests find_nearest_rule() in utils.py"""
 
     def test_find_nearest_rule_no_ties(self):
         """Tests that the nearest rule is found per example assuming no ties"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                            "C": [3, 2, 1, .5, 3, 2],
                            "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         rules = [
             pd.Series({"B": (1, 1), "C": (3, 3), "Class": _0}, name=0),
             pd.Series({"B": (1, 1), "C": (2, 2), "Class": _0}, name=1),
@@ -54,14 +53,13 @@ class TestFindNearestRule(TestCase):
 
     def test_find_nearest_rule_ties(self):
         """Tests that ties (multiple rules cover an example) are resolved properly"""
-        bracid = BRACID()
+        bracid = BRACID(k=-1, minority_class = _0)
         df = pd.DataFrame({"B": [1, 1, 2],
                            "C": [1, 2, 3],
                            "Class": [_0, _1, _1]})
         class_col_name = "Class"
         classes = [_0, _1]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
-        bracid.minority_class = _0
         rules = [
             pd.Series({"B": (1, 2), "C": (1, 3), "Class": _0}, name=0),
             pd.Series({"B": (1, 2), "C": (1, 3), "Class": _0}, name=1),

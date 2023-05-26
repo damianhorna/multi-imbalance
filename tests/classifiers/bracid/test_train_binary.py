@@ -2,8 +2,8 @@ from unittest import TestCase
 
 import pandas as pd
 
-from multi_imbalance.resampling.bracid.bracid import BRACID, Bounds, Support
-from tests.resampling.bracid.classes_ import _0, _1
+from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds, Support
+from tests.classifiers.bracid.classes_ import _0, _1
 
 
 class TestTrain(TestCase):
@@ -11,12 +11,12 @@ class TestTrain(TestCase):
 
     def test_train(self):
         """Test with numeric and nominal features"""
-        bracid = BRACID()
+        minority_label = _1
+        bracid = BRACID(k=-1, minority_class=minority_label)
         training_set = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
                                      "C": [3, 2, 1, .5, 3, 2],
                                      "Class": [_0, _0, _1, _1, _1, _1]})
         # Use majority class as minority to have multiple neighbors and see if the function works correctly
-        minority_label = _1
         class_col_name = "Class"
         rules = {
             2: pd.Series({"B": Bounds(lower=1.25, upper=4.0), "C": Bounds(lower=0.5, upper=1.5),

@@ -1,7 +1,7 @@
 from unittest import TestCase
 from collections import Counter
 
-from multi_imbalance.resampling.bracid.bracid import ExampleClass, assign_tag
+from multi_imbalance.classifiers.bracid.bracid import ExampleClass, assign_tag
 
 
 class TestAssignTag(TestCase):
