@@ -1,3 +1,4 @@
+import functools
 from collections import Counter, deque, namedtuple
 import os
 import itertools
@@ -150,7 +151,6 @@ class BRACID:
             if col_name == class_col_name:
                 continue
             col = df[col_name]
-            assert is_numeric_dtype(col), f'{col_name}, {col.dtype} {col}'
             # Assuming the value is x, we now store named tuples of Bounds(lower=x, upper=x) per row
             rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name]) for _, row in df.iterrows()]
         return rules
@@ -335,8 +335,6 @@ class BRACID:
         """
         for (col_name, example_val), dtype in zip(example.items(), dtypes):
             example_dtype = dtype
-            if not is_numeric_dtype(example_dtype):
-                raise ValueError(f'{col_name} is not of a numeric dtype: {example_val} ({example_dtype})')
             if col_name not in rule:
                 continue
             rule_val = rule[col_name]
@@ -644,21 +642,22 @@ class BRACID:
         for (col_name, example_val), dtype in zip(example.items(), dtypes):
             if col_name == class_col_name:
                 continue
-            example_dtype = dtype
             if col_name in rule:
-                # Cast object to tuple datatype -> this is only automatically done if it's not a string
-                rule_val = (rule[col_name])
+                rule_val = rule[col_name]
+                new_rule = rule_val
                 # logger.info("rule_val", rule_val, "\nrule type:", type(rule_val))
-                # assert is_numeric_dtype(example_dtype), f'{col_name} {example_dtype}'
-                if not is_numeric_dtype(example_dtype):
-                    raise ValueError(f'{example_dtype} is not a numeric dtype')
                 if example_val > rule_val[1]:
                     # logger.info("new upper limit", (rule_val[0], example_val))
-                    rule[col_name] = Bounds(lower=rule_val[0], upper=example_val)
+                    new_rule = (rule_val[0], example_val)
                 elif example_val < rule_val[0]:
                     # logger.info("new lower limit", (example_val, rule_val[1]))
-                    rule[col_name] = Bounds(lower=example_val, upper=rule_val[1])
+                    new_rule = (example_val, rule_val[1])
                     # logger.info("updated:", rule)
+                if isinstance(rule_val, Bounds):
+                    rule[col_name] = Bounds(lower=new_rule[0], upper=new_rule[1])
+                else:
+                    rule[col_name] = new_rule
+
         return rule
 
 
