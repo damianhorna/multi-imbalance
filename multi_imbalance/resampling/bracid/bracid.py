@@ -30,9 +30,6 @@ class ExampleClass(enum.Enum):
 class Labels(str, enum.Enum):
     REST = "rest"
 
-class MyException(Exception):
-    pass
-
 @dataclasses.dataclass
 class ConfusionMatrix:
     TP: set = dataclasses.field(default_factory=set)
@@ -410,7 +407,7 @@ class BRACID:
 
         Raises
         ------
-        MyException: if invalid option for <label_type> is supplied
+        ValueError: if invalid option for <label_type> is supplied
 
         Returns
         -------
@@ -431,7 +428,7 @@ class BRACID:
         elif label_type == my_vars.SAME_LABEL_AS_RULE:
             examples_with_same_label = df.loc[df[class_col_name] == class_label]
         else:
-            raise MyException("'{}' is an invalid option for the label_type!".format(label_type))
+            raise ValueError("'{}' is an invalid option for the label_type!".format(label_type))
         # Only consider examples, that have the same label as the rule and aren't covered by the rule yet
         if only_uncovered_neighbors:
             covered_examples = self.examples_covered_by_rule.get(rule.name, set())
@@ -581,43 +578,42 @@ class BRACID:
         # hvdm() expects a dataFrame of examples, not a Series
         # Plus, data type is "object", but then numeric columns won't be detected in di(), so we need to infer them
         example_df = example.to_frame().T.infer_objects()
-        try:
-            was_updated = False
-            for rule in rules:
-                rule_id = rule.name
-                # logger.info("Now checking rule with ID {}:\n{}".format(rule_id, rule))
-                examples = len(examples_covered_by_rule.get(rule.name, set()))
-                # > 0 (instead of 1) because seeds aren't stored in this dict, so we implicitly add 1
-                covers_multiple_examples = True if examples > 0 else False
+        was_updated = False
+        for rule in rules:
+            rule_id = rule.name
+            # logger.info("Now checking rule with ID {}:\n{}".format(rule_id, rule))
+            examples = len(examples_covered_by_rule.get(rule.name, set()))
+            # > 0 (instead of 1) because seeds aren't stored in this dict, so we implicitly add 1
+            covers_multiple_examples = True if examples > 0 else False
 
-                # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
-                # if not covers_multiple_examples and self.seed_example_rule[example.name] == rule_id:
-                if not covers_multiple_examples and rule_id in self.seed_example_rule.get(example.name, set()):
-                    # Ignore rule as it's the seed for the example
-                    # logger.info("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
-                    continue
-                neighbors, dists, is_closest = \
-                    self.find_nearest_examples(example_df, k, rule, class_col_name, min_max, classes,
-                                        label_type=label_type, only_uncovered_neighbors=only_uncovered_neighbors)
-                if neighbors is not None:
-                    dist = dists.iloc[0][my_vars.DIST]
-                    if min_dist is not None:
-                        if is_closest:
-                            was_updated = True
-                            min_dist = dist
-                            min_rule_id = rule_id
-                    else:
-                        min_dist = dist
-                        min_rule_id = rule_id
-                        was_updated = True
-                else:
-                    raise MyException("No neighbors for rule:\n{}".format(rule))
-            if min_rule_id is not None:
-                logger.info("nearest rule for example {}:rule {} with dist={}".format(example.name, min_rule_id, min_dist))
-                return self.all_rules[min_rule_id], min_dist, was_updated
-            return None, None, None
-        except MyException:
-            return None, None, None
+            # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
+            # if not covers_multiple_examples and self.seed_example_rule[example.name] == rule_id:
+            if not covers_multiple_examples and rule_id in self.seed_example_rule.get(example.name, set()):
+                # Ignore rule as it's the seed for the example
+                # logger.info("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
+                continue
+            neighbors, dists, is_closest = \
+                self.find_nearest_examples(example_df, k, rule, class_col_name, min_max, classes,
+                                    label_type=label_type, only_uncovered_neighbors=only_uncovered_neighbors)
+            if neighbors is None:
+                logger.debug("No neighbors for rule:\n{}".format(rule))
+                min_rule_id = None
+                break
+            dist = dists.iloc[0][my_vars.DIST]
+            if min_dist is not None:
+                if is_closest:
+                    was_updated = True
+                    min_dist = dist
+                    min_rule_id = rule_id
+            else:
+                min_dist = dist
+                min_rule_id = rule_id
+                was_updated = True
+
+        if min_rule_id is not None:
+            logger.info("nearest rule for example {}:rule {} with dist={}".format(example.name, min_rule_id, min_dist))
+            return self.all_rules[min_rule_id], min_dist, was_updated
+        return None, None, None
 
 
     def most_specific_generalization(self, example, rule, class_col_name, dtypes):
