@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Tuple, List
+from typing import Tuple, List, Callable
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -21,14 +21,18 @@ class CCR(BaseSampler):
     International Journal of Applied Mathematics and Computer Science 2017
     """
 
-    def __init__(self, energy: float):
+    def __init__(self, energy: float, distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
+                 lambda x, y: np.linalg.norm(x - y, ord=1, axis=1)) -> None:
         """
         :param energy:
             initial energy budget for each minority example to use for sphere expansion
+        :param distance_function:
+            function to calculate distance between minority example and array of majority examples, defaults to L1 norm
         """
         super().__init__()
         self.energy = energy
         self._sampling_type = "over-sampling"
+        self.distance_function = distance_function
 
     def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -64,13 +68,21 @@ class CCR(BaseSampler):
         :return:
             clean majority X, synthetic minority X
         """
-        majority_count = len(majority_examples)
+        r, t = self._calculate_radius_and_translations(minority_examples, majority_examples)
+        translated_majority_examples = majority_examples + t
+        synthetic_examples = self._generate_synthetic_examples(minority_examples, majority_examples, r,
+                                                               synthetic_examples_total)
 
+        return translated_majority_examples, synthetic_examples
+
+    def _calculate_radius_and_translations(self, minority_examples, majority_examples):
         r = np.zeros(minority_examples.shape[0])
         t = np.zeros(majority_examples.shape)
 
-        for i, x in enumerate(minority_examples):
-            distances = self.distances(x, majority_examples)
+        majority_count = len(majority_examples)
+        for i, minority_example in enumerate(minority_examples):
+            distances = self.distance_function(minority_example, majority_examples)
+
             sorted_distances_index = np.argsort(distances)
             energy = self.energy
             current_example = 0
@@ -100,18 +112,18 @@ class CCR(BaseSampler):
                 d = distances[j]
                 if d == 0:
                     continue
-                translation = majority_examples[j] - x
+                translation = majority_examples[j] - minority_example
                 t[j] += (r[i] - d) / d * translation
+        return r, t
 
-        majority_examples += t
-
+    def _generate_synthetic_examples(self, majority_examples, minority_examples, r, synthetic_examples_total):
         generation_order = r.argsort()
         if synthetic_examples_total is None:
             synthetic_examples_total = majority_examples.shape[0] - minority_examples.shape[0]
-        synthetic_examples_counts = (r ** -1 / (r ** -1).sum()) * synthetic_examples_total
-        synthetic_leftovers = int((synthetic_examples_counts - synthetic_examples_counts.astype(int)).sum())
-        synthetic_examples_counts = np.floor(synthetic_examples_counts).astype(int)
 
+        synthetic_examples_counts = (r ** -1 / (r ** -1).sum()) * synthetic_examples_total
+        synthetic_examples_counts = np.floor(synthetic_examples_counts).astype(int)
+        synthetic_leftovers = int((synthetic_examples_counts - synthetic_examples_counts.astype(int)).sum())
         for i in range(synthetic_leftovers):
             synthetic_examples_counts[generation_order[i % len(generation_order)]] += 1
 
@@ -134,10 +146,7 @@ class CCR(BaseSampler):
         else:
             generated = np.empty((0, minority_examples.shape[1]))
 
-        return majority_examples, generated
-
-    def distances(self, minority_example: np.ndarray, majority_examples: np.ndarray) -> np.ndarray:
-        return (abs(minority_example - majority_examples)).sum(1)
+        return generated
 
 
 class MultiClassCCR(BaseSampler):
