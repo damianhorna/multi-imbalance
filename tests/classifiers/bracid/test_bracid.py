@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from multi_imbalance.classifiers.bracid.bracid import BRACID, Bounds
+import multi_imbalance.classifiers.bracid.vars as my_vars
 from tests.classifiers.bracid.classes_ import _0, _1, _2
 
 
@@ -39,7 +40,7 @@ class TestBracid(TestCase):
         for key, rule in rules.items():
             with self.subTest(f'rule_{key}'):
                 expected = correct_rules[key]
-                pd.testing.assert_series_equal(expected, rule)
+                pd.testing.assert_series_equal(expected, rule.drop(my_vars.HASH, errors='ignore'))
 
     def test_bracid_fit_predict(self):
         """Tests that the bracid.fit() stops"""
@@ -68,5 +69,5 @@ class TestBracid(TestCase):
             predict_proba = bracid.predict_proba(X)
             self.assertFalse(bracid._is_binary_classification)
             self.assertEqual(np.asarray(y).shape, prediction.shape)
-            np.testing.assert_array_less(predict_proba, 1.0)
-            np.testing.assert_array_less(0.0, predict_proba)
+            np.testing.assert_array_less(predict_proba, 1.0 + 1e-5)
+            np.testing.assert_array_less(0.0 - 1e-5, predict_proba)

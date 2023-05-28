@@ -86,7 +86,7 @@ class TestAddOneBestRule(TestCase):
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
 
         assert_almost_equal(self, bracid.closest_rule_per_example, correct_closest_rule_per_example)
-        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        pd.testing.assert_series_equal(updated_rules[test_idx].drop(my_vars.HASH, errors='ignore'), correct_generalized_rule)
         self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
         self.assertDictEqual(correct_closest_examples_per_rule, bracid.closest_examples_per_rule)
 
@@ -147,7 +147,6 @@ class TestAddOneBestRule(TestCase):
                                                     True)
         improved, updated_rules, f1 = bracid.add_one_best_rule(df, neighbors, rules[test_idx], rules, initial_f1,
                                                         class_col_name, min_max, classes)
-
         correct_closest_rule_per_example = {
             0: Data(rule_id=1, dist=0.010000000000000002),
             1: Data(rule_id=0, dist=0.0), 2: Data(rule_id=0, dist=0.5725),
@@ -162,7 +161,7 @@ class TestAddOneBestRule(TestCase):
         correct_confusion_matrix = ConfusionMatrix(TP={0, 1}, TN=set(), FP={2, 5}, FN={3, 4})
         # Make sure confusion matrix, closest rule per example, and rule set were updated with the updated rule too
         assert_almost_equal(self, bracid.closest_rule_per_example, correct_closest_rule_per_example)
-        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        pd.testing.assert_series_equal(updated_rules[test_idx].drop(my_vars.HASH, errors='ignore'), correct_generalized_rule)
         self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
         print(correct_closest_examples_per_rule)
         print(bracid.closest_examples_per_rule)
@@ -231,7 +230,7 @@ class TestAddOneBestRule(TestCase):
         print(correct_generalized_rule)
         print("updated")
         print(updated_rules)
-        pd.testing.assert_series_equal(updated_rules[test_idx], correct_generalized_rule)
+        pd.testing.assert_series_equal(updated_rules[test_idx].drop(my_vars.HASH, errors='ignore'), correct_generalized_rule)
         self.assertEqual(bracid.conf_matrix, correct_confusion_matrix)
 
     @pytest.mark.skip(reason="TODO: fix this test")

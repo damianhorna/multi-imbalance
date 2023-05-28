@@ -25,6 +25,7 @@ PREDICTED_LABEL = "predicted_label"
 PREDICTION_CONFIDENCE = "confidence_for_prediction"
 # Indicates that a rule has a unique hash
 UNIQUE_RULE = -1
+HASH = "_hash"
 # {example ei: set(rule ri for which ei is the seed)}
 # seed_example_rule = {}
 # {rule ri: example ei is seed for ri}

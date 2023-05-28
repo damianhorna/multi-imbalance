@@ -5,6 +5,7 @@ from operator import itemgetter
 import math
 
 import pandas as pd
+import tqdm as tqdm
 from pandas.api.types import is_numeric_dtype
 import sklearn.datasets
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -489,13 +490,26 @@ def sklearn_to_df(sklearn_dataset):
     return df
 
 
+# def compute_hashable_key(series):
+#     """Returns a hashable (=immutable) representation of a pd.Series object"""
+#     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
+#     if my_vars.HASH in series:
+#         return series[my_vars.HASH]
+#     original_name = series.name
+#     series.name = 1
+#     hash_value = hash(str(series))
+#     series.name = original_name
+#     series[my_vars.HASH] = hash_value
+#     return hash_value
+
 def compute_hashable_key(series):
     """Returns a hashable (=immutable) representation of a pd.Series object"""
-    cp = series.copy()
     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
-    cp.name = 1
-    return hash(str(cp))
-
+    original_name = series.name
+    series.name = 1
+    hash_value = hash(str(series))
+    series.name = original_name
+    return hash_value
 
 def to_binary_classification_task(df, class_col_name, minority_label,
                                   merged_label="rest"):
@@ -1470,10 +1484,10 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 logger.info("updated unique rules:", self.unique_rules)
                 rules[idx] = best_generalization
                 self.all_rules[best_generalization.name] = best_generalization
-                logger.info("updated best rule per example for example {}:\n{}"
-                            .format(best_generalization.name, (
-                    rule.name,
-                    best_closest_rule_dist[best_generalization.name])))
+                # logger.info("updated best rule per example for example {}:\n{}"
+                #             .format(best_generalization.name, (
+                #     rule.name,
+                #     best_closest_rule_dist[best_generalization.name])))
                 self.closest_rule_per_example = best_closest_rule_dist
                 logger.info("closest rule per example updated",
                             self.closest_rule_per_example)
@@ -2114,16 +2128,13 @@ class BRACID(BaseEstimator, ClassifierMixin):
     def fit(self, X, y):
         X, y = np.asarray(X), np.asarray(y)
         assert y.shape[0] > 0, 'y cannot be empty'
-        if not isinstance(y[0], (str, int)):
-            raise ValueError(
-                f'y should contain integers but is of dtype: {type(y)}')
         y_nominal = [str(v) for v in y]
         self._classes = list(set(y_nominal))
         self._is_binary_classification = len(self._classes) <= 2
         self._columns = [f'Column_{i}' for i in range(X.shape[1])]
         df = pd.DataFrame(X, columns=self._columns)
-        df[self._class_column_name] = y_nominal
         self._min_max = get_min_max(df)
+        df[self._class_column_name] = y_nominal
         if self._is_binary_classification:
             return self._fit_binary(df)
         return self._fit_multiclass(df)
@@ -2251,12 +2262,16 @@ class BRACID(BaseEstimator, ClassifierMixin):
             rule_hash = compute_hashable_key(rule)
             logger.info("rule/ hash:", rule_hash)
             self.unique_rules.setdefault(rule_hash, set()).add(rule.name)
-        f1 = self.evaluate_f1_initialize_confusion_matrix(df, rules,
-                                                          class_col_name,
-                                                          min_max, classes)
+        f1_ = self.evaluate_f1_initialize_confusion_matrix(df, rules,
+                                                           class_col_name,
+                                                           min_max, classes)
         while keep_running:
             improved = False
+            pbar = tqdm.tqdm(desc=f'BRACID for class {minority_label}')
+            loop_iterations = 0
             while len(rules) > 0:
+                loop_iterations += 1
+                pbar.set_description(f'({minority_label}) There are {len(rules)} rules left for evaluation', refresh=True)
                 logger.info("\nthere are {} rules left for evaluation:".format(
                     len(rules)))
                 logger.info("hashes:", self.unique_rules)
@@ -2300,12 +2315,12 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     # Neighbors exist
                     # if neighbors is not None:
                     if seed_tag == ExampleClass.SAFE:
-                        improved, generalized_rules, f1 = self.add_one_best_rule(
-                            df, neighbors, rule, rules, f1,
+                        improved, generalized_rules, f1_ = self.add_one_best_rule(
+                            df, neighbors, rule, rules, f1_,
                             class_col_name, min_max, classes)
                     else:
-                        improved, generalized_rules, f1 = self.add_all_good_rules(
-                            df, neighbors, rule, rules, f1,
+                        improved, generalized_rules, f1_ = self.add_all_good_rules(
+                            df, neighbors, rule, rules, f1_,
                             class_col_name, min_max, classes)
                     if not improved:
                         # Don't extend for outlier
@@ -2341,8 +2356,8 @@ class BRACID(BaseEstimator, ClassifierMixin):
                                                                      only_uncovered_neighbors=True)
                     # Neighbors exist
                     # if neighbors is not None:
-                    improved, generalized_rules, f1 = self.add_one_best_rule(
-                        df, neighbors, rule, rules, f1, class_col_name,
+                    improved, generalized_rules, f1_ = self.add_one_best_rule(
+                        df, neighbors, rule, rules, f1_, class_col_name,
                         min_max, classes)
                     if not improved:
                         # Treat as noise
@@ -2369,8 +2384,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 logger.info(
                     "end of iteration {} in bracid()".format(iteration))
                 logger.info("#####################\n")
+                pbar.update(1)
             if not improved:
                 keep_running = False
+
+            pbar.set_description(
+                f'There were {loop_iterations} iterations for label={minority_label}',
+                refresh=True)
+            pbar.close()
 
         return final_rules
 
