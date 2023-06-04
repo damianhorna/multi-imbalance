@@ -273,15 +273,20 @@ def di(example_feat, rule_feat, min_max):
     for idx, example_val in example_feat.items():
         # logger.info("processing", example_val)
         if pd.isnull(example_val):
-            logger.info("NaN(s) in svdm() in column '{}' in row {}".format(
+            logger.warning("NaN(s) in svdm() in column '{}' in row {}".format(
                 col_name, idx))
             dist = 1.0
         else:
             min_rule_val = min_max.at["min", col_name]
             max_rule_val = min_max.at["max", col_name]
+            if np.isclose(min_rule_val, max_rule_val):
+                logger.warning(
+                    'Min and max for column "%s" are equal: %f and %f',
+                    col_name, min_rule_val, max_rule_val)
+                dist = 0
             # logger.info("min({})={}".format(col_name, min_rule_val))
             # logger.info("max({})={}".format(col_name, max_rule_val))
-            if example_val > upper_rule_val:
+            elif example_val > upper_rule_val:
                 # logger.info("example > upper")
                 # logger.info("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
                 dist = (example_val - upper_rule_val) / (
@@ -323,7 +328,7 @@ def hvdm(examples, rule, classes, min_max, class_col_name):
     dists = []
     # Compute distance for j-th feature (=column)
     for col_name in examples:
-        if col_name == class_col_name or col_name == my_vars.TAG or col_name == my_vars.COVERED:
+        if col_name in [class_col_name, my_vars.TAG, my_vars.COVERED]:
             continue
         # Extract column from both dataframes into numpy array
         example_feature_col = examples[col_name]
@@ -511,6 +516,7 @@ def compute_hashable_key(series):
     series.name = original_name
     return hash_value
 
+
 def to_binary_classification_task(df, class_col_name, minority_label,
                                   merged_label="rest"):
     """
@@ -572,7 +578,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             raise ValueError(
                 f'minority_class={minority_class} should be an int or str '
                 f'but is {type(minority_class)}')
-        self._minority_class = str(minority_class)
+        self._minority_class = minority_class
         self.k = k
         self._class_column_name = "Class"
         self._rules = None
@@ -730,7 +736,8 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
     def find_nearest_examples(self, df, k, rule, class_col_name, min_max,
                               classes, label_type=my_vars.ALL_LABELS,
-                              only_uncovered_neighbors=True):
+                              only_uncovered_neighbors=True,
+                              only_single_example=False):
         """
         Finds k-nearest examples for a given rule with the same class label as the rule.
         If less than k examples exist, a warning is issued.
@@ -807,10 +814,10 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
         neighbors = examples_with_same_label.shape[0]
         # logger.info("neighbors:", neighbors)
-        if neighbors < k:
-            warnings.warn("Only {} neighbors for\n{}".format(
-                examples_with_same_label.shape[0], examples_with_same_label),
-                UserWarning)
+        if neighbors < k and not only_single_example:
+            logging.debug("Only %i neighbors for\n%s",
+                          examples_with_same_label.shape[0],
+                          examples_with_same_label)
         dists = hvdm(examples_with_same_label, rule, classes, min_max,
                      class_col_name)
         neighbor_ids = dists.index[: k]
@@ -967,11 +974,13 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 # Ignore rule as it's the seed for the example
                 # logger.info("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
                 continue
+            assert example_df.shape[0] == 1
             neighbors, dists, is_closest = \
                 self.find_nearest_examples(example_df, k, rule, class_col_name,
                                            min_max, classes,
                                            label_type=label_type,
-                                           only_uncovered_neighbors=only_uncovered_neighbors)
+                                           only_uncovered_neighbors=only_uncovered_neighbors,
+                                           only_single_example=True)
             if neighbors is None:
                 logger.debug("No neighbors for rule:\n{}".format(rule))
                 min_rule_id = None
@@ -2119,6 +2128,13 @@ class BRACID(BaseEstimator, ClassifierMixin):
         return False
 
     def _fit_binary(self, df):
+        if self._minority_class is None:
+            # raise ValueError('Provide the minority class for binary prediction')
+            self._minority_class = \
+                df[self._class_column_name].value_counts().index[-1]
+            logger.info(
+                'No minority class specified for binary classification. Choosing %s',
+                self._minority_class)
         self._rules = self.bracid(df, self.k, self._class_column_name,
                                   self._min_max, self._classes,
                                   self._minority_class)
@@ -2142,7 +2158,8 @@ class BRACID(BaseEstimator, ClassifierMixin):
     def _predict_binary(self, df, predict_proba=False):
         preds_df = self.predict_binary(self._model, df, self._rules,
                                        self._classes,
-                                       self._class_column_name, self._min_max)
+                                       self._class_column_name, self._min_max,
+                                       for_multiclass=False)
         if predict_proba:
             preds = preds_df[my_vars.PREDICTION_CONFIDENCE].values
         else:
@@ -2271,7 +2288,9 @@ class BRACID(BaseEstimator, ClassifierMixin):
             loop_iterations = 0
             while len(rules) > 0:
                 loop_iterations += 1
-                pbar.set_description(f'({minority_label}) There are {len(rules)} rules left for evaluation', refresh=True)
+                pbar.set_description(
+                    f'({minority_label}) There are {len(rules)} rules left for evaluation',
+                    refresh=True)
                 logger.info("\nthere are {} rules left for evaluation:".format(
                     len(rules)))
                 logger.info("hashes:", self.unique_rules)
@@ -2628,7 +2647,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
                                                majority=new_majority)
                 # logger.info("updated support", supports[example_id])
         # Compute distances for the remaining uncovered examples and take ties into account
-        if len(uncovered_example_ids) > 0:
+        if uncovered_example_ids:
             k = len(uncovered_example_ids)
             # {example_id1: [Data(rule_id, dist, Data(rule_id, dist),...]}
             uncovered_examples = {}
