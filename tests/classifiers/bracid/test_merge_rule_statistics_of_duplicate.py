@@ -14,10 +14,8 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         step in bracid()"""
         bracid = BRACID(k=0, minority_class=-1)
         rules = [
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                      name=0),
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                      name=1),  # Duplicate
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=0),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=1),  # Duplicate
         ]
 
         orig_idx = 0
@@ -33,8 +31,12 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         bracid.seed_example_rule = {0: {1, 5}, 10: {0}, 4: {7}}
         bracid.seed_rule_example = {5: 0, 1: 0, 0: 10, 7: 4}
         bracid.closest_examples_per_rule = {0: {0, 3}, 1: {4}, 4: {8}}
-        bracid.closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
-                                            4: Data(rule_id=1, dist=0.13), 5: Data(rule_id=76, dist=3)}
+        bracid.closest_rule_per_example = {
+            0: Data(rule_id=0, dist=3),
+            3: Data(rule_id=0, dist=2),
+            4: Data(rule_id=1, dist=0.13),
+            5: Data(rule_id=76, dist=3),
+        }
         bracid.examples_covered_by_rule = {0: {43, 12}, 1: {7}, 2: {3}}
 
         # Delete entries of the rule with ID 1 as the one with ID 0 already exists
@@ -48,8 +50,12 @@ class TestMergeRuleStatisticsOfDuplicate(TestCase):
         correct_all_rules = {0: rules[orig_idx]}
         # extra_rule now also covers the 3 examples to which the 2 deleted rules were closest
         correct_closest_examples_per_rule = {0: {0, 3, 4}, 4: {8}}
-        correct_closest_rule_per_example = {0: Data(rule_id=0, dist=3), 3: Data(rule_id=0, dist=2),
-                                            4: Data(rule_id=0, dist=0.13), 5: Data(rule_id=76, dist=3)}
+        correct_closest_rule_per_example = {
+            0: Data(rule_id=0, dist=3),
+            3: Data(rule_id=0, dist=2),
+            4: Data(rule_id=0, dist=0.13),
+            5: Data(rule_id=76, dist=3),
+        }
         correct_covered_by_rule = {2: {3}, 0: {43, 12, 7}}
         self.assertDictEqual(bracid.seed_rule_example, correct_seed_rule_example)
         self.assertDictEqual(bracid.seed_example_rule, correct_seed_example_rule)

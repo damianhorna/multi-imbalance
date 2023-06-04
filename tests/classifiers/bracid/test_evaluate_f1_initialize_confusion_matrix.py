@@ -12,25 +12,17 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
 
     def test_evaluate_f1_initialize_confusion_matrix(self):
         """Tests what happens if input has a numeric and a nominal feature"""
-        bracid = BRACID(k=-1, minority_class = _0)
-        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
-                           "C": [3, 2, 1, .5, 3, 2],
-                           "Class": [_0, _0, _1, _1, _1, _1]})
+        bracid = BRACID(k=-1, minority_class=_0)
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         classes = [_0, _1]
         rules = [
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                      name=0),
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
-                      name=1),
-            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                       "Class": _1}, name=2),
-            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": _1}, name=3),
-            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                       "Class": _1}, name=4),
-            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": _1}, name=5)
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=0),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0}, name=1),
+            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1), "Class": _1}, name=2),
+            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5), "Class": _1}, name=3),
+            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3), "Class": _1}, name=4),
+            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2), "Class": _1}, name=5),
         ]
         min_max = pd.DataFrame({"B": {"min": 1, "max": 5}, "C": {"min": 1, "max": 11}})
         bracid.all_rules = {i: rule for i, rule in enumerate(rules)}
@@ -47,7 +39,8 @@ class TestEvaluateF1InitializeConfusionMatrix(TestCase):
             2: Data(rule_id=3, dist=0.393125),
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=5, dist=0.013906250000000002),
-            5: Data(rule_id=1, dist=0.00390625)}
+            5: Data(rule_id=1, dist=0.00390625),
+        }
         correct_closest_examples_per_rule = {1: {0, 3, 5}, 5: {1, 4}, 3: {2}}
         correct_conf_matrix = ConfusionMatrix(TP={0}, TN={2, 4}, FP={3, 5}, FN={1})
         correct_f1 = correct_conf_matrix.f1

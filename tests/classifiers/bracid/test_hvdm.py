@@ -12,9 +12,7 @@ class TestHvdm(TestCase):
 
     def test_hvdm_numeric(self):
         """Tests what happens if input has only one type of input, namely a numeric feature"""
-        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
-                           "C": [3, 2, 1, .5, 3, 2],
-                           "Class": [_0, _0, _1, _1, _1, _1]})
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         correct = pd.DataFrame({"B": [0, 0, 0.09, 0.0025, 0.0025, 0.000625]})
         correct["dist"] = correct.select_dtypes(float).sum(1)
@@ -26,4 +24,3 @@ class TestHvdm(TestCase):
         # Due to floating point precision, use approximate comparison
         np.testing.assert_allclose(correct["B"], dist["B"])
         np.testing.assert_allclose(correct["dist"], dist["dist"])
-    

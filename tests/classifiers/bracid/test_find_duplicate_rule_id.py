@@ -13,10 +13,8 @@ class TestFindDuplicateRuleId(TestCase):
         """Tests that a duplicate rule is detected properly"""
         bracid = BRACID(k=-1, minority_class=-1)
         rules = [
-            pd.Series({"B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                       "Class": _1}, name=7),
-            pd.Series({"B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0),
-                       "Class": _1}, name=12)  # Duplicate
+            pd.Series({"B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0), "Class": _1}, name=7),
+            pd.Series({"B": Bounds(lower=0.5, upper=1.5), "C": Bounds(lower=0.5, upper=3.0), "Class": _1}, name=12),  # Duplicate
         ]
         duplicate_idx = 1
         bracid.unique_rules = {compute_hashable_key(rules[0]): {7}}

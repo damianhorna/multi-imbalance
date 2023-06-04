@@ -43,4 +43,3 @@ HASH = "_hash"
 # all_rules = {}
 # latest_rule_id = 0
 # minority_class = ""
-

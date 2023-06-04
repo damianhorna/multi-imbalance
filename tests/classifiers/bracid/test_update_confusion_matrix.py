@@ -24,18 +24,10 @@ class TestUpdateConfusionMatrix(TestCase):
             pd.Series({"B": (1, 1), "C": (3, 3), "Class": _0}, name=0),
             pd.Series({"B": (1, 1), "C": (2, 2), "Class": _1}, name=1),
         ]
-        conf_matrix = update_confusion_matrix(examples[0], rules[0],
-                                              positive_class, class_col_name,
-                                              conf_matrix)  # TP
-        conf_matrix = update_confusion_matrix(examples[1], rules[0],
-                                              positive_class, class_col_name,
-                                              conf_matrix)  # FP
-        conf_matrix = update_confusion_matrix(examples[2], rules[1],
-                                              positive_class, class_col_name,
-                                              conf_matrix)  # FN
-        conf_matrix = update_confusion_matrix(examples[3], rules[1],
-                                              positive_class, class_col_name,
-                                              conf_matrix)  # TN
+        conf_matrix = update_confusion_matrix(examples[0], rules[0], positive_class, class_col_name, conf_matrix)  # TP
+        conf_matrix = update_confusion_matrix(examples[1], rules[0], positive_class, class_col_name, conf_matrix)  # FP
+        conf_matrix = update_confusion_matrix(examples[2], rules[1], positive_class, class_col_name, conf_matrix)  # FN
+        conf_matrix = update_confusion_matrix(examples[3], rules[1], positive_class, class_col_name, conf_matrix)  # TN
         correct = ConfusionMatrix(
             TP={0, 3},
             TN={1, 6},

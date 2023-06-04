@@ -19,7 +19,7 @@ from . import vars as my_vars
 import logging
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('bracid')
+logger = logging.getLogger("bracid")
 
 
 class ExampleClass(enum.Enum):
@@ -53,18 +53,14 @@ Bounds = namedtuple("Bounds", ["lower", "upper"])
 Support = namedtuple("Support", ["minority", "majority"])
 Predictions = namedtuple("Predictions", ["label", "confidence"])
 # Keep original rule and delete the corresponding duplicate rule which is at duplicate_idx in the list of rules
-Duplicates = namedtuple("Duplicates",
-                        ["original", "duplicate", "duplicate_idx"])
+Duplicates = namedtuple("Duplicates", ["original", "duplicate", "duplicate_idx"])
 
 
 def get_min_max(df: pd.DataFrame):
     min_max = {}
     for column in df.columns:
         values = df[column].values
-        min_max[column] = {
-            "min": np.nanmin(values),
-            "max": np.nanmax(values)
-        }
+        min_max[column] = {"min": np.nanmin(values), "max": np.nanmax(values)}
     return pd.DataFrame(min_max)
 
 
@@ -95,8 +91,7 @@ def assign_tag(labels, label):
         # logger.info("most common: {} 2nd most common: {}".format(most_common, second_most_common))
 
         # Tie
-        if most_common[1] == second_most_common[1] or most_common[
-            0] != label:
+        if most_common[1] == second_most_common[1] or most_common[0] != label:
             tag = ExampleClass.BORDERLINE
     # logger.info("neighbor labels: {} vs. {}".format(labels, label))
     # logger.info("tag:", tag)
@@ -106,9 +101,10 @@ def assign_tag(labels, label):
 def _assert_is_numeric_dtype(col):
     if not is_numeric_dtype(col):
         raise ValueError(
-            f'''{col.name} is not of numeric dtype. Found: {col.dtype}
+            f"""{col.name} is not of numeric dtype. Found: {col.dtype}
 {col}
-''')
+"""
+        )
 
 
 def normalize_dataframe(df):
@@ -159,8 +155,7 @@ def does_rule_cover_example(example, rule):
     return True
 
 
-def does_rule_cover_example_without_label(example, rule, dtypes,
-                                          class_col_name):
+def does_rule_cover_example_without_label(example, rule, dtypes, class_col_name):
     """
     Tests if a rule covers a given example. In contrast to does_rule_cover_example(), the class label is ignored.
 
@@ -182,11 +177,11 @@ def does_rule_cover_example_without_label(example, rule, dtypes,
         example_dtype = dtype
         if col_name in rule and col_name != class_col_name:
             # Cast object to tuple datatype -> this is only automatically done if it's not a string
-            rule_val = (rule[col_name])
+            rule_val = rule[col_name]
             # logger.info("rule_val", rule_val, "\nrule type:", type(rule_val))
             # assert is_numeric_dtype(example_dtype), f'{col_name} {example_dtype}'
             if not is_numeric_dtype(example_dtype):
-                raise ValueError(f'{example_dtype} is not a numeric dtype')
+                raise ValueError(f"{example_dtype} is not a numeric dtype")
             if rule_val[0] > example_val or rule_val[1] < example_val:
                 is_covered = False
                 break
@@ -198,8 +193,7 @@ def is_empty(df):
     return len(df.index) == 0
 
 
-def most_specific_generalization(example, rule, class_col_name,
-                                 dtypes):
+def most_specific_generalization(example, rule, class_col_name, dtypes):
     """
     Implements MostSpecificGeneralization() from the paper, i.e. Algorithm 2.
 
@@ -233,8 +227,7 @@ def most_specific_generalization(example, rule, class_col_name,
                 new_rule = (example_val, rule_val[1])
                 # logger.info("updated:", rule)
             if isinstance(rule_val, Bounds):
-                rule[col_name] = Bounds(lower=new_rule[0],
-                                        upper=new_rule[1])
+                rule[col_name] = Bounds(lower=new_rule[0], upper=new_rule[1])
             else:
                 rule[col_name] = new_rule
 
@@ -262,8 +255,7 @@ def di(example_feat, rule_feat, min_max):
     dists = []
     # Feature is NaN in rule -> all distances will become 1 automatically by definition
     if pd.isnull(lower_rule_val) or pd.isnull(upper_rule_val):
-        logger.info(
-            "column {} is NaN in rule:\n{}".format(col_name, rule_feat))
+        logger.info("column {} is NaN in rule:\n{}".format(col_name, rule_feat))
         dists = [(idx, 1.0) for idx, _ in example_feat.items()]
         zlst = list(zip(*dists))
         out = pd.Series(zlst[1], index=zlst[0], name=col_name)
@@ -272,29 +264,24 @@ def di(example_feat, rule_feat, min_max):
     for idx, example_val in example_feat.items():
         # logger.info("processing", example_val)
         if pd.isnull(example_val):
-            logger.warning("NaN(s) in svdm() in column '{}' in row {}".format(
-                col_name, idx))
+            logger.warning("NaN(s) in svdm() in column '{}' in row {}".format(col_name, idx))
             dist = 1.0
         else:
             min_rule_val = min_max.at["min", col_name]
             max_rule_val = min_max.at["max", col_name]
             if np.isclose(min_rule_val, max_rule_val):
-                logger.warning(
-                    'Min and max for column "%s" are equal: %f and %f',
-                    col_name, min_rule_val, max_rule_val)
+                logger.warning('Min and max for column "%s" are equal: %f and %f', col_name, min_rule_val, max_rule_val)
                 dist = 0
             # logger.info("min({})={}".format(col_name, min_rule_val))
             # logger.info("max({})={}".format(col_name, max_rule_val))
             elif example_val > upper_rule_val:
                 # logger.info("example > upper")
                 # logger.info("({} - {}) / ({} - {})".format(example_val, upper_rule_val, max_rule_val, min_rule_val))
-                dist = (example_val - upper_rule_val) / (
-                        max_rule_val - min_rule_val)
+                dist = (example_val - upper_rule_val) / (max_rule_val - min_rule_val)
             elif example_val < lower_rule_val:
                 # logger.info("example < lower")
                 # logger.info("({} - {}) / ({} - {})".format(lower_rule_val, example_val, max_rule_val, min_rule_val))
-                dist = (lower_rule_val - example_val) / (
-                        max_rule_val - min_rule_val)
+                dist = (lower_rule_val - example_val) / (max_rule_val - min_rule_val)
             else:
                 dist = 0
         dists.append((idx, dist * dist))
@@ -336,17 +323,14 @@ def hvdm(examples, rule, classes, min_max, class_col_name):
         dist_squared = di(example_feature_col, rule, min_max)
         dists.append(dist_squared)
     # Note: this line assumes that there's at least 1 feature
-    distances = pd.DataFrame(list(zip(*dists)),
-                             columns=[s.name for s in dists],
-                             index=dists[0].index)
+    distances = pd.DataFrame(list(zip(*dists)), columns=[s.name for s in dists], index=dists[0].index)
     # Sum up rows to compute HVDM - no need to square the distances as the order won't change
     distances[my_vars.DIST] = distances.select_dtypes(float).sum(1)
     distances = distances.sort_values(my_vars.DIST, ascending=True)
     return distances
 
 
-def update_confusion_matrix(example, rule, positive_class,
-                            class_col_name, conf_matrix):
+def update_confusion_matrix(example, rule, positive_class, class_col_name, conf_matrix):
     """
     Updates the confusion matrix.
 
@@ -440,13 +424,11 @@ def _are_duplicates(rule_i, rule_j):
             assert issubclass(Bounds, tuple)
             lower_i, upper_i = val_i
             lower_j, upper_j = val_j
-            return np.isclose(lower_i, lower_j, atol=my_vars.PRECISION) \
-                   and np.isclose(upper_i, upper_j, atol=my_vars.PRECISION)
+            return np.isclose(lower_i, lower_j, atol=my_vars.PRECISION) and np.isclose(upper_i, upper_j, atol=my_vars.PRECISION)
 
         return val_i == val_j
 
-    for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(),
-                                              rule_j.items()):
+    for (idx_i, val_i), (idx_j, val_j) in zip(rule_i.items(), rule_j.items()):
         # Same feature
         if idx_i != idx_j:
             return False
@@ -479,18 +461,15 @@ def extract_initial_rules(df, class_col_name):
     for col_name in df:
         if col_name == class_col_name:
             continue
-        col = df[col_name]
         # Assuming the value is x, we now store named tuples of Bounds(lower=x, upper=x) per row
-        rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name])
-                           for _, row in df.iterrows()]
+        rules[col_name] = [Bounds(lower=row[col_name], upper=row[col_name]) for _, row in df.iterrows()]
     return rules
 
 
 def sklearn_to_df(sklearn_dataset):
     """Converts sklearn dataset into a pd.dataFrame."""
-    df = pd.DataFrame(sklearn_dataset.data,
-                      columns=sklearn_dataset.feature_names)
-    df['class'] = pd.Series(sklearn_dataset.target)
+    df = pd.DataFrame(sklearn_dataset.data, columns=sklearn_dataset.feature_names)
+    df["class"] = pd.Series(sklearn_dataset.target)
     return df
 
 
@@ -506,6 +485,7 @@ def sklearn_to_df(sklearn_dataset):
 #     series[my_vars.HASH] = hash_value
 #     return hash_value
 
+
 def compute_hashable_key(series):
     """Returns a hashable (=immutable) representation of a pd.Series object"""
     # Ignore index for hashing because that makes hashes of rules, that are otherwise duplicates, unique
@@ -516,8 +496,7 @@ def compute_hashable_key(series):
     return hash_value
 
 
-def to_binary_classification_task(df, class_col_name, minority_label,
-                                  merged_label="rest"):
+def to_binary_classification_task(df, class_col_name, minority_label, merged_label="rest"):
     """
     Converts a classification task into a binary classification task merging all classes other than the minority one.
 
@@ -536,14 +515,12 @@ def to_binary_classification_task(df, class_col_name, minority_label,
     """
     unique_class_labels = set(df[class_col_name].tolist())
     unique_class_labels.remove(minority_label)
-    labels_to_merge = dict(
-        (label, merged_label) for label in unique_class_labels)
+    labels_to_merge = dict((label, merged_label) for label in unique_class_labels)
     df[class_col_name] = df[class_col_name].replace(labels_to_merge)
     return df
 
 
 class BRACID(BaseEstimator, ClassifierMixin):
-
     def __init__(self, k: int = 5, minority_class=None):
         """
         Parameters
@@ -573,19 +550,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # {ID of rule ri: rule ri (=pd.Series)}
         self.all_rules = {}
         self.latest_rule_id = 0
-        if (minority_class is not None
-                and not isinstance(minority_class, (str, int))):
-            raise ValueError(
-                f'minority_class={minority_class} should be an int or str '
-                f'but is {type(minority_class)}')
+        if minority_class is not None and not isinstance(minority_class, (str, int)):
+            raise ValueError(f"minority_class={minority_class} should be an int or str " f"but is {type(minority_class)}")
         self._minority_class = minority_class
         self.k = k
         self._class_column_name = "Class"
         self._rules = None
 
-    def read_dataset(self, src, positive_class, excluded=[], skip_rows=0,
-                     na_values=[], normalize=False, class_index=-1,
-                     header=True):
+    def read_dataset(self, src, positive_class, excluded=[], skip_rows=0, na_values=[], normalize=False, class_index=-1, header=True):
         """
         Reads in a dataset in csv format and stores it in a dataFrame.
 
@@ -612,8 +584,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
         if header:
             df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values)
         else:
-            df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values,
-                             header=None)
+            df = pd.read_csv(src, skiprows=skip_rows, na_values=na_values, header=None)
             df.columns = [i for i in range(len(df.columns))]
         # Convert fancy index to regular index - otherwise the loop below won't skip the column with class labels
         if class_index < 0:
@@ -627,15 +598,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
             if col_name == class_col_name:
                 continue
             col = df[col_name]
-            assert is_numeric_dtype(col), f'{col_name} {col.dtype} {col}'
+            assert is_numeric_dtype(col), f"{col_name} {col.dtype} {col}"
             if normalize:
                 df[col_name] = normalize_series(col)
             minmax[col_name] = {"min": col.min(), "max": col.max()}
         min_max = pd.DataFrame(minmax)
         return df, rules, min_max
 
-    def add_tags_and_extract_rules(self, df, k, class_col_name, min_max,
-                                   classes):
+    def add_tags_and_extract_rules(self, df, k, class_col_name, min_max, classes):
         """
         Extracts initial rules and assigns each example in the dataset a tag, either "SAFE" or "UNSAFE", "NOISY",
         "BORDERLINE".
@@ -722,9 +692,15 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 # logger.info("pairwise distances for rule {}:".format(rule.name))
                 # logger.info("compute distance to:\n{}".format(examples_for_pairwise_distance))
                 neighbors, _, _ = self.find_nearest_examples(
-                    examples_for_pairwise_distance, k, rule, class_col_name,
-                    min_max, classes, label_type=my_vars.ALL_LABELS,
-                    only_uncovered_neighbors=False)
+                    examples_for_pairwise_distance,
+                    k,
+                    rule,
+                    class_col_name,
+                    min_max,
+                    classes,
+                    label_type=my_vars.ALL_LABELS,
+                    only_uncovered_neighbors=False,
+                )
                 # logger.info("neighbors:\n{}".format(neighbors))
                 labels = Counter(neighbors[class_col_name].values)
                 tag = assign_tag(labels, rule[class_col_name])
@@ -734,10 +710,18 @@ class BRACID(BaseEstimator, ClassifierMixin):
         df[my_vars.TAG] = pd.Series(tags)
         return df
 
-    def find_nearest_examples(self, df, k, rule, class_col_name, min_max,
-                              classes, label_type=my_vars.ALL_LABELS,
-                              only_uncovered_neighbors=True,
-                              only_single_example=False):
+    def find_nearest_examples(
+        self,
+        df,
+        k,
+        rule,
+        class_col_name,
+        min_max,
+        classes,
+        label_type=my_vars.ALL_LABELS,
+        only_uncovered_neighbors=True,
+        only_single_example=False,
+    ):
         """
         Finds k-nearest examples for a given rule with the same class label as the rule.
         If less than k examples exist, a warning is issued.
@@ -777,36 +761,27 @@ class BRACID(BaseEstimator, ClassifierMixin):
         if label_type == my_vars.ALL_LABELS:
             examples_with_same_label = df.copy()
         elif label_type == my_vars.OPPOSITE_LABEL_TO_RULE:
-            opposite_label = classes[0] if classes[0] != class_label else \
-                classes[1]
+            opposite_label = classes[0] if classes[0] != class_label else classes[1]
             logger.info("opposite class label:", opposite_label)
-            examples_with_same_label = df.loc[
-                df[class_col_name] == opposite_label]
+            examples_with_same_label = df.loc[df[class_col_name] == opposite_label]
         elif label_type == my_vars.SAME_LABEL_AS_RULE:
-            examples_with_same_label = df.loc[
-                df[class_col_name] == class_label]
+            examples_with_same_label = df.loc[df[class_col_name] == class_label]
         else:
-            raise ValueError(
-                "'{}' is an invalid option for the label_type!".format(
-                    label_type))
+            raise ValueError("'{}' is an invalid option for the label_type!".format(label_type))
         # Only consider examples, that have the same label as the rule and aren't covered by the rule yet
         if only_uncovered_neighbors:
-            covered_examples = self.examples_covered_by_rule.get(rule.name,
-                                                                 set())
+            covered_examples = self.examples_covered_by_rule.get(rule.name, set())
             # logger.info("examples that are already covered by the rule:", covered_examples)
             # Select only examples which aren't covered yet
-            examples_with_same_label = examples_with_same_label.loc[
-                ~examples_with_same_label.index.isin(covered_examples)]
+            examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label.index.isin(covered_examples)]
             if is_empty(examples_with_same_label):
                 return None, None, None
             # Check if any remaining examples are covered as well
-            examples_with_same_label[
-                my_vars.COVERED] = examples_with_same_label.loc[:, :] \
-                .apply(does_rule_cover_example, axis=1,
-                       args=(rule,))
+            examples_with_same_label[my_vars.COVERED] = examples_with_same_label.loc[:, :].apply(
+                does_rule_cover_example, axis=1, args=(rule,)
+            )
             # Only keep the uncovered examples
-            examples_with_same_label = examples_with_same_label.loc[
-                examples_with_same_label[my_vars.COVERED] == False]
+            examples_with_same_label = examples_with_same_label.loc[~examples_with_same_label[my_vars.COVERED]]
         # logger.info("neighbors:\n{}".format(examples_with_same_label))
 
         if is_empty(examples_with_same_label):
@@ -815,12 +790,9 @@ class BRACID(BaseEstimator, ClassifierMixin):
         neighbors = examples_with_same_label.shape[0]
         # logger.info("neighbors:", neighbors)
         if neighbors < k and not only_single_example:
-            logging.debug("Only %i neighbors for\n%s",
-                          examples_with_same_label.shape[0],
-                          examples_with_same_label)
-        dists = hvdm(examples_with_same_label, rule, classes, min_max,
-                     class_col_name)
-        neighbor_ids = dists.index[: k]
+            logging.debug("Only %i neighbors for\n%s", examples_with_same_label.shape[0], examples_with_same_label)
+        dists = hvdm(examples_with_same_label, rule, classes, min_max, class_col_name)
+        neighbor_ids = dists.index[:k]
         is_closer = self._update_data_about_closest_rule(rule, dists)
 
         # logger.info("{} nearest neighbors:\n{}\n{}".format(k, dists, neighbor_ids))
@@ -852,17 +824,12 @@ class BRACID(BaseEstimator, ClassifierMixin):
             has_changed = False
             # No closest rule exists for the example yet
             if example_id not in self.closest_rule_per_example:
-                logger.info("old closest rule per example:",
-                            self.closest_rule_per_example)
-                logger.info(
-                    "add new entry for example {}: {}".format(example_id, Data(
-                        rule_id=rule.name, dist=dist)))
-                self.closest_rule_per_example[example_id] = Data(
-                    rule_id=rule.name, dist=dist)
+                logger.info("old closest rule per example:", self.closest_rule_per_example)
+                logger.info("add new entry for example {}: {}".format(example_id, Data(rule_id=rule.name, dist=dist)))
+                self.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                 has_changed = True
             else:
-                old_rule_id, old_dist = self.closest_rule_per_example[
-                    example_id]
+                old_rule_id, old_dist = self.closest_rule_per_example[example_id]
                 # if old_rule_id is None:
                 #     error = "name is None in the closest rule for example {}, i.e. name=... wasn't set in the rule!"\
                 #         .format(example_id)
@@ -873,50 +840,41 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 features = rule.size
                 # 1. New rule is closer
                 if dist < old_dist:
-                    logger.info(
-                        "new rule is closer ({}) vs. old ({})".format(dist,
-                                                                      old_dist))
-                    self.closest_rule_per_example[example_id] = Data(
-                        rule_id=rule.name, dist=dist)
+                    logger.info("new rule is closer ({}) vs. old ({})".format(dist, old_dist))
+                    self.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                     has_changed = True
                 # 2. Occam's razor, i.e. 2 rules are equally close, then prefer the simpler (= with fewer features) one.
                 # If both are equally simple, keep the current one
-                elif abs(
-                        dist - old_dist) < my_vars.PRECISION and features < old_features:
+                elif abs(dist - old_dist) < my_vars.PRECISION and features < old_features:
                     logger.info(
                         "occam's razor: dist: {} and #old {} vs. #new {} features in rule {}".format(
-                            abs(dist - old_dist),
-                            old_features,
-                            features, rule.name))
-                    self.closest_rule_per_example[example_id] = Data(
-                        rule_id=rule.name, dist=dist)
+                            abs(dist - old_dist), old_features, features, rule.name
+                        )
+                    )
+                    self.closest_rule_per_example[example_id] = Data(rule_id=rule.name, dist=dist)
                     has_changed = True
             if has_changed:
                 was_updated = True
                 # logger.info("nearest rule was updated for example ({})".format(example_id))
-                self.closest_examples_per_rule.setdefault(rule.name,
-                                                          set()).add(
-                    example_id)
+                self.closest_examples_per_rule.setdefault(rule.name, set()).add(example_id)
                 # Delete old entry and possibly the whole entry (if the old rule isn't closest to any example anymore),
                 # but only if the new closest rule is a different one (it could still be the old rule which came closer
                 # to the example after generalization)
                 if old_rule_id is not None and rule.name != old_rule_id:
                     logger.info("update closest examples per rule")
                     logger.info("old", self.closest_examples_per_rule)
-                    self.closest_examples_per_rule[old_rule_id].discard(
-                        example_id)
+                    self.closest_examples_per_rule[old_rule_id].discard(example_id)
                     if len(self.closest_examples_per_rule[old_rule_id]) == 0:
                         del self.closest_examples_per_rule[old_rule_id]
                     logger.info("new", self.closest_examples_per_rule)
             # Special case: rule covers example - an example could be covered by multiple rules theoretically
             if row[my_vars.DIST] == 0:
-                self.examples_covered_by_rule.setdefault(rule.name, set()).add(
-                    example_id)
+                self.examples_covered_by_rule.setdefault(rule.name, set()).add(example_id)
         return was_updated
 
-    def find_nearest_rule(self, rules, example, class_col_name, min_max,
-                          classes, examples_covered_by_rule, label_type,
-                          only_uncovered_neighbors):
+    def find_nearest_rule(
+        self, rules, example, class_col_name, min_max, classes, examples_covered_by_rule, label_type, only_uncovered_neighbors
+    ):
         """
         Finds the nearest rule for a given example. Certain rules are ignored, namely those for which the example is a
         seed if the rule doesn't cover multiple examples. Deals with ties if multiple rules cover an example. In this case
@@ -969,18 +927,22 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
             # Ignore rule because current example was seed for it and the rule doesn't cover multiple examples
             # if not covers_multiple_examples and self.seed_example_rule[example.name] == rule_id:
-            if not covers_multiple_examples and rule_id in self.seed_example_rule.get(
-                    example.name, set()):
+            if not covers_multiple_examples and rule_id in self.seed_example_rule.get(example.name, set()):
                 # Ignore rule as it's the seed for the example
                 # logger.info("rule {} is seed for example {}, so ignore it".format(rule_id, example.name))
                 continue
             assert example_df.shape[0] == 1
-            neighbors, dists, is_closest = \
-                self.find_nearest_examples(example_df, k, rule, class_col_name,
-                                           min_max, classes,
-                                           label_type=label_type,
-                                           only_uncovered_neighbors=only_uncovered_neighbors,
-                                           only_single_example=True)
+            neighbors, dists, is_closest = self.find_nearest_examples(
+                example_df,
+                k,
+                rule,
+                class_col_name,
+                min_max,
+                classes,
+                label_type=label_type,
+                only_uncovered_neighbors=only_uncovered_neighbors,
+                only_single_example=True,
+            )
             if neighbors is None:
                 logger.debug("No neighbors for rule:\n{}".format(rule))
                 min_rule_id = None
@@ -997,15 +959,11 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 was_updated = True
 
         if min_rule_id is not None:
-            logger.info(
-                "nearest rule for example {}:rule {} with dist={}".format(
-                    example.name, min_rule_id, min_dist))
+            logger.info("nearest rule for example {}:rule {} with dist={}".format(example.name, min_rule_id, min_dist))
             return self.all_rules[min_rule_id], min_dist, was_updated
         return None, None, None
 
-    def evaluate_f1_initialize_confusion_matrix(self, df, rules,
-                                                class_col_name, min_max,
-                                                classes):
+    def evaluate_f1_initialize_confusion_matrix(self, df, rules, class_col_name, min_max, classes):
         """
         Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
         Builds the initial confusion matrix.
@@ -1034,27 +992,24 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # Problem: rules can't be stored in dataFrame because they might contain different features
         for row_id, example in df.iterrows():
             # logger.info("Searching nearest rule for example:\n{}\n{}".format("------------------------------------", example))
-            rule, rule_dist, _ = self.find_nearest_rule(rules, example,
-                                                        class_col_name,
-                                                        min_max, classes,
-                                                        self.examples_covered_by_rule,
-                                                        label_type=my_vars.ALL_LABELS,
-                                                        only_uncovered_neighbors=False)
+            rule, rule_dist, _ = self.find_nearest_rule(
+                rules,
+                example,
+                class_col_name,
+                min_max,
+                classes,
+                self.examples_covered_by_rule,
+                label_type=my_vars.ALL_LABELS,
+                only_uncovered_neighbors=False,
+            )
 
             # Update which rule predicts the label of the example
-            logger.info(
-                "minimum distance ({}) to example {} by rule: {}".format(
-                    rule_dist, row_id, rule.name))
-            self.closest_rule_per_example[example.name] = Data(
-                rule_id=rule.name, dist=rule_dist)
-            self.conf_matrix = update_confusion_matrix(example, rule,
-                                                       self._minority_class,
-                                                       class_col_name,
-                                                       self.conf_matrix)
+            logger.info("minimum distance ({}) to example {} by rule: {}".format(rule_dist, row_id, rule.name))
+            self.closest_rule_per_example[example.name] = Data(rule_id=rule.name, dist=rule_dist)
+            self.conf_matrix = update_confusion_matrix(example, rule, self._minority_class, class_col_name, self.conf_matrix)
         return f1(self.conf_matrix)
 
-    def evaluate_f1_update_confusion_matrix(self, df, new_rule, class_col_name,
-                                            min_max, classes):
+    def evaluate_f1_update_confusion_matrix(self, df, new_rule, class_col_name, min_max, classes):
         """
         Computes the F1 score of the dataset for a given set of rules using leave-one-out cross-evaluation.
         Assumes that the initial confusion matrix already exists, hence evaluate_f1_initialize_confusion_matrix() should
@@ -1087,13 +1042,16 @@ class BRACID(BaseEstimator, ClassifierMixin):
             # logger.info("Potentially update nearest rule for example {}:\n{}"
             #       .format(example.name, "------------------------------------"))
 
-            _, new_dist, is_closest = self.find_nearest_rule([new_rule],
-                                                             example,
-                                                             class_col_name,
-                                                             min_max, classes,
-                                                             self.examples_covered_by_rule,
-                                                             label_type=my_vars.ALL_LABELS,
-                                                             only_uncovered_neighbors=False)
+            _, new_dist, is_closest = self.find_nearest_rule(
+                [new_rule],
+                example,
+                class_col_name,
+                min_max,
+                classes,
+                self.examples_covered_by_rule,
+                label_type=my_vars.ALL_LABELS,
+                only_uncovered_neighbors=False,
+            )
             if new_dist is not None:
                 # logger.info("current min value", self.closest_rule_per_example[example_id].dist)
                 # logger.info("new dist", new_dist)
@@ -1107,32 +1065,21 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     # logger.info("****************************")
                     # logger.info("old mapping:", self.closest_rule_per_example[example_id])
                     # logger.info("old examples per rule", self.closest_examples_per_rule)
-                    old_rule_id = self.closest_rule_per_example[
-                        example_id].rule_id
-                    self.closest_examples_per_rule.setdefault(new_rule.name,
-                                                              set()).add(
-                        example_id)
+                    old_rule_id = self.closest_rule_per_example[example_id].rule_id
+                    self.closest_examples_per_rule.setdefault(new_rule.name, set()).add(example_id)
                     if old_rule_id in self.closest_examples_per_rule and new_rule.name != old_rule_id:
-                        self.closest_examples_per_rule[old_rule_id].discard(
-                            example_id)
-                        if len(self.closest_examples_per_rule[
-                                   old_rule_id]) == 0:
+                        self.closest_examples_per_rule[old_rule_id].discard(example_id)
+                        if len(self.closest_examples_per_rule[old_rule_id]) == 0:
                             del self.closest_examples_per_rule[old_rule_id]
-                    self.closest_rule_per_example[example_id] = Data(
-                        rule_id=new_rule.name, dist=new_dist)
+                    self.closest_rule_per_example[example_id] = Data(rule_id=new_rule.name, dist=new_dist)
                     # logger.info("new mapping", self.closest_rule_per_example[example_id])
                     # logger.info("new examples per rule", self.closest_examples_per_rule)
                     # logger.info("old confusion matrix:", self.conf_matrix)
-                    self.conf_matrix = update_confusion_matrix(example,
-                                                               new_rule,
-                                                               self._minority_class,
-                                                               class_col_name,
-                                                               self.conf_matrix)
+                    self.conf_matrix = update_confusion_matrix(example, new_rule, self._minority_class, class_col_name, self.conf_matrix)
                     # logger.info("new confusion matrix:", self.conf_matrix)
         return f1(self.conf_matrix)
 
-    def evaluate_f1_temporarily(self, df, new_rule, new_rule_id,
-                                class_col_name, min_max, classes):
+    def evaluate_f1_temporarily(self, df, new_rule, new_rule_id, class_col_name, min_max, classes):
         """
         Same as evaluate_f1_update_confusion_matrix(), with the difference that the actual confusion matrix isn't updated,
         but a copy of it.
@@ -1167,11 +1114,9 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # logger.info(new_rule)
         # initial_closest_rule_per_example = copy.deepcopy(self.closest_rule_per_example)
         closest_rule_per_example = copy.deepcopy(self.closest_rule_per_example)
-        closest_examples_per_rule = copy.deepcopy(
-            self.closest_examples_per_rule)
+        closest_examples_per_rule = copy.deepcopy(self.closest_examples_per_rule)
         covered_examples = copy.deepcopy(self.examples_covered_by_rule)
-        backup_closest_examples_per_rule = copy.deepcopy(
-            self.closest_examples_per_rule)
+        backup_closest_examples_per_rule = copy.deepcopy(self.closest_examples_per_rule)
         backup_closest_rule = copy.deepcopy(self.closest_rule_per_example)
         backup_covered = copy.deepcopy(self.examples_covered_by_rule)
         conf_matrix = copy.deepcopy(self.conf_matrix)
@@ -1182,13 +1127,16 @@ class BRACID(BaseEstimator, ClassifierMixin):
         for example_id, example in df.iterrows():
             # logger.info("Potentially update nearest rule for example {}:\n{}".format(example_id,
             #                                                                    "------------------------------------"))
-            _, new_dist, was_updated = self.find_nearest_rule([new_rule],
-                                                              example,
-                                                              class_col_name,
-                                                              min_max, classes,
-                                                              self.examples_covered_by_rule,
-                                                              label_type=my_vars.ALL_LABELS,
-                                                              only_uncovered_neighbors=False)
+            _, new_dist, was_updated = self.find_nearest_rule(
+                [new_rule],
+                example,
+                class_col_name,
+                min_max,
+                classes,
+                self.examples_covered_by_rule,
+                label_type=my_vars.ALL_LABELS,
+                only_uncovered_neighbors=False,
+            )
             if was_updated:
                 has_changed = True
 
@@ -1203,35 +1151,27 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     logger.info("*****************************")
                     # logger.info("old mapping:", closest_rule_per_example[example_id])
                     old_rule_id = closest_rule_per_example[example_id].rule_id
-                    closest_rule_per_example[example_id] = Data(
-                        rule_id=new_rule_id, dist=new_dist)
+                    closest_rule_per_example[example_id] = Data(rule_id=new_rule_id, dist=new_dist)
                     updated_example_ids.append(example_id)
                     # logger.info("new mapping", closest_rule_per_example[example_id])
                     # logger.info(closest_rule_per_example)
                     # logger.info("old closest examples per rule", closest_examples_per_rule)
-                    closest_examples_per_rule.setdefault(new_rule_id,
-                                                         set()).add(example_id)
+                    closest_examples_per_rule.setdefault(new_rule_id, set()).add(example_id)
                     # logger.info("intermediate closest examples per rule", closest_examples_per_rule)
                     if old_rule_id in closest_examples_per_rule and new_rule_id != old_rule_id:
                         # logger.info("delete")
-                        closest_examples_per_rule[old_rule_id].discard(
-                            example_id)
+                        closest_examples_per_rule[old_rule_id].discard(example_id)
                         if len(closest_examples_per_rule[old_rule_id]) == 0:
                             del closest_examples_per_rule[old_rule_id]
                     # logger.info("new closest examples per rule", closest_examples_per_rule)
                     # logger.info("old confusion matrix:", conf_matrix)
-                    conf_matrix = update_confusion_matrix(example,
-                                                          new_rule,
-                                                          self._minority_class,
-                                                          class_col_name,
-                                                          conf_matrix)
+                    conf_matrix = update_confusion_matrix(example, new_rule, self._minority_class, class_col_name, conf_matrix)
                     # logger.info("new confusion matrix:", conf_matrix)
                     # logger.info("new distance", new_dist)
                     if new_dist == 0:
                         # logger.info("new rule id", new_rule_id)
                         # logger.info("before covered examples by rule:", covered_examples)
-                        covered_examples.setdefault(new_rule_id, set()).add(
-                            example_id)
+                        covered_examples.setdefault(new_rule_id, set()).add(example_id)
                         # Delete entry for old rule only if the new rule is different from the old one
                         if old_rule_id in covered_examples and old_rule_id != new_rule_id:
                             covered_examples[old_rule_id].discard(example_id)
@@ -1245,9 +1185,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             self.closest_rule_per_example = backup_closest_rule
             self.closest_examples_per_rule = backup_closest_examples_per_rule
             self.examples_covered_by_rule = backup_covered
-        return f1(
-            conf_matrix), conf_matrix, closest_rule_per_example, closest_examples_per_rule, covered_examples, \
-               updated_example_ids
+        return f1(conf_matrix), conf_matrix, closest_rule_per_example, closest_examples_per_rule, covered_examples, updated_example_ids
 
     def is_duplicate(self, new_rule, existing_rule_ids):
         """
@@ -1298,8 +1236,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             for rid in existing_rule_ids:
                 logger.info(rid)
                 logger.info("possible duplicate:", self.all_rules[rid])
-            duplicate_rule_id = self.is_duplicate(generalized_rule,
-                                                  existing_rule_ids)
+            duplicate_rule_id = self.is_duplicate(generalized_rule, existing_rule_ids)
         return duplicate_rule_id
 
     def _delete_old_rule_hash(self, rule):
@@ -1329,8 +1266,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             del self.unique_rules[rule_hash]
         logger.info("after update:", self.unique_rules)
 
-    def merge_rule_statistics_of_duplicate(self, existing_rule,
-                                           duplicate_rule):
+    def merge_rule_statistics_of_duplicate(self, existing_rule, duplicate_rule):
         """
         Merges the statistics of a rule, that was just generalized and became a duplicate of an existing rule, with the
         statistics of the existing rule, s.t. the generalized rule is deleted and all statistics are updated for the
@@ -1353,40 +1289,32 @@ class BRACID(BaseEstimator, ClassifierMixin):
         logger.info("seed example per rule:", self.seed_rule_example)
         # self.seed_rule_example[existing_rule.name] = duplicate_seed_example_id
 
-        logger.info("rules for which the examples are seeds:",
-                    self.seed_example_rule)
+        logger.info("rules for which the examples are seeds:", self.seed_example_rule)
         # self.seed_example_rule[existing_seed_example_id].add(duplicate_rule.name)
 
-        logger.info("updating which rule covers which examples:",
-                    self.examples_covered_by_rule)
+        logger.info("updating which rule covers which examples:", self.examples_covered_by_rule)
         covered = self.examples_covered_by_rule.get(duplicate_rule.name, set())
         if len(covered) > 0:
-            self.examples_covered_by_rule[existing_rule.name] = \
-                self.examples_covered_by_rule.get(existing_rule.name,
-                                                  set()).union(covered)
+            self.examples_covered_by_rule[existing_rule.name] = self.examples_covered_by_rule.get(existing_rule.name, set()).union(covered)
         logger.info("after merging:", self.examples_covered_by_rule)
 
-        affected_examples = self.closest_examples_per_rule.get(
-            duplicate_rule.name, set())
+        affected_examples = self.closest_examples_per_rule.get(duplicate_rule.name, set())
 
         logger.info("closest rule per example", self.closest_rule_per_example)
         for example_id in affected_examples:
             _, dist = self.closest_rule_per_example[example_id]
-            self.closest_rule_per_example[example_id] = Data(
-                rule_id=existing_rule.name, dist=dist)
+            self.closest_rule_per_example[example_id] = Data(rule_id=existing_rule.name, dist=dist)
         logger.info("after update:", self.closest_rule_per_example)
 
-        logger.info("closest examples per rule:",
-                    self.closest_examples_per_rule)
-        self.closest_examples_per_rule[existing_rule.name] = \
-            self.closest_examples_per_rule.get(existing_rule.name,
-                                               set()).union(affected_examples)
+        logger.info("closest examples per rule:", self.closest_examples_per_rule)
+        self.closest_examples_per_rule[existing_rule.name] = self.closest_examples_per_rule.get(existing_rule.name, set()).union(
+            affected_examples
+        )
 
         # 2. Delete statistics of duplicate rule
         del self.seed_rule_example[duplicate_rule.name]
         if len(self.seed_example_rule[duplicate_seed_example_id]) > 1:
-            self.seed_example_rule[duplicate_seed_example_id].discard(
-                duplicate_rule.name)
+            self.seed_example_rule[duplicate_seed_example_id].discard(duplicate_rule.name)
         else:
             del self.seed_example_rule[duplicate_seed_example_id]
         logger.info("seed example rule updated", self.seed_example_rule)
@@ -1397,15 +1325,13 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
         if duplicate_rule.name in self.closest_examples_per_rule:
             del self.closest_examples_per_rule[duplicate_rule.name]
-        logger.info("closest examples per rule after merging:",
-                    self.closest_examples_per_rule)
+        logger.info("closest examples per rule after merging:", self.closest_examples_per_rule)
 
         del self.all_rules[duplicate_rule.name]
 
         self._delete_old_rule_hash(duplicate_rule)
 
-    def add_one_best_rule(self, df, neighbors, rule, rules, f1, class_col_name,
-                          min_max, classes):
+    def add_one_best_rule(self, df, neighbors, rule, rules, f1, class_col_name, min_max, classes):
         """
         Implements AddOneBestRule() from the paper, i.e. Algorithm 3.
 
@@ -1446,17 +1372,17 @@ class BRACID(BaseEstimator, ClassifierMixin):
             return False, rules, best_f1
         dtypes = neighbors.dtypes
         for example_id, example in neighbors.iterrows():
-            logger.info(
-                "add_1 generalize rule for example {}".format(example.name))
-            generalized_rule = most_specific_generalization(example, rule,
-                                                            class_col_name,
-                                                            dtypes)
+            logger.info("add_1 generalize rule for example {}".format(example.name))
+            generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
             # logger.info("generalized rule:\n{}".format(generalized_rule))
-            current_f1, current_conf_matrix, current_closest_rule, current_closest_examples_per_rule, current_covered, _ \
-                = self.evaluate_f1_temporarily(df, generalized_rule,
-                                               generalized_rule.name,
-                                               class_col_name, min_max,
-                                               classes)
+            (
+                current_f1,
+                current_conf_matrix,
+                current_closest_rule,
+                current_closest_examples_per_rule,
+                current_covered,
+                _,
+            ) = self.evaluate_f1_temporarily(df, generalized_rule, generalized_rule.name, class_col_name, min_max, classes)
             logger.info(current_f1, best_f1)
 
             if current_f1 >= best_f1 and current_f1 != 1.0:
@@ -1476,20 +1402,17 @@ class BRACID(BaseEstimator, ClassifierMixin):
             idx = -1
             # replace_rule = False
             # Only update existing if its generalization isn't a duplicate - if it is, just delete the existing rule
-            duplicate_rule_id = self.find_duplicate_rule_id(
-                best_generalization, best_hash)
+            duplicate_rule_id = self.find_duplicate_rule_id(best_generalization, best_hash)
             # Generalized rule isn't a duplicate
             if duplicate_rule_id == my_vars.UNIQUE_RULE:
                 # Delete old hash entry first before adding a new one
                 self._delete_old_rule_hash(rule)
-                logger.info("replace rule (add_one_best)",
-                            best_generalization.name)
+                logger.info("replace rule (add_one_best)", best_generalization.name)
                 logger.info("###############")
                 logger.info("###############")
                 # Note that a hash collision could've occurred, i.e. there are different rules with the same hash, so just
                 # add to the set of IDs instead of assuming an empty set
-                self.unique_rules.setdefault(best_hash, set()).add(
-                    best_generalization.name)
+                self.unique_rules.setdefault(best_hash, set()).add(best_generalization.name)
                 logger.info("updated unique rules:", self.unique_rules)
                 rules[idx] = best_generalization
                 self.all_rules[best_generalization.name] = best_generalization
@@ -1498,14 +1421,11 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 #     rule.name,
                 #     best_closest_rule_dist[best_generalization.name])))
                 self.closest_rule_per_example = best_closest_rule_dist
-                logger.info("closest rule per example updated",
-                            self.closest_rule_per_example)
+                logger.info("closest rule per example updated", self.closest_rule_per_example)
                 self.closest_examples_per_rule = best_closest_examples_per_rule
-                logger.info("closest examples per rule updated",
-                            self.closest_examples_per_rule)
+                logger.info("closest examples per rule updated", self.closest_examples_per_rule)
                 self.examples_covered_by_rule = best_covered
-                logger.info("covered examples by rule updated",
-                            self.examples_covered_by_rule)
+                logger.info("covered examples by rule updated", self.examples_covered_by_rule)
                 self.conf_matrix = best_conf_matrix
                 logger.info("updated conf matrix", self.conf_matrix)
                 logger.info("best f1:", best_f1)
@@ -1514,20 +1434,16 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 logger.info("Duplicate rules!!!!")
                 logger.info("Duplicate rule: \n{}".format(duplicate_rule_id))
                 logger.info(self.all_rules[duplicate_rule_id])
-                logger.info(
-                    "best rule according to add_best_rule():\n{}".format(
-                        best_generalization))
+                logger.info("best rule according to add_best_rule():\n{}".format(best_generalization))
                 logger.info("so doN't add the new rule")
                 # Remove current rule that was generalized, which was added to the end of the list
                 del rules[idx]
                 # Important: use the original rule here because otherwise the generated hash will result in the one
                 # that we want to keep because after generalization its hash became the same as the existing rule's hash
-                self.merge_rule_statistics_of_duplicate(
-                    self.all_rules[duplicate_rule_id], rule)
+                self.merge_rule_statistics_of_duplicate(self.all_rules[duplicate_rule_id], rule)
         return improved, rules, best_f1
 
-    def add_all_good_rules(self, df, neighbors, rule, rules, f1,
-                           class_col_name, min_max, classes):
+    def add_all_good_rules(self, df, neighbors, rule, rules, f1, class_col_name, min_max, classes):
         """
         Implements AddAllGoodRules() from the paper, i.e. Algorithm 3.
 
@@ -1550,9 +1466,6 @@ class BRACID(BaseEstimator, ClassifierMixin):
         Returns False, <rules>, <f1> if <neighbors> is None
 
         """
-        # To be able to compute the hash of the rule that replaced <rule> in iteration 0 -
-        # it's necessary to delete old hashes later
-        replaced_rule = None
         improved = False
 
         best_f1 = f1
@@ -1561,8 +1474,6 @@ class BRACID(BaseEstimator, ClassifierMixin):
         changed_rules = []
         # Keep track of how many rules were added to access the original rule in the list in O(1)
         added_rules = 0
-        # Duplicate rules
-        duplicates = None
         if neighbors is None:
             return False, rules, best_f1
         dtypes = neighbors.dtypes
@@ -1570,19 +1481,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
         logger.info(neighbors)
         while not is_empty(neighbors):
             for example_id, example in neighbors.iterrows():
-                logger.info(
-                    "\nadd_all generalize rule {} for example {}".format(
-                        rule.name, example_id))
+                logger.info("\nadd_all generalize rule {} for example {}".format(rule.name, example_id))
                 logger.info("-------------------------------------------")
                 # Assume that the generalized rule will be added, so we generate a new ID for it in advance
                 original_rule_id = rule.name
                 self.latest_rule_id += 1
 
                 # logger.info("old rule:\n{}".format(rule))
-                generalized_rule = most_specific_generalization(example,
-                                                                rule,
-                                                                class_col_name,
-                                                                dtypes)
+                generalized_rule = most_specific_generalization(example, rule, class_col_name, dtypes)
 
                 # Remove current example
                 neighbors.drop(example_id, inplace=True)
@@ -1593,16 +1499,17 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 # Check if the generalized rule is a duplicate of an existing one
                 logger.info("possible new rule")
                 logger.info(generalized_rule)
-                duplicate_rule_id = self.find_duplicate_rule_id(
-                    generalized_rule, rule_hash)
+                duplicate_rule_id = self.find_duplicate_rule_id(generalized_rule, rule_hash)
                 # Generalized rule isn't a duplicate
                 if duplicate_rule_id == my_vars.UNIQUE_RULE:
-                    current_f1, current_conf_matrix, current_closest_rule, current_closest_examples, current_covered, \
-                    updated_example_ids = \
-                        self.evaluate_f1_temporarily(df, generalized_rule,
-                                                     self.latest_rule_id,
-                                                     class_col_name,
-                                                     min_max, classes)
+                    (
+                        current_f1,
+                        current_conf_matrix,
+                        current_closest_rule,
+                        current_closest_examples,
+                        current_covered,
+                        updated_example_ids,
+                    ) = self.evaluate_f1_temporarily(df, generalized_rule, self.latest_rule_id, class_col_name, min_max, classes)
                     # Generalized rule is better
                     if current_f1 >= best_f1:
                         improved = True
@@ -1619,22 +1526,15 @@ class BRACID(BaseEstimator, ClassifierMixin):
                         # result is passed back as a Boolean variable
                         if is_first_rule:
                             is_first_rule = False
-                            logger.info(
-                                "replace rule {} which had as original id {}".format(
-                                    generalized_rule.name,
-                                    original_rule_id))
+                            logger.info("replace rule {} which had as original id {}".format(generalized_rule.name, original_rule_id))
                             logger.info("###############")
                             logger.info("###############")
                             changed_rules.append((example, generalized_rule))
                             # Note that a hash collision could've occurred, i.e. there are different rules with the same
                             # hash, so just
                             # add to the set of IDs instead of assuming an empty set
-                            self.unique_rules.setdefault(rule_hash, set()).add(
-                                generalized_rule.name)
-                            logger.info(
-                                "added {} for rule {}".format(rule_hash,
-                                                              generalized_rule.name))
-                            replaced_rule = generalized_rule
+                            self.unique_rules.setdefault(rule_hash, set()).add(generalized_rule.name)
+                            logger.info("added {} for rule {}".format(rule_hash, generalized_rule.name))
 
                             # Rule to be replaced is at the end
                             idx = -1
@@ -1644,18 +1544,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
                             # Replace old rule with new one - old rule is at the end of the list
                             rules[idx] = generalized_rule
-                            self.all_rules[
-                                generalized_rule.name] = generalized_rule
+                            self.all_rules[generalized_rule.name] = generalized_rule
 
                             # Generalized rule replaces existing one, but we updated statistics assuming that
                             # so use the original one's ID and allow reuse of this new ID
                             wrong_rule_id = self.latest_rule_id
-                            logger.info(
-                                "wrong ID used to temporarily compute f1:",
-                                wrong_rule_id)
+                            logger.info("wrong ID used to temporarily compute f1:", wrong_rule_id)
                             self.latest_rule_id -= 1
-                            logger.info("old closest rule per example:",
-                                        current_closest_rule)
+                            logger.info("old closest rule per example:", current_closest_rule)
 
                             # We updated statistics assuming that the new rule ID would be used, but this isn't the
                             # case, so we need to rollback and merge the results of the original rule ID with
@@ -1668,61 +1564,45 @@ class BRACID(BaseEstimator, ClassifierMixin):
                             # self.closest_rule_per_example = current_closest_rule
                             # logger.info("after update", current_closest_rule)
 
-                            logger.info("old closest examples per rule",
-                                        current_closest_examples)
+                            logger.info("old closest examples per rule", current_closest_examples)
                             # Again, the new rule might have not become the closest rule, so only update if it did
-                            closest_examples_for_new_rule = current_closest_examples.get(
-                                wrong_rule_id, set())
+                            closest_examples_for_new_rule = current_closest_examples.get(wrong_rule_id, set())
                             if len(closest_examples_for_new_rule) > 0:
                                 for eid in closest_examples_for_new_rule:
-                                    current_closest_rule[eid] = Data(
-                                        rule_id=original_rule_id,
-                                        dist=current_closest_rule[eid].dist)
+                                    current_closest_rule[eid] = Data(rule_id=original_rule_id, dist=current_closest_rule[eid].dist)
                                 self.closest_rule_per_example = current_closest_rule
-                                logger.info("new closest rule per example:",
-                                            current_closest_rule)
+                                logger.info("new closest rule per example:", current_closest_rule)
 
-                                current_closest_examples[original_rule_id] = \
-                                    current_closest_examples.get(
-                                        original_rule_id, set()).union(
-                                        closest_examples_for_new_rule)
-                            logger.info(
-                                "intermediate closest examples per rule",
-                                current_closest_examples)
+                                current_closest_examples[original_rule_id] = current_closest_examples.get(original_rule_id, set()).union(
+                                    closest_examples_for_new_rule
+                                )
+                            logger.info("intermediate closest examples per rule", current_closest_examples)
                             # A new rule might not be closest to any example
                             if wrong_rule_id in current_closest_examples:
                                 del current_closest_examples[wrong_rule_id]
                             self.closest_examples_per_rule = current_closest_examples
-                            logger.info("new closest examples per rule",
-                                        self.closest_examples_per_rule)
+                            logger.info("new closest examples per rule", self.closest_examples_per_rule)
 
                             logger.info("old covered rules", current_covered)
                             # Again, the new rule might have not become the closest rule, so only update if it did
-                            covered_examples_by_new_rule = current_covered.get(
-                                wrong_rule_id, set())
+                            covered_examples_by_new_rule = current_covered.get(wrong_rule_id, set())
                             if len(covered_examples_by_new_rule) > 0:
-                                current_covered[original_rule_id] = \
-                                    current_covered.get(original_rule_id,
-                                                        set()).union(
-                                        covered_examples_by_new_rule)
-                            logger.info("intermediate covered rules",
-                                        current_covered)
+                                current_covered[original_rule_id] = current_covered.get(original_rule_id, set()).union(
+                                    covered_examples_by_new_rule
+                                )
+                            logger.info("intermediate covered rules", current_covered)
 
                             if wrong_rule_id in current_covered:
                                 del current_covered[wrong_rule_id]
                             self.examples_covered_by_rule = current_covered
-                            logger.info("new current covered rules",
-                                        self.examples_covered_by_rule)
+                            logger.info("new current covered rules", self.examples_covered_by_rule)
 
                             for eid in updated_example_ids:
-                                logger.info("closest rule",
-                                            self.closest_rule_per_example[eid])
-                                self.closest_rule_per_example[eid] = \
-                                    Data(rule_id=original_rule_id,
-                                         dist=self.closest_rule_per_example[
-                                             eid].dist)
-                                logger.info("updated rule ID closest rule",
-                                            self.closest_rule_per_example[eid])
+                                logger.info("closest rule", self.closest_rule_per_example[eid])
+                                self.closest_rule_per_example[eid] = Data(
+                                    rule_id=original_rule_id, dist=self.closest_rule_per_example[eid].dist
+                                )
+                                logger.info("updated rule ID closest rule", self.closest_rule_per_example[eid])
 
                             # Confusion matrix won't change, so no need to update it
                             self.conf_matrix = current_conf_matrix
@@ -1734,12 +1614,15 @@ class BRACID(BaseEstimator, ClassifierMixin):
                             dists = []
                             for neighbor_id, neighbor in neighbors.iterrows():
                                 _, dist, _ = self.find_nearest_rule(
-                                    [generalized_rule], neighbor,
+                                    [generalized_rule],
+                                    neighbor,
                                     class_col_name,
-                                    min_max, classes,
+                                    min_max,
+                                    classes,
                                     self.examples_covered_by_rule,
                                     label_type=my_vars.ALL_LABELS,
-                                    only_uncovered_neighbors=False)
+                                    only_uncovered_neighbors=False,
+                                )
                                 dists.append((neighbor_id, dist))
                             logger.info("recomputed distances:")
                             logger.info(dists)
@@ -1752,96 +1635,67 @@ class BRACID(BaseEstimator, ClassifierMixin):
                             break
                         else:
                             # Add generalized rule instead of replacing the original one
-                            logger.info(
-                                "add rule {}!!!".format(self.latest_rule_id))
+                            logger.info("add rule {}!!!".format(self.latest_rule_id))
                             logger.info("###############")
                             logger.info("###############")
                             logger.info(generalized_rule)
-                            logger.info("closest new rule per example",
-                                        current_closest_rule)
+                            logger.info("closest new rule per example", current_closest_rule)
                             self.closest_rule_per_example = current_closest_rule
                             self.closest_examples_per_rule = current_closest_examples
                             self.conf_matrix = current_conf_matrix
                             self.examples_covered_by_rule = current_covered
 
-                            logger.info("original rule id:",
-                                        generalized_rule.name)
+                            logger.info("original rule id:", generalized_rule.name)
                             new_rule_id = self.latest_rule_id
                             generalized_rule.name = new_rule_id
                             logger.info("new rule id", generalized_rule.name)
 
-                            logger.info("before adding unique hash:",
-                                        self.unique_rules)
+                            logger.info("before adding unique hash:", self.unique_rules)
                             # new_hash = compute_hashable_key(generalized_rule)
                             is_added = True
                             if rule_hash not in self.unique_rules:
                                 self.unique_rules[rule_hash] = {new_rule_id}
                             else:
                                 generalized_rule.name = self.latest_rule_id
-                                logger.info(
-                                    "hash collision when adding new rule!")
+                                logger.info("hash collision when adding new rule!")
                                 logger.info("new rule:")
                                 logger.info(generalized_rule)
                                 # Hash collisions might occur, so there could be multiple rules with the same hash value
-                                existing_rule_ids = self.unique_rules[
-                                    rule_hash]
-                                existing_rule_id = self.is_duplicate(
-                                    generalized_rule, existing_rule_ids)
+                                existing_rule_ids = self.unique_rules[rule_hash]
+                                existing_rule_id = self.is_duplicate(generalized_rule, existing_rule_ids)
                                 # No duplicate exists
                                 if existing_rule_id != my_vars.UNIQUE_RULE:
                                     is_added = False
-                            logger.info("after adding unique hash:",
-                                        self.unique_rules)
+                            logger.info("after adding unique hash:", self.unique_rules)
                             # Only add if the generalized rule is no duplicate
                             if is_added:
-
                                 # Note that a hash collision could've occurred, i.e. there are different rules with the same
                                 # hash, so just
                                 # add to the set of IDs instead of assuming an empty set
-                                self.unique_rules.setdefault(rule_hash,
-                                                             set()).add(
-                                    generalized_rule.name)
-                                logger.info(
-                                    "added {} for rule {}".format(rule_hash,
-                                                                  generalized_rule.name))
+                                self.unique_rules.setdefault(rule_hash, set()).add(generalized_rule.name)
+                                logger.info("added {} for rule {}".format(rule_hash, generalized_rule.name))
                                 added_rules += 1
-                                logger.info(
-                                    "before updating seed: example_rule:",
-                                    self.seed_example_rule)
-                                self.seed_example_rule.setdefault(example_id,
-                                                                  set()).add(
-                                    new_rule_id)
-                                logger.info(
-                                    "after updating seed: example_rule:",
-                                    self.seed_example_rule)
-                                logger.info(
-                                    "before updating seed: rule_example_rule:",
-                                    self.seed_rule_example)
-                                self.seed_rule_example[
-                                    new_rule_id] = example_id
-                                logger.info(
-                                    "after updating seed: rule_example_rule:",
-                                    self.seed_rule_example)
+                                logger.info("before updating seed: example_rule:", self.seed_example_rule)
+                                self.seed_example_rule.setdefault(example_id, set()).add(new_rule_id)
+                                logger.info("after updating seed: example_rule:", self.seed_example_rule)
+                                logger.info("before updating seed: rule_example_rule:", self.seed_rule_example)
+                                self.seed_rule_example[new_rule_id] = example_id
+                                logger.info("after updating seed: rule_example_rule:", self.seed_rule_example)
 
                                 # Use the newly generated ID as name
                                 generalized_rule.name = self.latest_rule_id
-                                self.all_rules[
-                                    generalized_rule.name] = generalized_rule
-                                changed_rules.append(
-                                    (example, generalized_rule))
+                                self.all_rules[generalized_rule.name] = generalized_rule
+                                changed_rules.append((example, generalized_rule))
                                 rules.append(generalized_rule)
-                                logger.info("new rule id:",
-                                            generalized_rule.name)
-                                logger.info("added rule for example {}:\n{}"
-                                            .format(example_id, (
-                                    generalized_rule.name,
-                                    current_closest_rule[example_id])))
-                                logger.info("covered:",
-                                            self.examples_covered_by_rule)
-                                logger.info("closest rule per example",
-                                            self.closest_rule_per_example)
-                                logger.info("closest examples per rule",
-                                            self.closest_examples_per_rule)
+                                logger.info("new rule id:", generalized_rule.name)
+                                logger.info(
+                                    "added rule for example {}:\n{}".format(
+                                        example_id, (generalized_rule.name, current_closest_rule[example_id])
+                                    )
+                                )
+                                logger.info("covered:", self.examples_covered_by_rule)
+                                logger.info("closest rule per example", self.closest_rule_per_example)
+                                logger.info("closest examples per rule", self.closest_examples_per_rule)
                                 logger.info("conf matrix", self.conf_matrix)
 
                             else:
@@ -1863,11 +1717,8 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     # new rules could've been added in the meantime; +1 because it's 0-based
                     idx_original_rule = added_rules + 1
                     # Remove current rule that was generalized, which was added to the end of the list
-                    logger.info(
-                        "remove rule {} after some rules might've been added".format(
-                            rules[-idx_original_rule].name))
-                    logger.info("keep rule {} and remove rule {}".format(
-                        self.all_rules[duplicate_rule_id].name, rule.name))
+                    logger.info("remove rule {} after some rules might've been added".format(rules[-idx_original_rule].name))
+                    logger.info("keep rule {} and remove rule {}".format(self.all_rules[duplicate_rule_id].name, rule.name))
                     logger.info("existing rule")
                     logger.info(self.all_rules[duplicate_rule_id])
                     # del rules[-idx_original_rule]
@@ -1945,11 +1796,9 @@ class BRACID(BaseEstimator, ClassifierMixin):
         Extended rule.
 
         """
-        neighbors, _, _ = self.find_nearest_examples(df, k, rule,
-                                                     class_col_name, min_max,
-                                                     classes,
-                                                     label_type=my_vars.OPPOSITE_LABEL_TO_RULE,
-                                                     only_uncovered_neighbors=True)
+        neighbors, _, _ = self.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.OPPOSITE_LABEL_TO_RULE, only_uncovered_neighbors=True
+        )
         # logger.info("neighbors")
         # logger.info(neighbors)
         # logger.info("rule before extension:\n{}".format(rule))
@@ -1963,10 +1812,8 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     # logger.info("lower: {} upper: {}".format(lower_rule, upper_rule))
                     # logger.info("neighbors")
                     # logger.info(neighbors)
-                    remaining_lower = neighbors.loc[
-                        neighbors[col_name] < lower_rule]
-                    remaining_upper = neighbors.loc[
-                        neighbors[col_name] > upper_rule]
+                    remaining_lower = neighbors.loc[neighbors[col_name] < lower_rule]
+                    remaining_upper = neighbors.loc[neighbors[col_name] > upper_rule]
                     # logger.info("neighbors meeting lower constraint:\n{}".format(remaining_lower))
                     # logger.info("neighbors meeting upper constraint:\n{}".format(remaining_upper))
                     new_lower = 0
@@ -1981,14 +1828,12 @@ class BRACID(BaseEstimator, ClassifierMixin):
                         upper_example = remaining_upper[col_name].min()
                         # logger.info("upper val", upper_example)
                         new_upper = 0.5 * (upper_example - upper_rule)
-                    rule[col_name] = Bounds(lower=lower_rule - new_lower,
-                                            upper=upper_rule + new_upper)
+                    rule[col_name] = Bounds(lower=lower_rule - new_lower, upper=upper_rule + new_upper)
                     # logger.info("rule after extension of current column:\n{}".format(rule))
         self.all_rules[rule.name] = rule
         return rule
 
-    def delete_rule_statistics(self, df, rule, rules, final_rules,
-                               class_col_name, min_max, classes):
+    def delete_rule_statistics(self, df, rule, rules, final_rules, class_col_name, min_max, classes):
         """
         Deletes all statistics related to a specific rule.
 
@@ -2014,55 +1859,54 @@ class BRACID(BaseEstimator, ClassifierMixin):
         logger.info("available rules", len(rules))
         logger.info("available final rules", len(final_rules))
         if rule.name not in final_rules:
-
             logger.info("Rule that was deleted: \n{}".format(rule.name))
-            logger.info("delete seed rule_example entry: {}:{} "
-                        .format(rule.name, self.seed_rule_example[rule.name]))
+            logger.info("delete seed rule_example entry: {}:{} ".format(rule.name, self.seed_rule_example[rule.name]))
             old_seed_example_id = self.seed_rule_example[rule.name]
             del self.seed_rule_example[rule.name]
             logger.info("remaining entries:", self.seed_rule_example)
 
-            logger.info("delete seed example_rule entry:",
-                        self.seed_example_rule[old_seed_example_id])
+            logger.info("delete seed example_rule entry:", self.seed_example_rule[old_seed_example_id])
             del self.seed_example_rule[old_seed_example_id]
             logger.info("remaining entries:", self.seed_example_rule)
 
-            logger.info("updating which rule covers which examples:",
-                        self.examples_covered_by_rule)
+            logger.info("updating which rule covers which examples:", self.examples_covered_by_rule)
             if rule.name in self.examples_covered_by_rule:
                 del self.examples_covered_by_rule[rule.name]
             logger.info("after update", self.examples_covered_by_rule)
 
-            affected_example_ids = self.closest_examples_per_rule.get(
-                rule.name, set())
-            logger.info("closest rule per example before update:",
-                        self.closest_examples_per_rule)
+            affected_example_ids = self.closest_examples_per_rule.get(rule.name, set())
+            logger.info("closest rule per example before update:", self.closest_examples_per_rule)
             logger.info("affected examples", affected_example_ids)
             # TODO: should the distances of each example to each rule be stored in memory for fast look-up????
             # To find the closest rule, check the remaining rules as well as the final rules
             for example_id in affected_example_ids:
                 # Delete existing entry because otherwise find_nearest_rule() won't update the distance properly as one
                 # rule,the one that was just deleted, was closer
-                logger.info("deleted closest rule for example {}: {}:"
-                            .format(example_id,
-                                    self.closest_rule_per_example[example_id]))
+                logger.info("deleted closest rule for example {}: {}:".format(example_id, self.closest_rule_per_example[example_id]))
                 del self.closest_rule_per_example[example_id]
                 example = df.loc[example_id]
-                logger.info(
-                    "example: {} old rule: {}".format(example[class_col_name],
-                                                      rule[class_col_name]))
+                logger.info("example: {} old rule: {}".format(example[class_col_name], rule[class_col_name]))
                 # Closest rule
                 rem_rule, rem_dist, rem_is_updated = self.find_nearest_rule(
-                    rules, example, class_col_name, min_max,
-                    classes, self.examples_covered_by_rule,
-                    label_type=my_vars.SAME_LABEL_AS_RULE,
-                    only_uncovered_neighbors=False)
-                fin_rule, fin_dist, fin_is_updated = self.find_nearest_rule(
-                    final_rules.values(), example, class_col_name,
-                    min_max, classes,
+                    rules,
+                    example,
+                    class_col_name,
+                    min_max,
+                    classes,
                     self.examples_covered_by_rule,
                     label_type=my_vars.SAME_LABEL_AS_RULE,
-                    only_uncovered_neighbors=False)
+                    only_uncovered_neighbors=False,
+                )
+                fin_rule, fin_dist, fin_is_updated = self.find_nearest_rule(
+                    final_rules.values(),
+                    example,
+                    class_col_name,
+                    min_max,
+                    classes,
+                    self.examples_covered_by_rule,
+                    label_type=my_vars.SAME_LABEL_AS_RULE,
+                    only_uncovered_neighbors=False,
+                )
                 closest_rule = rem_rule
                 closest_dist = rem_dist
                 # Sanity check: it's impossible that both rule sets were empty, thus a neighbor must exist
@@ -2073,30 +1917,21 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     closest_rule = fin_rule
                     closest_dist = fin_dist
                 if rem_rule is None and fin_rule is None:
-                    raise AssertionError(
-                        "no rules remain with the label '{}'".format(
-                            example[class_col_name]))
+                    raise AssertionError("no rules remain with the label '{}'".format(example[class_col_name]))
                 logger.info(rem_rule)
                 logger.info(fin_rule)
                 # logger.info("nearest rule")
                 # logger.info(closest_rule)
-                logger.info("new nearest rule: {} with dist {}".format(
-                    closest_rule.name, closest_dist))
-                self.closest_rule_per_example[example_id] = Data(
-                    rule_id=closest_rule.name, dist=closest_dist)
+                logger.info("new nearest rule: {} with dist {}".format(closest_rule.name, closest_dist))
+                self.closest_rule_per_example[example_id] = Data(rule_id=closest_rule.name, dist=closest_dist)
                 logger.info(self.closest_rule_per_example)
-                self.closest_examples_per_rule.setdefault(closest_rule.name,
-                                                          set()).add(
-                    example_id)
-            logger.info("closest rule per example after update:",
-                        self.closest_examples_per_rule)
+                self.closest_examples_per_rule.setdefault(closest_rule.name, set()).add(example_id)
+            logger.info("closest rule per example after update:", self.closest_examples_per_rule)
 
-            logger.info("closest examples per rule before update:",
-                        self.closest_examples_per_rule)
+            logger.info("closest examples per rule before update:", self.closest_examples_per_rule)
             if rule.name in self.closest_examples_per_rule:
                 del self.closest_examples_per_rule[rule.name]
-            logger.info("closest examples per rule after update:",
-                        self.closest_examples_per_rule)
+            logger.info("closest examples per rule after update:", self.closest_examples_per_rule)
 
             logger.info("all rules before", self.all_rules)
             del self.all_rules[rule.name]
@@ -2114,13 +1949,11 @@ class BRACID(BaseEstimator, ClassifierMixin):
             #     del self.unique_rules[rule_hash]
             logger.info("all rules after", self.unique_rules)
         else:
-            logger.info(
-                "Rule that was deleted, but added to final rules earlier - hence, it's not deleted: \n{}\n\n\n"
-                    .format(rule.name))
+            logger.info("Rule that was deleted, but added to final rules earlier - hence, it's not deleted: \n{}\n\n\n".format(rule.name))
 
     def _in_final_rules(self, rule, final_rules, final_rules_hashes):
         rule_hash = compute_hashable_key(rule)
-        if not rule_hash in final_rules_hashes:
+        if rule_hash not in final_rules_hashes:
             return False
         for final_rule in final_rules:
             if _are_duplicates(rule, final_rule):
@@ -2130,24 +1963,18 @@ class BRACID(BaseEstimator, ClassifierMixin):
     def _fit_binary(self, df):
         if self._minority_class is None:
             # raise ValueError('Provide the minority class for binary prediction')
-            self._minority_class = \
-                df[self._class_column_name].value_counts().index[-1]
-            logger.info(
-                'No minority class specified for binary classification. Choosing %s',
-                self._minority_class)
-        self._rules = self.bracid(df, self.k, self._class_column_name,
-                                  self._min_max, self._classes,
-                                  self._minority_class)
-        self._model = self.train_binary(self._rules, df, self._minority_class,
-                                        self._class_column_name)
+            self._minority_class = df[self._class_column_name].value_counts().index[-1]
+            logger.info("No minority class specified for binary classification. Choosing %s", self._minority_class)
+        self._rules = self.bracid(df, self.k, self._class_column_name, self._min_max, self._classes, self._minority_class)
+        self._model = self.train_binary(self._rules, df, self._minority_class, self._class_column_name)
 
     def fit(self, X, y):
         X, y = np.asarray(X), np.asarray(y)
-        assert y.shape[0] > 0, 'y cannot be empty'
+        assert y.shape[0] > 0, "y cannot be empty"
         y_nominal = [str(v) for v in y]
         self._classes = list(set(y_nominal))
         self._is_binary_classification = len(self._classes) <= 2
-        self._columns = [f'Column_{i}' for i in range(X.shape[1])]
+        self._columns = [f"Column_{i}" for i in range(X.shape[1])]
         df = pd.DataFrame(X, columns=self._columns)
         self._min_max = get_min_max(df)
         df[self._class_column_name] = y_nominal
@@ -2155,15 +1982,13 @@ class BRACID(BaseEstimator, ClassifierMixin):
             return self._fit_binary(df)
         else:
             # fit multiclass
-            raise NotImplementedError(
-                "fit for multiclass problem is not tested yet.")
+            raise NotImplementedError("fit for multiclass problem is not tested yet.")
             return self._fit_multiclass(df)
 
     def _predict_binary(self, df, predict_proba=False):
-        preds_df = self.predict_binary(self._model, df, self._rules,
-                                       self._classes,
-                                       self._class_column_name, self._min_max,
-                                       for_multiclass=False)
+        preds_df = self.predict_binary(
+            self._model, df, self._rules, self._classes, self._class_column_name, self._min_max, for_multiclass=False
+        )
         if predict_proba:
             preds = preds_df[my_vars.PREDICTION_CONFIDENCE].values
         else:
@@ -2172,32 +1997,17 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
     def _fit_multiclass(self, df):
         minority_labels = self._classes
-        logger.info("one-vs-all labels in the order they'll be processed",
-                    minority_labels)
+        logger.info("one-vs-all labels in the order they'll be processed", minority_labels)
         multiclass_fit_data = {}
         for minority_label in minority_labels:
             classes = [minority_label, Labels.REST]
             # Convert to a binary problem
             train = df.copy()
-            train = to_binary_classification_task(train,
-                                                  self._class_column_name,
-                                                  minority_label,
-                                                  merged_label=Labels.REST)
-            logger.info("####training set#####"
-                        f"{train}"
-                        "classes to be used in current run"
-                        f"{train[self._class_column_name].unique()}"
-                        )
-            rules = self.bracid(train, self.k, self._class_column_name,
-                                self._min_max, classes,
-                                minority_label)
-            model = self.train_binary(rules, train, minority_label,
-                                      self._class_column_name)
-            multiclass_fit_data[minority_label] = {
-                "rules": rules,
-                "model": model,
-                "classes": classes
-            }
+            train = to_binary_classification_task(train, self._class_column_name, minority_label, merged_label=Labels.REST)
+            logger.info("####training set#####" f"{train}" "classes to be used in current run" f"{train[self._class_column_name].unique()}")
+            rules = self.bracid(train, self.k, self._class_column_name, self._min_max, classes, minority_label)
+            model = self.train_binary(rules, train, minority_label, self._class_column_name)
+            multiclass_fit_data[minority_label] = {"rules": rules, "model": model, "classes": classes}
         self._multiclass_fit_data = multiclass_fit_data
 
     def _predict_multiclass(self, df, predict_proba=False):
@@ -2213,10 +2023,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             rules = fit_data["rules"]
             model = fit_data["model"]
             classes = fit_data["classes"]
-            preds_df = self.predict_binary(model, df, rules, classes,
-                                           self._class_column_name,
-                                           self._min_max,
-                                           for_multiclass=True)
+            preds_df = self.predict_binary(model, df, rules, classes, self._class_column_name, self._min_max, for_multiclass=True)
             all_rules[minority_label] = rules
             # Update predicted label and confidence if confidence is higher than the currently best confidence
             PC = my_vars.PREDICTION_CONFIDENCE
@@ -2270,39 +2077,30 @@ class BRACID(BaseEstimator, ClassifierMixin):
         self._minority_class = minority_label
         self.init_statistics(df)
         logger.info("minority class label:", self._minority_class)
-        df, rules = self.add_tags_and_extract_rules(df, k, class_col_name,
-                                                    min_max, classes)
+        df, rules = self.add_tags_and_extract_rules(df, k, class_col_name, min_max, classes)
         logger.info("initial rules")
         logger.info(rules)
         # {rule_id: rule}
         final_rules = {}
-        final_rules_hashes = set()
         iteration = 0
         keep_running = True
         for rule in rules:
             rule_hash = compute_hashable_key(rule)
             logger.info("rule/ hash:", rule_hash)
             self.unique_rules.setdefault(rule_hash, set()).add(rule.name)
-        f1_ = self.evaluate_f1_initialize_confusion_matrix(df, rules,
-                                                           class_col_name,
-                                                           min_max, classes)
+        f1_ = self.evaluate_f1_initialize_confusion_matrix(df, rules, class_col_name, min_max, classes)
         while keep_running:
             improved = False
-            pbar = tqdm.tqdm(desc=f'BRACID for class {minority_label}')
+            pbar = tqdm.tqdm(desc=f"BRACID for class {minority_label}")
             loop_iterations = 0
             while len(rules) > 0:
                 loop_iterations += 1
-                pbar.set_description(
-                    f'({minority_label}) There are {len(rules)} rules left for evaluation',
-                    refresh=True)
-                logger.info("\nthere are {} rules left for evaluation:".format(
-                    len(rules)))
+                pbar.set_description(f"({minority_label}) There are {len(rules)} rules left for evaluation", refresh=True)
+                logger.info("\nthere are {} rules left for evaluation:".format(len(rules)))
                 logger.info("hashes:", self.unique_rules)
                 rule = rules.popleft()
                 rule_id = rule.name
-                logger.info(
-                    "rule {} is currently being processed:\n{}".format(rule_id,
-                                                                       rule))
+                logger.info("rule {} is currently being processed:\n{}".format(rule_id, rule))
                 # Add current rule at the end
 
                 # if self._in_final_rules(rule, final_rules, final_rules_hashes):
@@ -2321,47 +2119,33 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 seed_label = seed[class_col_name]
                 seed_tag = seed[my_vars.TAG]
                 # logger.info("seed label:", seed_label)
-                logger.info("closest rule per example",
-                            self.closest_rule_per_example)
-                logger.info("closest examples per rule",
-                            self.closest_examples_per_rule)
+                logger.info("closest rule per example", self.closest_rule_per_example)
+                logger.info("closest examples per rule", self.closest_examples_per_rule)
                 logger.info("covered examples", self.examples_covered_by_rule)
                 # Minority class label
                 if seed_label == minority_label:
-                    neighbors, dists, _ = self.find_nearest_examples(df, k,
-                                                                     rule,
-                                                                     class_col_name,
-                                                                     min_max,
-                                                                     classes,
-                                                                     label_type=my_vars.SAME_LABEL_AS_RULE,
-                                                                     only_uncovered_neighbors=True)
+                    neighbors, dists, _ = self.find_nearest_examples(
+                        df, k, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=True
+                    )
                     # Neighbors exist
                     # if neighbors is not None:
                     if seed_tag == ExampleClass.SAFE:
                         improved, generalized_rules, f1_ = self.add_one_best_rule(
-                            df, neighbors, rule, rules, f1_,
-                            class_col_name, min_max, classes)
+                            df, neighbors, rule, rules, f1_, class_col_name, min_max, classes
+                        )
                     else:
                         improved, generalized_rules, f1_ = self.add_all_good_rules(
-                            df, neighbors, rule, rules, f1_,
-                            class_col_name, min_max, classes)
+                            df, neighbors, rule, rules, f1_, class_col_name, min_max, classes
+                        )
                     if not improved:
                         # Don't extend for outlier
                         if iteration != 0:
-                            extended_rule = self.extend_rule(df, k, rule,
-                                                             class_col_name,
-                                                             min_max, classes)
+                            extended_rule = self.extend_rule(df, k, rule, class_col_name, min_max, classes)
                             final_rules[extended_rule.name] = extended_rule
                             # Delete rule
                             removed = rules.pop()
-                            logger.info(
-                                "removed rule after extension:\n{}".format(
-                                    removed))
-                            self.delete_rule_statistics(df, removed, rules,
-                                                        final_rules,
-                                                        class_col_name,
-                                                        min_max,
-                                                        classes)
+                            logger.info("removed rule after extension:\n{}".format(removed))
+                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, min_max, classes)
                     else:
                         # Use updated rules
                         rules = generalized_rules
@@ -2370,50 +2154,36 @@ class BRACID(BaseEstimator, ClassifierMixin):
                     n = k
                     if seed_tag == ExampleClass.SAFE:
                         n = 1
-                    neighbors, dists, _ = self.find_nearest_examples(df, n,
-                                                                     rule,
-                                                                     class_col_name,
-                                                                     min_max,
-                                                                     classes,
-                                                                     label_type=my_vars.SAME_LABEL_AS_RULE,
-                                                                     only_uncovered_neighbors=True)
+                    neighbors, dists, _ = self.find_nearest_examples(
+                        df, n, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=True
+                    )
                     # Neighbors exist
                     # if neighbors is not None:
                     improved, generalized_rules, f1_ = self.add_one_best_rule(
-                        df, neighbors, rule, rules, f1_, class_col_name,
-                        min_max, classes)
+                        df, neighbors, rule, rules, f1_, class_col_name, min_max, classes
+                    )
                     if not improved:
                         # Treat as noise
                         if iteration == 0:
                             example_id = self.seed_rule_example[rule_id]
-                            df, rules = self.treat_majority_example_as_noise(
-                                df, example_id, rules, rule_id)
+                            df, rules = self.treat_majority_example_as_noise(df, example_id, rules, rule_id)
                         else:
                             final_rules[rule.name] = rule
                             # Delete rule
                             removed = rules.pop()
-                            logger.info(
-                                "removed rule after adding majority final rule:\n{}".format(
-                                    removed))
-                            self.delete_rule_statistics(df, removed, rules,
-                                                        final_rules,
-                                                        class_col_name,
-                                                        min_max,
-                                                        classes)
+                            logger.info("removed rule after adding majority final rule:\n{}".format(removed))
+                            self.delete_rule_statistics(df, removed, rules, final_rules, class_col_name, min_max, classes)
                     else:
                         # Use updated rules
                         rules = generalized_rules
                 iteration += 1
-                logger.info(
-                    "end of iteration {} in bracid()".format(iteration))
+                logger.info("end of iteration {} in bracid()".format(iteration))
                 logger.info("#####################\n")
                 pbar.update(1)
             if not improved:
                 keep_running = False
 
-            pbar.set_description(
-                f'There were {loop_iterations} iterations for label={minority_label}',
-                refresh=True)
+            pbar.set_description(f"There were {loop_iterations} iterations for label={minority_label}", refresh=True)
             pbar.close()
 
         return final_rules
@@ -2454,14 +2224,12 @@ class BRACID(BaseEstimator, ClassifierMixin):
         logger.info(rules)
         # Delete rule
         removed = rules.pop()
-        logger.info(
-            "removed rule in majority noisy label:\n{}".format(removed))
+        logger.info("removed rule in majority noisy label:\n{}".format(removed))
         logger.info("rules after deletion:")
         logger.info(rules)
         return df, rules
 
-    def train_binary(self, rules, training_examples, minority_label,
-                     class_col_name):
+    def train_binary(self, rules, training_examples, minority_label, class_col_name):
         """
         Trains the model used for predicting class labels of unknown examples. To this end, the support of the derived rules
         is computed in the model. Note that BRACID was used to derive <rules>.
@@ -2485,33 +2253,22 @@ class BRACID(BaseEstimator, ClassifierMixin):
         """
         self._minority_class = minority_label
         model = {}
-        logger.info("closest rule per example in train():",
-                    self.closest_rule_per_example)
+        logger.info("closest rule per example in train():", self.closest_rule_per_example)
         for rule_id in rules:
             rule = rules[rule_id]
             logger.info(rule)
             if self._minority_class == rule[class_col_name]:
-                logger.info(
-                    "rule {} predicts minority label '{}'".format(rule.name,
-                                                                  rule[
-                                                                      class_col_name]))
+                logger.info("rule {} predicts minority label '{}'".format(rule.name, rule[class_col_name]))
             else:
-                logger.info(
-                    "rule {} predicts majority label '{}'".format(rule.name,
-                                                                  rule[
-                                                                      class_col_name]))
-            training_examples[my_vars.COVERED] = training_examples.loc[:, :] \
-                .apply(does_rule_cover_example_without_label, axis=1,
-                       args=(rule, training_examples.dtypes, class_col_name))
-            all_covered_examples = training_examples.loc[
-                training_examples[my_vars.COVERED] == True]
+                logger.info("rule {} predicts majority label '{}'".format(rule.name, rule[class_col_name]))
+            training_examples[my_vars.COVERED] = training_examples.loc[:, :].apply(
+                does_rule_cover_example_without_label, axis=1, args=(rule, training_examples.dtypes, class_col_name)
+            )
+            all_covered_examples = training_examples.loc[training_examples[my_vars.COVERED]]
             logger.info("all covered")
             logger.info(all_covered_examples)
             # Examples whose labels were predicted correctly by the rule - True or False
-            correct = \
-                all_covered_examples.loc[
-                    rule[class_col_name] == all_covered_examples[
-                        class_col_name]]
+            correct = all_covered_examples.loc[rule[class_col_name] == all_covered_examples[class_col_name]]
             logger.info("correctly covered")
             logger.info(correct)
             counts = correct.shape[0]
@@ -2519,17 +2276,14 @@ class BRACID(BaseEstimator, ClassifierMixin):
             # Support = #covered examples that were predicted correctly by that rule / all covered examples by that rule
             support = counts / total
             rest = 1 - support
-            logger.info(
-                "support(rule {}) = {}/{} = {}".format(rule_id, counts, total,
-                                                       support))
+            logger.info("support(rule {}) = {}/{} = {}".format(rule_id, counts, total, support))
             if rule[class_col_name] == self._minority_class:
                 model[rule_id] = Support(minority=support, majority=rest)
             else:
                 model[rule_id] = Support(minority=rest, majority=support)
         return model
 
-    def predict_binary(self, model, test_examples, rules, classes,
-                       class_col_name, min_max, for_multiclass=False):
+    def predict_binary(self, model, test_examples, rules, classes, class_col_name, min_max, for_multiclass=False):
         """
         Predicts the binary class labels of unknown examples. Sums up the support of (potentially multiple) rules that are
         closest to an example.
@@ -2562,9 +2316,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # {example_id: Predictions(...)}
         preds = {}
         # Compute support and predicted label
-        supports = self.compute_rule_support_per_example(rules, test_examples,
-                                                         model, class_col_name,
-                                                         min_max, classes)
+        supports = self.compute_rule_support_per_example(rules, test_examples, model, class_col_name, min_max, classes)
         majority_label = classes[0]
         if self._minority_class == classes[0]:
             majority_label = classes[1]
@@ -2577,28 +2329,20 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 predicted_label = majority_label
                 has_minority = False
             if has_minority or for_multiclass:
-                confidence = supports[example_id].minority / (
-                        supports[example_id].minority + supports[
-                    example_id].majority)
+                confidence = supports[example_id].minority / (supports[example_id].minority + supports[example_id].majority)
                 predicted_label = minority_label
             else:
-                confidence = supports[example_id].majority / (
-                        supports[example_id].minority + supports[
-                    example_id].majority)
-            preds[example_id] = Predictions(label=predicted_label,
-                                            confidence=confidence)
+                confidence = supports[example_id].majority / (supports[example_id].minority + supports[example_id].majority)
+            preds[example_id] = Predictions(label=predicted_label, confidence=confidence)
         # Store confidence and predicted label in data frame
         test_examples[my_vars.PREDICTED_LABEL] = minority_label
         test_examples[my_vars.PREDICTION_CONFIDENCE] = 0
         for example_id, row in test_examples.iterrows():
             data = preds[example_id]
-            test_examples.loc[example_id, [my_vars.PREDICTED_LABEL,
-                                           my_vars.PREDICTION_CONFIDENCE]] = data.label, \
-                                                                             data.confidence
+            test_examples.loc[example_id, [my_vars.PREDICTED_LABEL, my_vars.PREDICTION_CONFIDENCE]] = data.label, data.confidence
         return test_examples
 
-    def compute_rule_support_per_example(self, rules, examples, model,
-                                         class_col_name, min_max, classes):
+    def compute_rule_support_per_example(self, rules, examples, model, class_col_name, min_max, classes):
         """
         Computes the support of the various rules for each unlabeled example. Even if class labels exist, they are ignored.
         Support computation takes into account that multiple rules might cover an example or that multiple rules are
@@ -2629,26 +2373,22 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # {example_id: Support(...)}
         supports = {}
         uncovered_example_ids = set(examples.index.values)
-        assert (len(uncovered_example_ids) == examples.shape[0])
+        assert len(uncovered_example_ids) == examples.shape[0]
         for rule_id in rules:
             rule = rules[rule_id]
-            examples[my_vars.COVERED] = examples.loc[:, :] \
-                .apply(does_rule_cover_example_without_label, axis=1,
-                       args=(rule, examples.dtypes, class_col_name))
-            all_covered_examples = examples.loc[
-                examples[my_vars.COVERED] == True]
+            examples[my_vars.COVERED] = examples.loc[:, :].apply(
+                does_rule_cover_example_without_label, axis=1, args=(rule, examples.dtypes, class_col_name)
+            )
+            all_covered_examples = examples.loc[examples[my_vars.COVERED]]
             for example_id, example in all_covered_examples.iterrows():
                 uncovered_example_ids.discard(example_id)
                 # logger.info("rule {} covers example {}".format(rule_id, example_id))
                 if example_id not in supports:
                     supports[example_id] = Support(minority=0, majority=0)
                 # logger.info("old support", supports[example_id])
-                new_minority = supports[example_id].minority + model[
-                    rule_id].minority
-                new_majority = supports[example_id].majority + model[
-                    rule_id].majority
-                supports[example_id] = Support(minority=new_minority,
-                                               majority=new_majority)
+                new_minority = supports[example_id].minority + model[rule_id].minority
+                new_majority = supports[example_id].majority + model[rule_id].majority
+                supports[example_id] = Support(minority=new_minority, majority=new_majority)
                 # logger.info("updated support", supports[example_id])
         # Compute distances for the remaining uncovered examples and take ties into account
         if uncovered_example_ids:
@@ -2672,30 +2412,30 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 rule = rules[rule_id]
                 # TODO: write as a class and don't update in find_nearest_rule (or nearest_examples), but return the
                 #         # updated entries to decide depending on the scenario whether to update the data or not
-                neighbors, dists, is_closest = \
-                    self.find_nearest_examples(remaining_examples, k, rule,
-                                               class_col_name, min_max,
-                                               classes,
-                                               label_type=my_vars.ALL_LABELS,
-                                               only_uncovered_neighbors=False)
+                neighbors, dists, is_closest = self.find_nearest_examples(
+                    remaining_examples,
+                    k,
+                    rule,
+                    class_col_name,
+                    min_max,
+                    classes,
+                    label_type=my_vars.ALL_LABELS,
+                    only_uncovered_neighbors=False,
+                )
                 if neighbors is not None:
                     for example_id, row in dists.iterrows():
                         dist = dists.loc[example_id][my_vars.DIST]
                         if example_id not in uncovered_examples:
-                            uncovered_examples[example_id] = [
-                                Data(rule_id=rule_id, dist=dist)]
+                            uncovered_examples[example_id] = [Data(rule_id=rule_id, dist=dist)]
                             closest_dist = math.inf
                         else:
-                            closest_dist = uncovered_examples[example_id][
-                                0].dist
+                            closest_dist = uncovered_examples[example_id][0].dist
                         # New closest rule
                         if dist < closest_dist:
-                            uncovered_examples[example_id] = [
-                                Data(rule_id=rule_id, dist=dist)]
+                            uncovered_examples[example_id] = [Data(rule_id=rule_id, dist=dist)]
                         # Add tie
                         elif abs(dist - closest_dist) < my_vars.PRECISION:
-                            uncovered_examples[example_id].append(
-                                Data(rule_id=rule_id, dist=dist))
+                            uncovered_examples[example_id].append(Data(rule_id=rule_id, dist=dist))
 
             # Restore actual model
             self.closest_rule_per_example = rule_per_example
@@ -2710,8 +2450,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
                 for rule_id, _ in uncovered_examples[example_id]:
                     minority_supp += model[rule_id].minority
                     majority_supp += model[rule_id].majority
-                supports[example_id] = Support(minority=minority_supp,
-                                               majority=majority_supp)
+                supports[example_id] = Support(minority=minority_supp, majority=majority_supp)
         return supports
 
     def init_statistics(self, df):
@@ -2745,8 +2484,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
             self._closest_examples_per_rule = None
             return
         if not isinstance(v, dict):
-            raise ValueError(
-                f'closest_examples_per_rule cannot be assigned a non-dict object of type {type(v)}: {v}')
+            raise ValueError(f"closest_examples_per_rule cannot be assigned a non-dict object of type {type(v)}: {v}")
         if self._closest_examples_per_rule is None:
             self._closest_examples_per_rule = defaultdict(set, v)
             return
@@ -2754,9 +2492,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
         self._closest_examples_per_rule.clear()
         self._closest_examples_per_rule.update(v)
 
-    def extract_rules_and_train_and_predict_multiclass(self, train_set,
-                                                       test_set, min_max,
-                                                       class_col_name, k):
+    def extract_rules_and_train_and_predict_multiclass(self, train_set, test_set, min_max, class_col_name, k):
         """
         Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
         labels for a multiclass classification task. Converts a multiclass problem into a one-vs-all scheme.
@@ -2785,8 +2521,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
 
         """
         minority_labels = train_set[class_col_name].unique()
-        logger.info("one-vs-all labels in the order they'll be processed",
-                    minority_labels)
+        logger.info("one-vs-all labels in the order they'll be processed", minority_labels)
         res = test_set.copy()
         # Negative confidence because even if confidence for the first label is 0, it should be used instead of no label
         res[my_vars.PREDICTION_CONFIDENCE] = -1
@@ -2797,43 +2532,37 @@ class BRACID(BaseEstimator, ClassifierMixin):
             # Convert to a binary problem
             train = train_set.copy()
             test = test_set.copy()
-            train = to_binary_classification_task(train, class_col_name,
-                                                  minority_label,
-                                                  merged_label=Labels.REST)
+            train = to_binary_classification_task(train, class_col_name, minority_label, merged_label=Labels.REST)
             logger.info("####training set#####")
             logger.info(train)
-            logger.info("classes to be used in current run",
-                        train[class_col_name].unique())
+            logger.info("classes to be used in current run", train[class_col_name].unique())
             logger.info("####test set######")
             logger.info(test)
-            rules = self.bracid(train, k, class_col_name, min_max, classes,
-                                minority_label)
-            model = self.train_binary(rules, train, minority_label,
-                                      class_col_name)
-            preds_df = self.predict_binary(model, test, rules, classes,
-                                           class_col_name, min_max,
-                                           for_multiclass=True)
+            rules = self.bracid(train, k, class_col_name, min_max, classes, minority_label)
+            model = self.train_binary(rules, train, minority_label, class_col_name)
+            preds_df = self.predict_binary(model, test, rules, classes, class_col_name, min_max, for_multiclass=True)
             all_rules[minority_label] = rules
             # Update predicted label and confidence if confidence is higher than the currently best confidence
-            res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[
-                my_vars.PREDICTION_CONFIDENCE]) &
-                     (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)),
-                    my_vars.PREDICTED_LABEL] = preds_df[
-                my_vars.PREDICTED_LABEL]
-            res.loc[((res[my_vars.PREDICTION_CONFIDENCE] < preds_df[
-                my_vars.PREDICTION_CONFIDENCE]) &
-                     (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)),
-                    my_vars.PREDICTION_CONFIDENCE] = preds_df[
-                my_vars.PREDICTION_CONFIDENCE]
+            res.loc[
+                (
+                    (res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE])
+                    & (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)
+                ),
+                my_vars.PREDICTED_LABEL,
+            ] = preds_df[my_vars.PREDICTED_LABEL]
+            res.loc[
+                (
+                    (res[my_vars.PREDICTION_CONFIDENCE] < preds_df[my_vars.PREDICTION_CONFIDENCE])
+                    & (preds_df[my_vars.PREDICTED_LABEL] != Labels.REST)
+                ),
+                my_vars.PREDICTION_CONFIDENCE,
+            ] = preds_df[my_vars.PREDICTION_CONFIDENCE]
             # logger.info("predicted when using {} as class".format(minority_label))
             # logger.info(res[res.columns[-3:]])
             # logger.info("bla")
         return all_rules, res
 
-    def extract_rules_and_train_and_predict_binary(self, train_set, test_set,
-                                                   min_max, classes,
-                                                   minority_label,
-                                                   class_col_name, k):
+    def extract_rules_and_train_and_predict_binary(self, train_set, test_set, min_max, classes, minority_label, class_col_name, k):
         """
         Wrapper function that extracts the BRACID rules, trains a model based on these discovered rules, and predicts the
         labels for a binary classification task.
@@ -2858,16 +2587,12 @@ class BRACID(BaseEstimator, ClassifierMixin):
         Confidence = max (support for minority, support for majority) / (support for minority + support for majority)
 
         """
-        rules = self.bracid(train_set, k, class_col_name, min_max, classes,
-                            minority_label)
-        model = self.train_binary(rules, train_set, minority_label,
-                                  class_col_name)
-        preds_df = self.predict_binary(model, test_set, rules, classes,
-                                       class_col_name, min_max)
+        rules = self.bracid(train_set, k, class_col_name, min_max, classes, minority_label)
+        model = self.train_binary(rules, train_set, minority_label, class_col_name)
+        preds_df = self.predict_binary(model, test_set, rules, classes, class_col_name, min_max)
         return rules, preds_df
 
-    def cv_binary(self, dataset, k, class_col_name, min_max, classes,
-                  minority_label, folds=10, seed=13):
+    def cv_binary(self, dataset, k, class_col_name, min_max, classes, minority_label, folds=10, seed=13):
         """
         Performs cross-validation on a given binary dataset.
 
@@ -2901,30 +2626,26 @@ class BRACID(BaseEstimator, ClassifierMixin):
         # Create folds for CV
         for i in range(folds):
             logger.info("fold", i + 1)
-            test_set = df.iloc[
-                       i * examples_per_fold: i * examples_per_fold + examples_per_fold]
+            fold_slice = slice(i * examples_per_fold, i * examples_per_fold + examples_per_fold)
+            test_set = df.iloc[fold_slice]
             # logger.info("test set: {}".format(test_set.shape))
             # logger.info(test_set)
-            train_set = df.drop(df.index[
-                                i * examples_per_fold: i * examples_per_fold + examples_per_fold])
+            train_set = df.drop(df.index[fold_slice])
             # logger.info("training set: {}".format(train_set.shape))
             # logger.info(train_set)
             _, preds_df = self.extract_rules_and_train_and_predict_binary(
-                train_set, test_set, min_max, classes,
-                minority_label, class_col_name, k)
+                train_set, test_set, min_max, classes, minority_label, class_col_name, k
+            )
             predicted.extend(preds_df[my_vars.PREDICTED_LABEL].values)
             true.extend(preds_df[class_col_name].values)
-        micro_f1 = sklearn.metrics.f1_score(true, predicted, labels=classes,
-                                            average="micro")
-        classwise_f1 = sklearn.metrics.f1_score(true, predicted,
-                                                labels=classes, average=None)
+        micro_f1 = sklearn.metrics.f1_score(true, predicted, labels=classes, average="micro")
+        classwise_f1 = sklearn.metrics.f1_score(true, predicted, labels=classes, average=None)
         # logger.info("order of classes", classes)
         # logger.info("class-wise F1-scores", classwise_f1)
         # logger.info("micro-averaged F1-score:", micro_f1)
         return micro_f1, classwise_f1
 
-    def cv_multiclass(self, dataset, k, class_col_name, min_max, classes,
-                      folds=10, seed=13):
+    def cv_multiclass(self, dataset, k, class_col_name, min_max, classes, folds=10, seed=13):
         """
         Performs cross-validation on a given dataset, but handles multiclass
         problems using the one-vs-all scheme, i.e. if there are m classes in the dataset, m classifiers are trained
@@ -2965,12 +2686,10 @@ class BRACID(BaseEstimator, ClassifierMixin):
         true_foldwise = []
         # Create folds for CV
         for i in range(folds):
-            test_set = df.iloc[
-                       i * examples_per_fold: i * examples_per_fold + examples_per_fold]
-            train_set = df.drop(df.index[
-                                i * examples_per_fold: i * examples_per_fold + examples_per_fold])
-            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(
-                train_set, test_set, min_max, class_col_name, k)
+            fold_slice = slice(i * examples_per_fold, i * examples_per_fold + examples_per_fold)
+            test_set = df.iloc[fold_slice]
+            train_set = df.drop(df.index[fold_slice])
+            _, preds_df = self.extract_rules_and_train_and_predict_multiclass(train_set, test_set, min_max, class_col_name, k)
             preds = preds_df[my_vars.PREDICTED_LABEL].values
             true = preds_df[class_col_name].values
             # logger.info("true labels:", true)
@@ -2979,9 +2698,6 @@ class BRACID(BaseEstimator, ClassifierMixin):
             predicted_foldwise.append(preds)
             true_total.extend(true)
             true_foldwise.append(true)
-        micro_f1 = f1_score(true_total, predicted_total, labels=classes,
-                            average="micro")
-        classwise_f1 = f1_score(true_total, predicted_total, labels=classes,
-                                average=None)
-        return micro_f1, classwise_f1, np.array(true_foldwise), np.array(
-            predicted_foldwise)
+        micro_f1 = f1_score(true_total, predicted_total, labels=classes, average="micro")
+        classwise_f1 = f1_score(true_total, predicted_total, labels=classes, average=None)
+        return micro_f1, classwise_f1, np.array(true_foldwise), np.array(predicted_foldwise)

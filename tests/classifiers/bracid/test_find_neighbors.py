@@ -17,35 +17,36 @@ class TestFindNeighbors(TestCase):
         k = 3
         bracid = BRACID(k=k, minority_class=-1)
         dataset = pd.DataFrame({"A": [1, 2], "B": [1, 2], "C": [2, 2], "Class": [_0, _1]})
-        rule = pd.Series({"A": (0.1, 1), "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2),
-                          "Class": _0})
+        rule = pd.Series({"A": (0.1, 1), "B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0})
         classes = [_0, _1]
         class_col_name = "Class"
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}, "C": {"min": 1, "max": 2}})
-        self.assertWarns(UserWarning, bracid.find_nearest_examples, dataset, k, rule, class_col_name, min_max, classes,
-                         label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False)
+        self.assertWarns(
+            UserWarning,
+            bracid.find_nearest_examples,
+            dataset,
+            k,
+            rule,
+            class_col_name,
+            min_max,
+            classes,
+            label_type=my_vars.SAME_LABEL_AS_RULE,
+            only_uncovered_neighbors=False,
+        )
 
     def test_find_neighbors_numeric_nominal_label_type(self):
         """Tests what happens if input has a numeric and a nominal feature and we vary label_type as parameter"""
         k = 3
         bracid = BRACID(k=k, minority_class=-1)
-        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
-                           "C": [3, 2, 1, .5, 3, 2],
-                           "Class": [_0, _0, _1, _1, _1, _1]})
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         rules = [
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                      name=0),
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
-                      name=1),
-            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1), "Class": _1},
-                      name=2),
-            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                       "Class": _1}, name=3),
-            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3), "Class": _1},
-                      name=4),
-            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                       "Class": _1}, name=5)
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=0),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0}, name=1),
+            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1), "Class": _1}, name=2),
+            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5), "Class": _1}, name=3),
+            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3), "Class": _1}, name=4),
+            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2), "Class": _1}, name=5),
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         bracid.closest_rule_per_example = {}
@@ -56,14 +57,15 @@ class TestFindNeighbors(TestCase):
         rule = pd.Series({"B": (1, 1), "Class": _1}, name=0)
         classes = [_0, _1]
         min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
-        neighbors_all, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                    label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False)
-        neighbors_same, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                     label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
-                                                     False)
-        neighbors_opposite, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                         label_type=my_vars.OPPOSITE_LABEL_TO_RULE,
-                                                         only_uncovered_neighbors=False)
+        neighbors_all, _, _ = bracid.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.ALL_LABELS, only_uncovered_neighbors=False
+        )
+        neighbors_same, _, _ = bracid.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False
+        )
+        neighbors_opposite, _, _ = bracid.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.OPPOSITE_LABEL_TO_RULE, only_uncovered_neighbors=False
+        )
         print(neighbors_all)
         print(neighbors_same)
         print(neighbors_opposite)
@@ -74,12 +76,10 @@ class TestFindNeighbors(TestCase):
     def test_find_neighbors_numeric_nominal_covered(self):
         """Tests what happens if input has a numeric and a nominal feature and some examples are already covered
         by the rule"""
-        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
-                            "C": [3, 2, 1, .5, 3, 2],
-                            "Class": [_0, _0, _1, _1, _1, _1]})
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         for k in [1, 2, 3, 4]:
-            with self.subTest(f'k={k}'):
+            with self.subTest(f"k={k}"):
                 bracid = BRACID(k=k, minority_class=-1)
                 if k == 1:
                     correct = df.iloc[[5]]
@@ -95,18 +95,16 @@ class TestFindNeighbors(TestCase):
                 classes = [_0, _1]
                 min_max = pd.DataFrame({"A": {"min": 1, "max": 5}, "B": {"min": 1, "max": 11}})
 
-                neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                        label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
-                                                        True)
+                neighbors, _, _ = bracid.find_nearest_examples(
+                    df, k, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=True
+                )
                 pd.testing.assert_frame_equal(correct, neighbors)
 
     def test_find_neighbors_numeric_nominal_stats(self):
         """Tests that global statistics are updated accordingly"""
         k = 4
         bracid = BRACID(k=k, minority_class=-1)
-        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75],
-                            "C": [3, 2, 1, .5, 3, 2],
-                            "Class": [_0, _0, _1, _1, _1, _1]})
+        df = pd.DataFrame({"B": [1, 1, 4, 1.5, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         rule = pd.Series({"B": (1, 1), "Class": _1}, name=0)
         bracid.closest_rule_per_example = {
@@ -115,23 +113,18 @@ class TestFindNeighbors(TestCase):
             2: Data(rule_id=5, dist=0.67015625),
             3: Data(rule_id=1, dist=0.038125),
             4: Data(rule_id=0, dist=0.015625),
-            5: Data(rule_id=2, dist=0.67015625)}
+            5: Data(rule_id=2, dist=0.67015625),
+        }
         # Reset because other tests added data, so if you only run this test it would work, but not if other
         # tests are run prior to that
         bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
         rules = [
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                        name=0),
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
-                        name=1),
-            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                        "Class": _1}, name=2),
-            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                        "Class": _1}, name=3),
-            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                        "Class": _1}, name=4),
-            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                        "Class": _1}, name=5)
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=0),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0}, name=1),
+            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1), "Class": _1}, name=2),
+            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5), "Class": _1}, name=3),
+            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3), "Class": _1}, name=4),
+            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2), "Class": _1}, name=5),
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         correct = df.iloc[[5, 3, 4, 2]]
@@ -147,10 +140,11 @@ class TestFindNeighbors(TestCase):
             2: Data(rule_id=0, dist=0.09),
             3: Data(rule_id=0, dist=0.0025000000000000005),
             4: Data(rule_id=0, dist=0.0025000000000000005),
-            5: Data(rule_id=0, dist=0.0006250000000000001)}
-        neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
-                                                False)
+            5: Data(rule_id=0, dist=0.0006250000000000001),
+        }
+        neighbors, _, _ = bracid.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False
+        )
         pd.testing.assert_frame_equal(neighbors, correct)
         self.assertDictEqual(correct_covered, bracid.examples_covered_by_rule)
         self.assertDictEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
@@ -167,24 +161,16 @@ class TestFindNeighbors(TestCase):
         """Tests that the stats for a newly covered rule are updated (dist = 0)"""
         """Tests that global statistics are updated accordingly"""
         k = 4
-        bracid = BRACID(k=k, minority_class = _1)
-        df = pd.DataFrame({"B": [1, 1, 1, 1, 0.5, 0.75],
-                            "C": [3, 2, 1, .5, 3, 2],
-                            "Class": [_0, _0, _1, _1, _1, _1]})
+        bracid = BRACID(k=k, minority_class=_1)
+        df = pd.DataFrame({"B": [1, 1, 1, 1, 0.5, 0.75], "C": [3, 2, 1, 0.5, 3, 2], "Class": [_0, _0, _1, _1, _1, _1]})
         class_col_name = "Class"
         rules = [
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0},
-                        name=0),
-            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0},
-                        name=1),
-            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1),
-                        "Class": _1}, name=2),
-            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5),
-                        "Class": _1}, name=3),
-            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3),
-                        "Class": _1}, name=4),
-            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2),
-                        "Class": _1}, name=5)
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=3, upper=3), "Class": _0}, name=0),
+            pd.Series({"B": Bounds(lower=1, upper=1), "C": Bounds(lower=2, upper=2), "Class": _0}, name=1),
+            pd.Series({"B": Bounds(lower=4, upper=4), "C": Bounds(lower=1, upper=1), "Class": _1}, name=2),
+            pd.Series({"B": Bounds(lower=1.5, upper=1.5), "C": Bounds(lower=0.5, upper=0.5), "Class": _1}, name=3),
+            pd.Series({"B": Bounds(lower=0.5, upper=0.5), "C": Bounds(lower=3, upper=3), "Class": _1}, name=4),
+            pd.Series({"B": Bounds(lower=0.75, upper=0.75), "C": Bounds(lower=2, upper=2), "Class": _1}, name=5),
         ]
         bracid.all_rules = {0: rules[0], 1: rules[1], 2: rules[2], 3: rules[3], 4: rules[4], 5: rules[5]}
         bracid.closest_rule_per_example = {
@@ -193,7 +179,8 @@ class TestFindNeighbors(TestCase):
             2: (5, 0.67015625),
             3: (1, 0.038125),
             4: (0, 0.015625),
-            5: (2, 0.67015625)}
+            5: (2, 0.67015625),
+        }
         bracid.closest_examples_per_rule = {0: {1, 4}, 1: {0, 3}, 2: {5}, 5: {2}}
         correct = df.iloc[[2, 3, 5, 4]]
         rule = pd.Series({"B": (1, 1), "Class": _1}, name=0)
@@ -202,17 +189,17 @@ class TestFindNeighbors(TestCase):
         bracid.examples_covered_by_rule = {1: {2}}
         correct_covered = {1: {2}, 0: {2, 3}}
         correct_examples_per_rule = {0: {1, 2, 3, 4, 5}, 1: {0}}
-        correct_closest_rule_per_example = {0: (1, 0.010000000000000002),
-                                            1: (0, 0.010000000000000002),
-                                            2: Data(rule_id=0, dist=0.0),
-                                            3: Data(rule_id=0, dist=0.0),
-                                            4: Data(rule_id=0,
-                                                    dist=0.0025000000000000005),
-                                            5: Data(rule_id=0,
-                                                    dist=0.0006250000000000001)}
-        neighbors, _, _ = bracid.find_nearest_examples(df, k, rule, class_col_name, min_max, classes,
-                                                label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=
-                                                False)
+        correct_closest_rule_per_example = {
+            0: (1, 0.010000000000000002),
+            1: (0, 0.010000000000000002),
+            2: Data(rule_id=0, dist=0.0),
+            3: Data(rule_id=0, dist=0.0),
+            4: Data(rule_id=0, dist=0.0025000000000000005),
+            5: Data(rule_id=0, dist=0.0006250000000000001),
+        }
+        neighbors, _, _ = bracid.find_nearest_examples(
+            df, k, rule, class_col_name, min_max, classes, label_type=my_vars.SAME_LABEL_AS_RULE, only_uncovered_neighbors=False
+        )
         pd.testing.assert_frame_equal(neighbors, correct)
         self.assertEqual(correct_covered, bracid.examples_covered_by_rule)
         self.assertEqual(correct_examples_per_rule, bracid.closest_examples_per_rule)
