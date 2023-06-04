@@ -1,5 +1,4 @@
 from collections import Counter, deque, namedtuple
-import warnings
 import copy
 from operator import itemgetter
 import math
@@ -557,6 +556,7 @@ class BRACID(BaseEstimator, ClassifierMixin):
         pd.DataFrame, list of pd.Series.
         Dataset with an additional column containing the tag, initially extracted rules.
         """
+        # TODO: add support for parallel fitting
         # {example ei: set(rule ri for which ei is the seed)}
         self.seed_example_rule = {}
         # {rule ri: example ei is seed for ri}
@@ -2153,7 +2153,11 @@ class BRACID(BaseEstimator, ClassifierMixin):
         df[self._class_column_name] = y_nominal
         if self._is_binary_classification:
             return self._fit_binary(df)
-        return self._fit_multiclass(df)
+        else:
+            # fit multiclass
+            raise NotImplementedError(
+                "fit for multiclass problem is not tested yet.")
+            return self._fit_multiclass(df)
 
     def _predict_binary(self, df, predict_proba=False):
         preds_df = self.predict_binary(self._model, df, self._rules,

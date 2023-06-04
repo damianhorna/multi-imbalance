@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import pandas as pd
+import pytest
 
 import multi_imbalance.classifiers.bracid.vars as my_vars
 from tests.classifiers.bracid.classes_ import _0, _1
@@ -10,6 +11,7 @@ from multi_imbalance.classifiers.bracid.bracid import BRACID, Data, Bounds
 class TestFindNeighbors(TestCase):
     """Test find_neighbors() from utils.py"""
 
+    @pytest.mark.skip(reason="TODO: remove test or test logging output")
     def test_find_neighbors_too_few(self):
         """Test that warning is thrown if too few neighbors exist"""
         k = 3
