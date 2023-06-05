@@ -88,9 +88,9 @@ class CCR(BaseSampler):
             current_example = 0
             number_of_points_in_radius = 1
 
-            while current_example != majority_count and energy > 0:
-                example_distance_index = sorted_distances_index[current_example]
-                distance = distances[example_distance_index]
+            while current_example < majority_count and energy > 0:
+                majority_distance_index = sorted_distances_index[current_example]
+                distance = distances[majority_distance_index]
                 if distance <= r[i]:
                     number_of_points_in_radius += 1
                 dr = energy / number_of_points_in_radius

@@ -33,14 +33,14 @@ original_cleaning_results = np.array([
 ])
 
 multiclass_X = np.vstack(
-        [
-            np.random.normal(0, 1, (100, 2)),
-            np.random.normal(3, 5, (30, 2)),
-            np.random.normal(-2, 2, (20, 2)),
-            np.random.normal(-4, 1, (10, 2)),
-            np.random.normal(10, 1, (5, 2)),
-        ]
-    )
+    [
+        np.random.normal(0, 1, (100, 2)),
+        np.random.normal(3, 5, (30, 2)),
+        np.random.normal(-2, 2, (20, 2)),
+        np.random.normal(-4, 1, (10, 2)),
+        np.random.normal(10, 1, (5, 2)),
+    ]
+)
 
 multiclass_y = np.array([1] * 100 + [2] * 30 + [3] * 20 + [4] * 10 + [5] * 5)
 
@@ -49,6 +49,44 @@ def test_compare_cleaning_results_to_original_article_implementation():
     clf = CCR(energy=0.5)
     resampled_X, resampled_y = clf.fit_resample(X, y)
     assert_array_equal(np.sort(resampled_X[:X.shape[0]], axis=0), np.sort(original_cleaning_results, axis=0))
+
+
+def test_radius_equal_to_energy_and_translations_equal_zero_when_majority_not_in_range():
+    clf = CCR(energy=0.5)
+    minority_examples = np.array([[0, 0]])
+    majority_examples = np.array([[1, 1], [-1, -1]])
+    r, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+
+    assert_array_equal(r, np.array([0.5]))
+    assert_array_equal(t, np.array([[0, 0], [0, 0]]))
+
+def test_radius_decreases_and_translation_nonequal_zero_when_majority_in_range():
+    clf = CCR(energy=1)
+    minority_examples = np.array([[0, 0]])
+    majority_examples = np.array([[0.5, 0], [1, 0]])
+    r, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+
+    assert_array_equal(r, np.array([0.75]))
+    assert_array_equal(t, np.array([[0.25, 0], [0, 0]]))
+
+
+def test_energy_cost_should_be_inversely_proportional_to_number_of_examples_in_radius():
+    clf = CCR(energy=10)
+    minority_examples = np.array([[0, 0]])
+    majority_examples = np.array([[0.5, 0], [1, 0], [1.5, 0], [2, 0], [2.5, 0]])
+    r, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+
+    print(np.array([[2.5+2.5/6, 0]]) - majority_examples)
+    assert_array_equal(r, np.array([3]))
+    assert_array_equal(t, np.array([[2.5, 0], [2, 0], [1.5, 0], [1, 0], [0.5, 0]]))
+
+
+def test_translations_should_accumulate():
+    clf = CCR(energy=1)
+    minority_examples = np.array([[0, 0], [2, 0]])
+    majority_examples = np.array([[1, 0]])
+    _, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+    assert_array_equal(t, np.array([[0, 0]]))
 
 
 def test_multiclass_ccr_call_count():
