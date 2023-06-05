@@ -78,16 +78,15 @@ class CCR(BaseSampler):
     def _calculate_radius_and_translations(self, minority_examples, majority_examples):
         radius = np.zeros(minority_examples.shape[0])
         translations = np.zeros(majority_examples.shape)
-
         majority_count = len(majority_examples)
+
         for i, minority_example in enumerate(minority_examples):
             distances = self.distance_function(minority_example, majority_examples)
-
             sorted_distances_index = np.argsort(distances)
             energy = self.energy
             current_example = 0
 
-            while current_example < majority_count and energy > 0:
+            while current_example < majority_count:
                 current_example_distance_index = sorted_distances_index[current_example]
                 current_example_distance = distances[current_example_distance_index]
                 if current_example_distance <= radius[i]:
@@ -99,19 +98,23 @@ class CCR(BaseSampler):
                     dr = current_example_distance - radius[i]
 
                 radius[i] += dr
-                energy -= dr * (current_example + 1.0)
+                energy -= dr * (current_example + 1)
+                if energy <= 0:
+                    break
                 current_example += 1
 
             if energy > 0:
                 radius[i] += energy / current_example
 
-            examples_in_range_index = np.flatnonzero(distances <= radius[i])
-            for j in examples_in_range_index:
-                d = distances[j]
+            for j in range(current_example):
+                d = distances[sorted_distances_index[j]]
                 if d == 0:
                     continue
-                translation = majority_examples[j] - minority_example
-                translations[j] += (radius[i] - d) / d * translation
+
+                majority_example_index = sorted_distances_index[j]
+                translation = majority_examples[majority_example_index] - minority_example
+                translations[majority_example_index] += (radius[i] - d) / d * translation
+
         return radius, translations
 
     def _generate_synthetic_examples(self, majority_examples, minority_examples, r, synthetic_examples_total):
