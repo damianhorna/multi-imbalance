@@ -76,8 +76,8 @@ class CCR(BaseSampler):
         return translated_majority_examples, synthetic_examples
 
     def _calculate_radius_and_translations(self, minority_examples, majority_examples):
-        r = np.zeros(minority_examples.shape[0])
-        t = np.zeros(majority_examples.shape)
+        radius = np.zeros(minority_examples.shape[0])
+        translations = np.zeros(majority_examples.shape)
 
         majority_count = len(majority_examples)
         for i, minority_example in enumerate(minority_examples):
@@ -89,32 +89,32 @@ class CCR(BaseSampler):
             number_of_points_in_radius = 1
 
             while current_example < majority_count and energy > 0:
-                majority_distance_index = sorted_distances_index[current_example]
-                distance = distances[majority_distance_index]
-                if distance <= r[i]:
+                current_example_distance_index = sorted_distances_index[current_example]
+                current_example_distance = distances[current_example_distance_index]
+                if current_example_distance <= radius[i]:
                     number_of_points_in_radius += 1
-                dr = energy / number_of_points_in_radius
 
-                shortest_distance = distances[sorted_distances_index[current_example]]
-                if r[i] + dr >= shortest_distance:
+                dr = energy / number_of_points_in_radius    # todo: check if this is correct
+
+                if radius[i] + dr >= current_example_distance:
                     number_of_points_in_radius += 1
-                    dr = shortest_distance - r[i]
+                    dr = current_example_distance - radius[i]
 
-                r[i] += dr
+                radius[i] += dr
                 energy -= dr * (current_example + 1.0)
                 current_example += 1
 
             if energy > 0:
-                r[i] += energy / (number_of_points_in_radius - 1)
+                radius[i] += energy / (number_of_points_in_radius - 1)
 
-            examples_in_range_index = np.flatnonzero(distances <= r[i])
+            examples_in_range_index = np.flatnonzero(distances <= radius[i])
             for j in examples_in_range_index:
                 d = distances[j]
                 if d == 0:
                     continue
                 translation = majority_examples[j] - minority_example
-                t[j] += (r[i] - d) / d * translation
-        return r, t
+                translations[j] += (radius[i] - d) / d * translation
+        return radius, translations
 
     def _generate_synthetic_examples(self, majority_examples, minority_examples, r, synthetic_examples_total):
         generation_order = r.argsort()
