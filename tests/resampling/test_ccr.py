@@ -73,12 +73,11 @@ def test_radius_decreases_and_translation_nonequal_zero_when_majority_in_range()
 def test_energy_cost_should_be_inversely_proportional_to_number_of_examples_in_radius():
     clf = CCR(energy=10)
     minority_examples = np.array([[0, 0]])
-    majority_examples = np.array([[0.5, 0], [1, 0], [1.5, 0], [2, 0], [2.5, 0]])
+    majority_examples = np.array([[1, 0], [2, 0], [3, 0], [4, 0]])
     r, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
 
-    print(np.array([[2.5+2.5/6, 0]]) - majority_examples)
-    assert_array_equal(r, np.array([3]))
-    assert_array_equal(t, np.array([[2.5, 0], [2, 0], [1.5, 0], [1, 0], [0.5, 0]]))
+    assert_array_equal(r, np.array([4]))
+    assert_array_equal(t, np.array([[3, 0], [2, 0], [1, 0], [0, 0]]))
 
 
 def test_translations_should_accumulate():
@@ -86,7 +85,17 @@ def test_translations_should_accumulate():
     minority_examples = np.array([[0, 0], [2, 0]])
     majority_examples = np.array([[1, 0]])
     _, t = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+
     assert_array_equal(t, np.array([[0, 0]]))
+
+
+def test_should_properly_handle_same_distance_examples():
+    clf = CCR(energy=2)
+    minority_examples = np.array([[0, 0]])
+    majority_examples = np.array([[1, 0], [1, 0]])
+    r, _ = clf._calculate_radius_and_translations(minority_examples, majority_examples)
+
+    assert_array_equal(r, np.array([1.5]))
 
 
 def test_multiclass_ccr_call_count():

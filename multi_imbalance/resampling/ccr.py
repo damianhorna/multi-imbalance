@@ -86,18 +86,16 @@ class CCR(BaseSampler):
             sorted_distances_index = np.argsort(distances)
             energy = self.energy
             current_example = 0
-            number_of_points_in_radius = 1
 
             while current_example < majority_count and energy > 0:
                 current_example_distance_index = sorted_distances_index[current_example]
                 current_example_distance = distances[current_example_distance_index]
                 if current_example_distance <= radius[i]:
-                    number_of_points_in_radius += 1
+                    current_example += 1
+                    continue
 
-                dr = energy / number_of_points_in_radius    # todo: check if this is correct
-
+                dr = energy / (current_example + 1)
                 if radius[i] + dr >= current_example_distance:
-                    number_of_points_in_radius += 1
                     dr = current_example_distance - radius[i]
 
                 radius[i] += dr
@@ -105,7 +103,7 @@ class CCR(BaseSampler):
                 current_example += 1
 
             if energy > 0:
-                radius[i] += energy / (number_of_points_in_radius - 1)
+                radius[i] += energy / current_example
 
             examples_in_range_index = np.flatnonzero(distances <= radius[i])
             for j in examples_in_range_index:
