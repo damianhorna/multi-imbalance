@@ -133,7 +133,7 @@ class MultiClassRBO(BaseSampler):
     IEEE Transactions on Neural Networks and Learning Systems
     """
 
-    def __init__(self, gamma: float, step: int, iterations: int, k: int,
+    def __init__(self, gamma: float, step: float, iterations: int, k: int,
                  distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] = lambda x, y: np.linalg.norm(x - y,
                                                                                                                  axis=1)):
         """
