@@ -108,6 +108,12 @@ def test_should_properly_handle_same_distance_examples():
     assert_array_equal(r, np.array([1.5]))
 
 
+def test_multiclass_equal_class_counts():
+    clf = MultiClassCCR(energy=0.5)
+    resampled_X, resampled_y = clf.fit_resample(multiclass_X, multiclass_y)
+    assert np.unique(resampled_y, return_counts=True)[1].min() == np.unique(resampled_y, return_counts=True)[1].max()
+
+
 def test_multiclass_ccr_call_count():
     clf = MultiClassCCR(energy=0.5)
 

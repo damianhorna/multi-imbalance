@@ -122,11 +122,8 @@ class CCR(BaseSampler):
         if synthetic_examples_total is None:
             synthetic_examples_total = majority_examples.shape[0] - minority_examples.shape[0]
 
-        synthetic_examples_counts = (r ** -1 / (r ** -1).sum()) * synthetic_examples_total
-        synthetic_examples_counts = np.floor(synthetic_examples_counts).astype(int)
-        synthetic_leftovers = int((synthetic_examples_counts - synthetic_examples_counts.astype(int)).sum())
-        for i in range(synthetic_leftovers):
-            synthetic_examples_counts[generation_order[i % len(generation_order)]] += 1
+        synthetic_examples_counts = self._calculate_synthetic_count_per_minority(generation_order, r,
+                                                                                 synthetic_examples_total)
 
         generated = []
         for i in generation_order:
@@ -148,6 +145,14 @@ class CCR(BaseSampler):
             generated = np.empty((0, minority_examples.shape[1]))
 
         return generated
+
+    def _calculate_synthetic_count_per_minority(self, generation_order, r, synthetic_examples_total):
+        synthetic_examples_counts = (r ** -1 / (r ** -1).sum()) * synthetic_examples_total
+        synthetic_leftovers = round((synthetic_examples_counts - synthetic_examples_counts.astype(int)).sum())
+        synthetic_examples_counts = synthetic_examples_counts.astype(int)
+        for i in range(synthetic_leftovers):
+            synthetic_examples_counts[generation_order[i % len(generation_order)]] += 1
+        return synthetic_examples_counts
 
 
 class MultiClassCCR(BaseSampler):
