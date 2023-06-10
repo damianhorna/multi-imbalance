@@ -60,6 +60,7 @@ def test_radius_equal_to_energy_and_translations_equal_zero_when_majority_not_in
     assert_array_equal(r, np.array([0.5]))
     assert_array_equal(t, np.array([[0, 0], [0, 0]]))
 
+
 def test_radius_decreases_and_translation_nonequal_zero_when_majority_in_range():
     clf = CCR(energy=1)
     minority_examples = np.array([[0, 0]])

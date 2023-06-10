@@ -117,7 +117,7 @@ class CCR(BaseSampler):
 
         return radius, translations
 
-    def _generate_synthetic_examples(self, majority_examples, minority_examples, r, synthetic_examples_total):
+    def _generate_synthetic_examples(self, minority_examples, majority_examples, r, synthetic_examples_total):
         generation_order = r.argsort()
         if synthetic_examples_total is None:
             synthetic_examples_total = majority_examples.shape[0] - minority_examples.shape[0]
