@@ -66,3 +66,44 @@ def test_mutual_potential_function():
     x = np.array([0, 0])
 
     assert clf._mutual_class_potential(x, X_majority, X_minority) == pytest.approx(0)
+
+
+def test_potential_for_empty_collection_equals_zero():
+    clf = RBO(gamma=1, step=2, iterations=10, k=2)
+
+    X_minority = np.array([
+        [1, 1],
+        [2, 2],
+        [3, 3]
+    ])
+
+    X_majority = np.array([
+        [-1, -1],
+        [-2, -2]
+    ])
+
+    X = np.vstack([X_minority, X_majority])
+    y = np.array([1, 1, 1, 0, 0])
+
+    minority_index = 1
+    minority_class = 1
+
+    k_sorted_nearest_neighbours = clf._find_k_sorted_nearest_neighbours(X_minority, X)
+    example_nearest_neighbours = k_sorted_nearest_neighbours[minority_index]
+    X_majority, X_minority = clf._get_nearest_majority_and_minority_neighbours(example_nearest_neighbours, minority_class, X, y)
+
+    majority_potential = clf._potential(X[minority_index], X_majority)
+    minority_potential = clf._potential(X[minority_index], X_minority)
+    assert majority_potential == pytest.approx(0)
+    assert clf._mutual_class_potential(X[minority_index], X_majority, X_minority) == pytest.approx(-minority_potential)
+
+
+def test_manhattan_distance_perturbance_step():
+    step = 1
+    clf = RBO(gamma=0.5, iterations=5, k=5, step=step)
+
+    x = np.array([0, 0])
+    new_x = clf._perturb_x(x, x.shape)[np.newaxis, :]
+    distance = clf.distance_function(x, new_x)
+
+    assert distance == pytest.approx(step)

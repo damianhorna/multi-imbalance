@@ -72,23 +72,30 @@ class RBO(BaseSampler):
                        np.full((len(majority_examples),), 1 - minority_class)])
         self.feature_count = X.shape[1]
 
-        minority_nearest_index = [np.argsort(self.distance_function(minority, X))[1:self.k + 1] for minority in
-                                  minority_examples]
+        k_sorted_nearest_neighbours = self._find_k_sorted_nearest_neighbours(minority_examples, X)
 
         while len(minority_examples) + len(synthetic_examples) < len(majority_examples):
             random_minority_index = random.randint(0, len(minority_examples) - 1)
-            current_x = minority_examples[random_minority_index].copy()
-            nearest_index = minority_nearest_index[random_minority_index]
-            nearest_classes = y[nearest_index]
-            X_nearest_majority = X[nearest_index[nearest_classes != minority_class]]
-            X_nearest_minority = X[nearest_index[nearest_classes == minority_class]]
+            example_k_nearest_neighbours = k_sorted_nearest_neighbours[random_minority_index]
+            X_nearest_majority, X_nearest_minority = self._get_nearest_majority_and_minority_neighbours(
+                example_k_nearest_neighbours, minority_class, X, y)
 
-            current_x = self._generate_minority_example(current_x, X_nearest_majority, X_nearest_minority)
-            synthetic_examples.append(current_x)
+            current_x = minority_examples[random_minority_index].copy()
+            new_x = self._generate_minority_example(current_x, X_nearest_majority, X_nearest_minority)
+            synthetic_examples.append(new_x)
 
         return np.array(synthetic_examples)
 
-    def _generate_minority_example(self, current_x, x_majority, x_minority):
+    def _get_nearest_majority_and_minority_neighbours(self, k_nearest_neighbours, minority_class, X, y):
+        nearest_classes = y[k_nearest_neighbours]
+        X_nearest_majority = X[k_nearest_neighbours[nearest_classes != minority_class]]
+        X_nearest_minority = X[k_nearest_neighbours[nearest_classes == minority_class]]
+        return X_nearest_majority, X_nearest_minority
+
+    def _find_k_sorted_nearest_neighbours(self, minority_examples, X):
+        return [np.argsort(self.distance_function(minority, X))[1:self.k + 1] for minority in minority_examples]
+
+    def _generate_minority_example(self, current_x: np.ndarray, x_majority: np.ndarray, x_minority: np.ndarray):
         mutual_potential = self._mutual_class_potential(current_x, x_majority, x_minority)
         for i in range(self.iterations):
             new_x = self._perturb_x(current_x, self.feature_count)
@@ -98,14 +105,14 @@ class RBO(BaseSampler):
                 mutual_potential = new_mutual_potential
         return current_x
 
-    def _perturb_x(self, current_x, feature_count):
+    def _perturb_x(self, current_x: np.ndarray, feature_count: int):
         direction = np.zeros(feature_count)
         direction[np.random.randint(feature_count)] = 1
         sign = -1 if random.randint(0, 1) else 1
         new_x = current_x + direction * sign * self.step
         return new_x
 
-    def _mutual_class_potential(self, x, x_majority, x_minority):
+    def _mutual_class_potential(self, x: np.ndarray, x_majority: np.ndarray, x_minority: np.ndarray):
         return self._potential(x, x_majority) - self._potential(x, x_minority)
 
     def _potential(self, x: np.ndarray, collection: np.ndarray) -> float:
@@ -134,8 +141,8 @@ class MultiClassRBO(BaseSampler):
     """
 
     def __init__(self, gamma: float, step: float, iterations: int, k: int,
-                 distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] = lambda x, y: np.linalg.norm(x - y,
-                                                                                                                 axis=1)):
+                 distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
+                 lambda x, y: np.linalg.norm(x - y, axis=1)):
         """
         :param gamma:
             spread of radial basis function
@@ -172,7 +179,7 @@ class MultiClassRBO(BaseSampler):
 
         for i in range(1, len(sorted_class_counts)):
             current_class, current_class_count = sorted_class_counts[i]
-            number_of_classes_with_higher_count = self._number_of_classes_with_higher_count(sorted_class_counts, i)
+            number_of_classes_with_higher_count = sum([1 for _, count in sorted_class_counts[:i] if count > current_class_count])
             if number_of_classes_with_higher_count > 0:
                 X_minority = class_X[current_class]
                 X_majority = []
@@ -194,11 +201,3 @@ class MultiClassRBO(BaseSampler):
         final_X = np.vstack([class_X[clazz] for clazz, _ in sorted_class_counts])
         final_y = np.hstack([np.full((class_X[clazz].shape[0],), clazz) for clazz, _ in sorted_class_counts])
         return final_X, final_y
-
-    def _number_of_classes_with_higher_count(self, sorted_class_counts, i):
-        number_of_classes_with_higher_count = 0
-        _, current_class_count = sorted_class_counts[i]
-        for _, class_count in sorted_class_counts[:i]:
-            if class_count > current_class_count:
-                number_of_classes_with_higher_count += 1
-        return number_of_classes_with_higher_count
