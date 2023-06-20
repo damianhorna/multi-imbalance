@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Tuple, List, Callable
+from typing import Tuple, Callable
 
 import numpy as np
 from imblearn.base import BaseSampler
@@ -196,7 +196,7 @@ class MultiClassCCR(BaseSampler):
 
         for i in range(1, len(sorted_class_counts)):
             current_class, current_class_count = sorted_class_counts[i]
-            number_of_classes_with_higher_count = self._number_of_classes_with_higher_count(sorted_class_counts, i)
+            number_of_classes_with_higher_count = sum([1 for _, count in sorted_class_counts[:i] if count > current_class_count])
             if number_of_classes_with_higher_count > 0:
                 X_minority = class_X[current_class]
                 X_majority = []
@@ -225,11 +225,3 @@ class MultiClassCCR(BaseSampler):
         final_X = np.vstack([class_X[clazz] for clazz, _ in sorted_class_counts])
         final_y = np.hstack([np.full((class_X[clazz].shape[0],), clazz) for clazz, _ in sorted_class_counts])
         return final_X, final_y
-
-    def _number_of_classes_with_higher_count(self, sorted_class_counts: List[int], i: int) -> int:
-        number_of_classes_with_higher_count = 0
-        _, current_class_count = sorted_class_counts[i]
-        for _, class_count in sorted_class_counts[:i]:
-            if class_count > current_class_count:
-                number_of_classes_with_higher_count += 1
-        return number_of_classes_with_higher_count
