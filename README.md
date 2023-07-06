@@ -26,6 +26,10 @@ Just type in
 ```bash
 pip install multi-imbalance
 ```
+Or for installation from a specific branch 
+```bash
+pip install -e git+https://github.com/damian-horna/multi-imbalance.git@<branch>#egg=multi-imbalance
+```
 
 ## Implemented algorithms
 Our package includes implementation of such algorithms, as: 
