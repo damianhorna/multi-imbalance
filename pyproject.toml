@@ -57,7 +57,7 @@ addopts = "--cov=."
 testpaths = ["tests"]
 
 [tool.setuptools]
-py-modules = ["multi_imbalance"]
+packages = ["multi-imbalance"]
 
 [tool.black]
 line-length = 140
