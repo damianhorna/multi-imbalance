@@ -56,8 +56,8 @@ documentation = "https://github.com/damian-horna/multi-imbalance/blob/master/REA
 addopts = "--cov=."
 testpaths = ["tests"]
 
-[tool.setuptools]
-py-modules = ["multi_imbalance"]
+[tool.setuptools.packages.find]
+include = ["multi_imbalance*"]
 
 [tool.black]
 line-length = 140
