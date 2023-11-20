@@ -26,7 +26,6 @@ dependencies = [
     "imbalanced-learn~=0.9.1",
     "seaborn~=0.12.1",
     "matplotlib~=3.6.2",
-    "click~=8.1.3",
     "scikit-posthocs~=0.7.0",
     "pydantic~=1.10.5",
 ]
@@ -41,11 +40,15 @@ notebooks = [
     "tqdm~=4.64.1",
     "jupyter~=1.0.0",
 ]
+cli = [
+    "click~=8.1.3"
+]
 all = [
     "multi-imbalance[test]",
     "multi-imbalance[lint]",
     "multi-imbalance[dev]",
     "multi-imbalance[notebooks]",
+    "multi-imbalance[cli]"
 ]
 
 [project.urls]
@@ -53,7 +56,7 @@ homepage = "https://github.com/damian-horna/multi-imbalance"
 documentation = "https://github.com/damian-horna/multi-imbalance/blob/master/README.md"
 
 [tool.pytest.ini_options]
-addopts = "--cov=."
+addopts = "--cov=multi_imbalance"
 testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
