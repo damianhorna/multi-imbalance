@@ -46,15 +46,18 @@ Our package includes implementation of such algorithms, as:
 ## Example usage
 ```python
 from multi_imbalance.resampling.mdo import MDO
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 
 # Mahalanbois Distance Oversampling
 mdo = MDO(k=9, k1_frac=0, seed=0)
 
 # read the data
-X_train, y_train, X_test, y_test = ...
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 # preprocess
-X_train_resampled, y_train_resampled = mdo.fit_transform(np.copy(X_train), np.copy(y_train))
+X_train_resampled, y_train_resampled = mdo.fit_resample(np.copy(X_train), np.copy(y_train))
 
 # train the classifier on preprocessed data
 clf_tree = DecisionTreeClassifier(random_state=0)
