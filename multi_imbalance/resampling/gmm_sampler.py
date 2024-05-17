@@ -8,19 +8,13 @@ import numpy as np
 from imblearn.over_sampling.base import BaseSampler
 from imblearn.utils import Substitution
 from imblearn.utils._docstring import _random_state_docstring
-from pydantic import validate_arguments
+from pydantic import validate_call
 from scipy.spatial.distance import cdist
 from sklearn.mixture import GaussianMixture
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NearestNeighbors
 
 GMMS = TypeVar("GMMS", bound="GMMSampler")
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(levelname)s %(name)s %(message)s",
-    datefmt="%d.%m.%Y %H:%M:%S",
-)
 
 
 @Substitution(
@@ -148,7 +142,7 @@ class GMMSampler(BaseSampler):
 
     _sampling_type = "over-sampling"
 
-    @validate_arguments
+    @validate_call
     def __init__(
         self,
         likelihood_threshold: float = 0.0,

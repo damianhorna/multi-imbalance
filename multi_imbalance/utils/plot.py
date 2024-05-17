@@ -33,7 +33,7 @@ def plot_cardinality_and_2d_data(X: np.ndarray, y: np.ndarray, dataset_name: str
 
     fig.suptitle(dataset_name, fontsize=16)
 
-    sns.countplot(y, ax=axs[0], palette=p)
+    sns.countplot(x=y, ax=axs[0], palette=p, hue=y, legend=False)
     X = pca.transform(X)
     df = construct_flat_2pc_df(X, y)
     sns.scatterplot(
@@ -87,7 +87,7 @@ def plot_visual_comparision_datasets(
     fig.set_size_inches(16, 10)
     axs = axs.flatten()
 
-    sns.countplot(y1, ax=axs[0], palette=p)
+    sns.countplot(x=y1, ax=axs[0], palette=p, hue=y1, legend=False)
     transformed_X = pca.transform(X1)
     df = construct_flat_2pc_df(transformed_X, y1)
     sns.scatterplot(
@@ -102,7 +102,7 @@ def plot_visual_comparision_datasets(
         palette=p,
     )
 
-    sns.countplot(y2, ax=axs[2], palette=p)
+    sns.countplot(x=y2, ax=axs[2], palette=p, hue=y2, legend=False)
     transformed_X2 = pca.transform(X2)
     df = construct_flat_2pc_df(transformed_X2, y2)
     sns.scatterplot(

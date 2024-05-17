@@ -124,7 +124,7 @@ class OVO(BaggingClassifier):
         binary_outputs_matrix = np.zeros((num_of_classes, num_of_classes))
         for class_idx1 in range(len(self._labels)):
             for class_idx2 in range(class_idx1):
-                binary_outputs_matrix[class_idx1][class_idx2] = self._binary_classifiers[class_idx1][class_idx2].predict([instance])
+                binary_outputs_matrix[class_idx1][class_idx2] = self._binary_classifiers[class_idx1][class_idx2].predict([instance])[0]
         return binary_outputs_matrix
 
     def _learn_binary_classifiers(self, X: np.ndarray, y: np.ndarray) -> None:

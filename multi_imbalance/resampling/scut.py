@@ -30,9 +30,7 @@ class SCUT(BaseSampler):
         self.n_components = n_components
         self.middle_size = None
 
-    def _undersample(
-        self, X: np.ndarray, y: np.ndarray, classes_for_undersample: List[int]
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _undersample(self, X: np.ndarray, y: np.ndarray, classes_for_undersample: List[int]) -> Tuple[np.ndarray, np.ndarray]:
         X_undersample = list()
         y_undersample = list()
         for class_label in classes_for_undersample:
@@ -45,9 +43,7 @@ class SCUT(BaseSampler):
 
         return np.array(X_undersample), np.array(y_undersample)
 
-    def _oversample(
-        self, X: np.ndarray, y: np.ndarray, classes_for_oversample: List[int]
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _oversample(self, X: np.ndarray, y: np.ndarray, classes_for_oversample: List[int]) -> Tuple[np.ndarray, np.ndarray]:
         X_oversample = list()
         y_oversample = list()
         for class_label in classes_for_oversample:
@@ -60,24 +56,16 @@ class SCUT(BaseSampler):
 
         return np.array(X_oversample), np.array(y_oversample)
 
-    def _fit_resample(
-        self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _fit_resample(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         quantities = Counter(y)
         self.middle_size = np.mean(list(quantities.values()), dtype=int)
-        classes_for_undersample = list(
-            filter(lambda key: quantities[key] > self.middle_size, quantities.keys())
-        )
+        classes_for_undersample = list(filter(lambda key: quantities[key] > self.middle_size, quantities.keys()))
         X_undersample, y_undersample = self._undersample(X, y, classes_for_undersample)
 
-        classes_for_oversample = list(
-            filter(lambda key: quantities[key] < self.middle_size, quantities.keys())
-        )
+        classes_for_oversample = list(filter(lambda key: quantities[key] < self.middle_size, quantities.keys()))
         X_oversample, y_oversample = self._oversample(X, y, classes_for_oversample)
 
-        stay_classes = list(
-            filter(lambda key: quantities[key] == self.middle_size, quantities.keys())
-        )
+        stay_classes = list(filter(lambda key: quantities[key] == self.middle_size, quantities.keys()))
         not_changing_indixes = np.argwhere(np.isin(y, stay_classes)).ravel()
         X_not_changing, y_not_changing = (
             X[not_changing_indixes],
