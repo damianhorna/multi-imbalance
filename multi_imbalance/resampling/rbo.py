@@ -22,9 +22,14 @@ class RBO(BaseSampler):
     IEEE Transactions on Neural Networks and Learning Systems
     """
 
-    def __init__(self, gamma: float, step: int, iterations: int, k: int,
-                 distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
-                 lambda x, y: np.linalg.norm(x - y, ord=1, axis=1)) -> None:
+    def __init__(
+        self,
+        gamma: float,
+        step: int,
+        iterations: int,
+        k: int,
+        distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] = lambda x, y: np.linalg.norm(x - y, ord=1, axis=1),
+    ) -> None:
         """
         :param gamma:
             spread of radial basis function
@@ -63,13 +68,11 @@ class RBO(BaseSampler):
 
         return np.vstack([X, synthetic_examples]), np.hstack([y, np.full((len(synthetic_examples),), minority_class)])
 
-    def _generate_examples(self, minority_examples: np.ndarray, majority_examples: np.ndarray, minority_class: Any) -> \
-            np.ndarray:
+    def _generate_examples(self, minority_examples: np.ndarray, majority_examples: np.ndarray, minority_class: Any) -> np.ndarray:
         synthetic_examples = []
 
         X = np.vstack([minority_examples, majority_examples])
-        y = np.hstack([np.full((len(minority_examples),), minority_class),
-                       np.full((len(majority_examples),), 1 - minority_class)])
+        y = np.hstack([np.full((len(minority_examples),), minority_class), np.full((len(majority_examples),), 1 - minority_class)])
         self.feature_count = X.shape[1]
 
         k_sorted_nearest_neighbours = self._find_k_sorted_nearest_neighbours(minority_examples, X)
@@ -78,7 +81,8 @@ class RBO(BaseSampler):
             random_minority_index = random.randint(0, len(minority_examples) - 1)
             example_k_nearest_neighbours = k_sorted_nearest_neighbours[random_minority_index]
             X_nearest_majority, X_nearest_minority = self._get_nearest_majority_and_minority_neighbours(
-                example_k_nearest_neighbours, minority_class, X, y)
+                example_k_nearest_neighbours, minority_class, X, y
+            )
 
             current_x = minority_examples[random_minority_index].copy()
             new_x = self._generate_minority_example(current_x, X_nearest_majority, X_nearest_minority)
@@ -93,7 +97,8 @@ class RBO(BaseSampler):
         return X_nearest_majority, X_nearest_minority
 
     def _find_k_sorted_nearest_neighbours(self, minority_examples, X):
-        return [np.argsort(self.distance_function(minority, X))[1:self.k + 1] for minority in minority_examples]
+        idx = self.k + 1
+        return [np.argsort(self.distance_function(minority, X))[1:idx] for minority in minority_examples]
 
     def _generate_minority_example(self, current_x: np.ndarray, x_majority: np.ndarray, x_minority: np.ndarray):
         mutual_potential = self._mutual_class_potential(current_x, x_majority, x_minority)
@@ -117,7 +122,7 @@ class RBO(BaseSampler):
 
     def _potential(self, x: np.ndarray, collection: np.ndarray) -> float:
         distances = self.distance_function(x, collection)
-        weights = np.exp(- (distances / self.gamma) ** 2)
+        weights = np.exp(-((distances / self.gamma) ** 2))
         total_weight = weights.sum()
         return total_weight
 
@@ -140,9 +145,14 @@ class MultiClassRBO(BaseSampler):
     IEEE Transactions on Neural Networks and Learning Systems
     """
 
-    def __init__(self, gamma: float, step: float, iterations: int, k: int,
-                 distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
-                 lambda x, y: np.linalg.norm(x - y, axis=1)):
+    def __init__(
+        self,
+        gamma: float,
+        step: float,
+        iterations: int,
+        k: int,
+        distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] = lambda x, y: np.linalg.norm(x - y, axis=1),
+    ):
         """
         :param gamma:
             spread of radial basis function

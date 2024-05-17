@@ -14,12 +14,6 @@ import numpy as np
 
 from multi_imbalance.datasets.helpers import Result, Config, import_from_string
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(levelname)s %(name)s %(message)s",
-    datefmt="%d.%m.%Y %H:%M:%S",
-)
-
 
 class AnalysisPipeline:
     """

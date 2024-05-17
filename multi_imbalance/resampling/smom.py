@@ -7,13 +7,11 @@ import numpy as np
 from typing import List, Dict, Optional, Union, Collection
 
 import sklearn.utils
-from sklearn import neighbors
+from sklearn import metrics, neighbors
 from imblearn.base import BaseSampler
 
 
-def _nbdos(Sc: List[int], k: int,
-           sNk: Dict[int, np.ndarray], rTh: float,
-           nTh: int):
+def _nbdos(Sc: List[int], k: int, sNk: Dict[int, np.ndarray], rTh: float, nTh: int):
     """
     NBDOS clustering algorithm implementation.
 
@@ -89,9 +87,8 @@ def _normalized_entropy(classes_counts: Collection[int]):
         E = 0
     else:
         total = sum(classes_counts)
-        E_min = np.log(1. / total)
-        E = sum(count / total * np.log(count / total) for count in
-                classes_counts) / E_min
+        E_min = np.log(1.0 / total)
+        E = sum(count / total * np.log(count / total) for count in classes_counts) / E_min
     assert 0 <= E <= 1, f"{E=} not in range [0, 1]"
     return E
 
@@ -116,23 +113,24 @@ class SMOM(BaseSampler):
     (2017): 327-340.
     """
 
-    def __init__(self,
-                 minority_class: Optional[int] = None,
-                 prop: float = 1.0,
-                 k1: int = 12,
-                 k2: int = 8,
-                 rTh: float = 5 / 8,
-                 nTh: int = 10,
-                 w1: float = 0.2,
-                 w2: float = 0.5,
-                 r1: float = 1 / 3,
-                 r2: float = 0.2,
-                 maj_int_min: Optional[Dict[str, List[int]]] = None,
-                 shuffle: bool = False,
-                 metric: str = "minkowski",
-                 p: int = 2,
-                 random_state: Optional[Union[
-                     int, np.random.RandomState]] = None) -> None:
+    def __init__(
+        self,
+        minority_class: Optional[int] = None,
+        prop: float = 1.0,
+        k1: int = 12,
+        k2: int = 8,
+        rTh: float = 5 / 8,
+        nTh: int = 10,
+        w1: float = 0.2,
+        w2: float = 0.5,
+        r1: float = 1 / 3,
+        r2: float = 0.2,
+        maj_int_min: Optional[Dict[str, List[int]]] = None,
+        shuffle: bool = False,
+        metric: str = "minkowski",
+        p: int = 2,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+    ) -> None:
         """
         :param minority_class:
             The minority class under consideration. If none, every minority
@@ -176,9 +174,9 @@ class SMOM(BaseSampler):
         self.shuffle = shuffle
         self.random_state = sklearn.utils.check_random_state(random_state)
         if metric == "minkowski":
-            self._metric = neighbors.DistanceMetric.get_metric(metric, p=p)
+            self._metric = metrics.DistanceMetric.get_metric(metric, p=p)
         else:
-            self._metric = neighbors.metrics.DistanceMetric.get_metric(metric)
+            self._metric = metrics.DistanceMetric.get_metric(metric)
 
     def _pairwise_distance(self, x1, x2):
         return self._metric.pairwise([x1], [x2])[0, 0]
@@ -199,8 +197,8 @@ class SMOM(BaseSampler):
         ind = Sc[ind]
         self.N_c_k3_i[i] = ind
         self.N_c_k3_d[i] = dist
-        self.N_c_k1_i[i] = ind[:self.k1]
-        self.N_c_k1_d[i] = dist[:self.k1]
+        self.N_c_k1_i[i] = ind[: self.k1]
+        self.N_c_k1_d[i] = dist[: self.k1]
         self.r_k1_i[i] = ind[self.k1 - 1]
         self.r_k1_d[i] = dist[self.k1 - 1]
 
@@ -219,13 +217,9 @@ class SMOM(BaseSampler):
         self.Fs_d[i] = np.concatenate([T_dist, self.N_c_k1_d[i]], axis=0)
 
     def _find_k2_nearest_in_neighbor(self, X, i):
-        nc_nct_union_i = np.concatenate([self.N_c_k3_i[i], self.N_ct_k3_i[i]],
-                                        axis=0)
-        nc_nct_union_d = np.concatenate([self.N_c_k3_d[i], self.N_ct_k3_d[i]],
-                                        axis=0)
-        dist_, ind_ = neighbors.KDTree(X[nc_nct_union_i],
-                                       metric=self._metric).query([X[i]],
-                                                                  self.k2)
+        nc_nct_union_i = np.concatenate([self.N_c_k3_i[i], self.N_ct_k3_i[i]], axis=0)
+        nc_nct_union_d = np.concatenate([self.N_c_k3_d[i], self.N_ct_k3_d[i]], axis=0)
+        dist_, ind_ = neighbors.KDTree(X[nc_nct_union_i], metric=self._metric).query([X[i]], self.k2)
         ind = ind_[0]
         self.N_k2_i[i] = nc_nct_union_i[ind]
         self.N_k2_d[i] = nc_nct_union_d[ind]
@@ -239,54 +233,40 @@ class SMOM(BaseSampler):
             y_min_classes = {k: v for k, v in cnt.items() if v < M / L}
         else:
             cnt = Counter(y)
-            y_maj_classes = {cls: cnt[cls] for cls in
-                             self.maj_int_min["maj"]
-                             if cls != self.c}
-            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min["min"]
-                             if cls != self.c}
+            y_maj_classes = {cls: cnt[cls] for cls in self.maj_int_min["maj"] if cls != self.c}
+            y_min_classes = {cls: cnt[cls] for cls in self.maj_int_min["min"] if cls != self.c}
         return y_maj_classes, y_min_classes
 
     def _run_nbdos(self, Sc):
-        N_k2_dct = {index: neighbors_ for index, neighbors_ in
-                    self.N_k2_i.items()}
+        N_k2_dct = {index: neighbors_ for index, neighbors_ in self.N_k2_i.items()}
         return _nbdos(Sc, self.k2, N_k2_dct, self.rTh, self.nTh)
 
-    def _compute_selection_weight(self, X, Sc, i, j, y_min_classes,
-                                  y_maj_classes):
+    def _compute_selection_weight(self, X, Sc, i, j, y_min_classes, y_maj_classes):
         dis_ij = self._pairwise_distance(X[i], X[j])
         Ss = _compute_ss(self.Fs_i, self.Fs_d, i, dis_ij)
         N_pn = self._dpn(X, i, j, Ss, dis_ij)
-        y_mi_pn = {k: v for k, v in y_min_classes.items() if
-                   k in N_pn}
-        y_ma_pn = {k: v for k, v in y_maj_classes.items() if
-                   k in N_pn}
+        y_mi_pn = {k: v for k, v in y_min_classes.items() if k in N_pn}
+        y_ma_pn = {k: v for k, v in y_maj_classes.items() if k in N_pn}
         y_mi = sum(y_mi_pn.values())
         y_ma = sum(y_ma_pn.values())
         E_mi = _normalized_entropy(y_mi_pn.values())
         E_ma = _normalized_entropy(y_ma_pn.values())
 
         y_c = len(Sc)
-        exponent1 = self.r1 * y_mi / y_c + self.r2 * E_mi + self.w2 * (
-                self.r1 * y_ma / y_c + self.r2 * E_ma)
+        exponent1 = self.r1 * y_mi / y_c + self.r2 * E_mi + self.w2 * (self.r1 * y_ma / y_c + self.r2 * E_ma)
         exponent2 = -y_c / (y_ma + y_mi + y_c)
-        return 1.0 / np.exp(exponent1) + self.w1 * np.exp(
-            exponent2)
+        return 1.0 / np.exp(exponent1) + self.w1 * np.exp(exponent2)
 
-    def _compute_selection_weights(self, X, Sc, TiC, OiC, y_min_classes,
-                                   y_maj_classes):
+    def _compute_selection_weights(self, X, Sc, TiC, OiC, y_min_classes, y_maj_classes):
         Sw = defaultdict(dict)
         for i in TiC:
             for j in self.N_c_k1_i[i]:
                 if j in OiC and j in self.N_c_k1_i and i in self.N_c_k1_i[j]:
                     Sw[i][j] = 1 + self.w1 / np.e
-                elif j in self.N_c_k1_i and i in self.N_c_k1_i[
-                    j] and j in Sw and i in \
-                        Sw[j]:
+                elif j in self.N_c_k1_i and i in self.N_c_k1_i[j] and j in Sw and i in Sw[j]:
                     Sw[i][j] = Sw[j][i]
                 else:
-                    Sw[i][j] = self._compute_selection_weight(X, Sc, i, j,
-                                                              y_min_classes,
-                                                              y_maj_classes)
+                    Sw[i][j] = self._compute_selection_weight(X, Sc, i, j, y_min_classes, y_maj_classes)
         return Sw
 
     def _obtain_probability_distribution(self, X, y, Sw, TiC):
@@ -301,7 +281,7 @@ class SMOM(BaseSampler):
             else:
                 if i not in self.N_c_k1_i[i]:
                     self.N_c_k1_i[i] = np.append(self.N_c_k1_i[i], i)
-                    self.N_c_k1_d[i] = np.append(self.N_c_k1_d[i], 0.)
+                    self.N_c_k1_d[i] = np.append(self.N_c_k1_d[i], 0.0)
                 Sw[i][i] = 1 + self.w1 / np.e
             for j in Sw[i]:
                 P[i][j] = Sw[i][j] / sum(Sw[i][k] for k in self.N_c_k1_i[i])
@@ -361,14 +341,12 @@ class SMOM(BaseSampler):
 
         SI_synth = []
         y_synth = []
-        target_number_to_generate = max(
-            int(max(y_maj_classes.values()) * self.prop), 1)
+        target_number_to_generate = max(int(max(y_maj_classes.values()) * self.prop), 1)
         for target_class in target_classes:
             self._setup()
 
             Sc = np.array([i for i, _ in enumerate(X) if y[i] == target_class])
-            Sct = np.array(
-                [i for i, _ in enumerate(X) if y[i] != target_class])
+            Sct = np.array([i for i, _ in enumerate(X) if y[i] != target_class])
 
             to_generate = target_number_to_generate - Sc.shape[0]
             if to_generate <= 0:
@@ -387,12 +365,9 @@ class SMOM(BaseSampler):
             OiC = Sc[Sc_cl != 0]
             TiC = Sc[Sc_cl == 0]
 
-            Sw = self._compute_selection_weights(X, Sc, TiC, OiC,
-                                                 y_min_classes,
-                                                 y_maj_classes)
+            Sw = self._compute_selection_weights(X, Sc, TiC, OiC, y_min_classes, y_maj_classes)
             P = self._obtain_probability_distribution(X, y, Sw, TiC)
-            N_syn = _compute_number_of_synthetic_instances(Sc,
-                                                           to_generate)
+            N_syn = _compute_number_of_synthetic_instances(Sc, to_generate)
             SI = self._generate_synthetic_instances(X, Sc, N_syn, TiC, P)
 
             SI_synth.append(SI)
@@ -402,8 +377,5 @@ class SMOM(BaseSampler):
         y_resampled = np.concatenate([y, *y_synth], 0)
 
         if self.shuffle:
-            (X_resampled, y_resampled
-             ) = sklearn.utils.shuffle(X_resampled,
-                                       y_resampled,
-                                       random_state=self.random_state)
+            (X_resampled, y_resampled) = sklearn.utils.shuffle(X_resampled, y_resampled, random_state=self.random_state)
         return X_resampled, y_resampled

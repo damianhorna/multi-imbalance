@@ -44,7 +44,7 @@ def test_load_arff_datasets():
     datasets = load_datasets_arff(return_non_cat_length=False, dataset_paths=ds_paths)
 
     keys = list(datasets.keys())
-    assert type(datasets) == OrderedDict
+    assert isinstance(datasets, OrderedDict)
     assert "ds_example" in keys
     assert len(keys) == 1
 
@@ -57,7 +57,7 @@ def test_load_arff_datasets_wth_non_cats():
     ds_paths = [os.path.join(dir_path, "ds_example.arrf")]
     datasets = load_datasets_arff(return_non_cat_length=True, dataset_paths=ds_paths)
     keys = list(datasets.keys())
-    assert type(datasets) == OrderedDict
+    assert isinstance(datasets, OrderedDict)
     assert "ds_example" in keys
     assert len(keys) == 1
 

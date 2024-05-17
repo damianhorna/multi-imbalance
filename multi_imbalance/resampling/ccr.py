@@ -21,8 +21,11 @@ class CCR(BaseSampler):
     International Journal of Applied Mathematics and Computer Science 2017
     """
 
-    def __init__(self, energy: float, distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] =
-                 lambda x, y: np.linalg.norm(x - y, ord=1, axis=1)) -> None:
+    def __init__(
+        self,
+        energy: float,
+        distance_function: Callable[[np.ndarray, np.ndarray], np.ndarray] = lambda x, y: np.linalg.norm(x - y, ord=1, axis=1),
+    ) -> None:
         """
         :param energy:
             initial energy budget for each minority example to use for sphere expansion
@@ -50,14 +53,17 @@ class CCR(BaseSampler):
 
         clean_majority, synthetic_minority = self._clean_and_generate(minority_examples, majority_examples)
 
-        return np.vstack([minority_examples, clean_majority, synthetic_minority]), np.hstack([
-            np.full((minority_examples.shape[0],), minority_class),
-            y[y != minority_class],
-            np.full((synthetic_minority.shape[0],), minority_class)
-        ])
+        return np.vstack([minority_examples, clean_majority, synthetic_minority]), np.hstack(
+            [
+                np.full((minority_examples.shape[0],), minority_class),
+                y[y != minority_class],
+                np.full((synthetic_minority.shape[0],), minority_class),
+            ]
+        )
 
-    def _clean_and_generate(self, minority_examples: np.ndarray, majority_examples: np.ndarray,
-                            synthetic_examples_total: int = None) -> Tuple[np.ndarray, np.ndarray]:
+    def _clean_and_generate(
+        self, minority_examples: np.ndarray, majority_examples: np.ndarray, synthetic_examples_total: int = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         :param minority_examples:
             two-dimensional numpy array (number of samples x number of features) with float numbers of minority class
@@ -70,8 +76,7 @@ class CCR(BaseSampler):
         """
         r, t = self._calculate_radius_and_translations(minority_examples, majority_examples)
         translated_majority_examples = majority_examples + t
-        synthetic_examples = self._generate_synthetic_examples(minority_examples, majority_examples, r,
-                                                               synthetic_examples_total)
+        synthetic_examples = self._generate_synthetic_examples(minority_examples, majority_examples, r, synthetic_examples_total)
 
         return translated_majority_examples, synthetic_examples
 
@@ -122,8 +127,7 @@ class CCR(BaseSampler):
         if synthetic_examples_total is None:
             synthetic_examples_total = majority_examples.shape[0] - minority_examples.shape[0]
 
-        synthetic_examples_counts = self._calculate_synthetic_count_per_minority(generation_order, r,
-                                                                                 synthetic_examples_total)
+        synthetic_examples_counts = self._calculate_synthetic_count_per_minority(generation_order, r, synthetic_examples_total)
 
         generated = []
         for i in generation_order:
@@ -147,7 +151,7 @@ class CCR(BaseSampler):
         return generated
 
     def _calculate_synthetic_count_per_minority(self, generation_order, r, synthetic_examples_total):
-        synthetic_examples_counts = (r ** -1 / (r ** -1).sum()) * synthetic_examples_total
+        synthetic_examples_counts = (r**-1 / (r**-1).sum()) * synthetic_examples_total
         synthetic_leftovers = round((synthetic_examples_counts - synthetic_examples_counts.astype(int)).sum())
         synthetic_examples_counts = synthetic_examples_counts.astype(int)
         for i in range(synthetic_leftovers):
@@ -211,8 +215,7 @@ class MultiClassCCR(BaseSampler):
                         class_samples.append((clazz, sample))
                         X_majority.append(sampled_X[sample])
                 X_majority = np.concatenate(X_majority)
-                clean_X_majority, synthetic_minority = self.CCR._clean_and_generate(X_minority, X_majority,
-                                                                                    n_max - current_class_count)
+                clean_X_majority, synthetic_minority = self.CCR._clean_and_generate(X_minority, X_majority, n_max - current_class_count)
                 class_X[current_class] = np.vstack([class_X[current_class], synthetic_minority])
                 clean_X_splits = [sample.shape[0] for _, sample in class_samples[:-1]]
                 for j in range(1, len(clean_X_splits)):
