@@ -11,14 +11,14 @@ multi-imbalance is a python package tackling the problem of multi-class imbalanc
 ## Requirements
 Tha package has been tested under python 3.9. It relies heavily on scikit-learn and typical scientific stack (numpy, scipy, pandas etc.).
 Requirements include:
-* numpy>=1.23.4,
-* scikit-learn>=1.1.3,
-* pandas>=1.5.1,
+* numpy>=1.23.4,<=1.26
+* scikit-learn>=1.1.0,<=1.4
+* pandas>1.5.1,<=2.2
 * pytest>=7.2.0,
-* imbalanced-learn>=0.9.1
+* imbalanced-learn~=0.12
 * IPython>=8.6.0,
-* seaborn>=0.12.1,
-* matplotlib>=3.6.2
+* seaborn~=0.13.2,
+* matplotlib>=3.6.2,<=3.9
 
 
 ## Installation
