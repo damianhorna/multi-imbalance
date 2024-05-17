@@ -97,7 +97,8 @@ class RBO(BaseSampler):
         return X_nearest_majority, X_nearest_minority
 
     def _find_k_sorted_nearest_neighbours(self, minority_examples, X):
-        return [np.argsort(self.distance_function(minority, X))[1 : self.k + 1] for minority in minority_examples]
+        idx = self.k + 1
+        return [np.argsort(self.distance_function(minority, X))[1:idx] for minority in minority_examples]
 
     def _generate_minority_example(self, current_x: np.ndarray, x_majority: np.ndarray, x_minority: np.ndarray):
         mutual_potential = self._mutual_class_potential(current_x, x_majority, x_minority)
